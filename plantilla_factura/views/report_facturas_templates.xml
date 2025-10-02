@@ -211,7 +211,26 @@
                         <div class="payment-info">
                             <div class="payment-details">
                                 <strong>Comunicaciones de pago:</strong> 
-                                <span t-field="o.name"/> en esta cuenta: ES34 0049 0357 1923 1175 4728
+                                <span t-field="o.name"/> en esta cuenta:
+                                <t t-if="o.journal_id.bank_account_id">
+                                    <span t-esc="o.journal_id.bank_account_id.acc_number[:4]"/> 
+                                    <span t-esc="o.journal_id.bank_account_id.acc_number[4:8]"/> 
+                                    <span t-esc="o.journal_id.bank_account_id.acc_number[8:12]"/> 
+                                    <span t-esc="o.journal_id.bank_account_id.acc_number[12:16]"/>
+                                    <span t-esc="o.journal_id.bank_account_id.acc_number[16:20]"/> 
+                                    <span t-esc="o.journal_id.bank_account_id.acc_number[20:] if len(o.journal_id.bank_account_id.acc_number) > 20 else ''"/>
+                                </t>
+                                <t t-elif="o.company_id.partner_id.bank_ids">
+                                    <span t-esc="o.company_id.partner_id.bank_ids[0].acc_number[:4]"/> 
+                                    <span t-esc="o.company_id.partner_id.bank_ids[0].acc_number[4:8]"/> 
+                                    <span t-esc="o.company_id.partner_id.bank_ids[0].acc_number[8:12]"/> 
+                                    <span t-esc="o.company_id.partner_id.bank_ids[0].acc_number[12:16]"/>
+                                    <span t-esc="o.company_id.partner_id.bank_ids[0].acc_number[16:20]"/> 
+                                    <span t-esc="o.company_id.partner_id.bank_ids[0].acc_number[20:] if len(o.company_id.partner_id.bank_ids[0].acc_number) > 20 else ''"/>
+                                </t>
+                                <t t-else="">
+                                    <span>No se ha configurado cuenta bancaria</span>
+                                </t>
                             </div>
                             <div class="terms-link">
                                 <strong>Términos y condiciones:</strong> 
