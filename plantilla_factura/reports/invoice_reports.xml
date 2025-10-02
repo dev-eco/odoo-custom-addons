@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Definir formato de papel personalizado -->
+    <record id="paperformat_facturas_personalizadas" model="report.paperformat">
+        <field name="name">Formato Facturas Personalizadas</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">35</field>
+        <field name="margin_bottom">20</field>
+        <field name="margin_left">7</field>
+        <field name="margin_right">7</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">30</field>
+        <field name="dpi">90</field>
+    </record>
+    
+    <!-- Definir el informe personalizado -->
+    <record id="action_report_factura_personalizada" model="ir.actions.report">
+        <field name="name">Factura</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">plantilla_factura.report_factura_personalizada</field>
+        <field name="report_file">plantilla_factura.report_factura_personalizada</field>
+        <field name="print_report_name">'Factura - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_facturas_personalizadas"/>
+    </record>
+    
+    <!-- Reemplazar los informes predeterminados -->
+    <record id="account.account_invoices" model="ir.actions.report">
+        <field name="report_name">plantilla_factura.report_factura_personalizada</field>
+        <field name="report_file">plantilla_factura.report_factura_personalizada</field>
+        <field name="paperformat_id" ref="paperformat_facturas_personalizadas"/>
+    </record>
+    
+    <record id="account.account_invoices_without_payment" model="ir.actions.report">
+        <field name="report_name">plantilla_factura.report_factura_personalizada</field>
+        <field name="report_file">plantilla_factura.report_factura_personalizada</field>
+        <field name="paperformat_id" ref="paperformat_facturas_personalizadas"/>
+    </record>
+    
+    <!-- Reemplazar referencia en parámetros del sistema -->
+    <function model="ir.config_parameter" name="set_param" eval="('account.default_invoice_report', 'plantilla_factura.action_report_factura_personalizada')"/>
+    
+    <!-- Hacer que este reporte sea el predeterminado para todos los casos de uso -->
+    <function model="ir.actions.report" name="unlink_action" eval="[ref('account.account_invoices')]"/>
+    <function model="ir.actions.report" name="create_action" eval="[ref('action_report_factura_personalizada')]"/>
+</odoo>

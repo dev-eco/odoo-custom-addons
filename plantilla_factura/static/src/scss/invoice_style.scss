@@ -1,0 +1,95 @@
+/**
+ * Estilos para la interfaz de usuario de facturas
+ * © 2025 Tu Empresa - https://www.tuempresa.com
+ * License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html)
+ */
+
+/* Estilos para la vista de formulario de facturas */
+.o_form_view.o_form_editable {
+    .o_account_move {
+        // Destacar el campo de referencia del cliente
+        .o_field_widget[name="referencia_cliente"] {
+            input {
+                font-weight: bold;
+                color: #0c79c5;
+            }
+        }
+        
+        // Mejorar la visibilidad del campo de pedidos relacionados
+        .o_field_widget[name="pedidos_relacionados"] {
+            font-weight: 500;
+            color: #6c757d;
+        }
+        
+        // Destacar la pestaña de información adicional cuando tiene datos
+        &.tiene_campos_personalizados {
+            .nav-link[data-name="info_adicional"] {
+                color: #0c79c5;
+                font-weight: 500;
+                
+                &::after {
+                    content: "•";
+                    margin-left: 5px;
+                    color: #28a745;
+                }
+            }
+        }
+        
+        // Mejorar la apariencia del campo de instrucciones especiales
+        .o_field_widget[name="instrucciones_especiales"] {
+            border-left: 3px solid #17a2b8;
+            padding-left: 8px;
+            background-color: #f8f9fa;
+            
+            textarea {
+                background-color: transparent;
+            }
+        }
+    }
+}
+
+/* Estilos para la vista de lista de facturas */
+.o_list_view {
+    .o_data_row {
+        // Destacar las facturas con campos personalizados
+        &.o_list_info {
+            background-color: rgba(23, 162, 184, 0.05);
+            
+            // Destacar la referencia del cliente
+            .o_data_cell.o_field_cell.o_list_char[name="referencia_cliente"] {
+                font-weight: 500;
+                color: #0c79c5;
+            }
+        }
+        
+        // Estilos para el campo de pedidos relacionados
+        .o_data_cell.o_field_cell.o_list_char[name="pedidos_relacionados"] {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    }
+}
+
+/* Estilos para el kanban de facturas si se usa */
+.o_kanban_view {
+    .o_kanban_record {
+        // Mostrar la referencia del cliente en tarjetas kanban
+        .o_field_referencia_cliente {
+            margin-top: 5px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #0c79c5;
+            
+            &::before {
+                content: "Ref. Cliente: ";
+                font-weight: normal;
+                color: #6c757d;
+            }
+        }
+        
+        // Destacar las tarjetas con campos personalizados
+        &.tiene_campos_personalizados {
+            border-left: 3px solid #17a2b8;
+        }
+    }
+}

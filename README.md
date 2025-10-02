@@ -1,2 +1,1 @@
-# odoo-custom-addons
-Módulos custom
+Este repositorio contiene todos los módulos personalizados desarrollados específicamente para las operaciones de EcoCaucho, incluyendo fabricación de losas de caucho y gestión de proyectos de instalación de pavimento continuo.
