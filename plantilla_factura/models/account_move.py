@@ -34,18 +34,6 @@ class AccountMove(models.Model):
         help="Muestra los números de pedido relacionados con esta factura"
     )
     
-    def format_iban(self, iban):
-            """Formatea un IBAN correctamente para su visualización"""
-            if not iban:
-                return ""
-            iban = iban.replace(" ", "")  # Elimina espacios existentes
-            # Formato para IBAN español: ESXX XXXX XXXX XX XXXXXXXXXX
-            if len(iban) >= 4 and iban[:2].upper() == "ES":
-                return f"{iban[:4]} {iban[4:8]} {iban[8:12]} {iban[12:14]} {iban[14:]}"
-            # Formato genérico para otros IBAN: grupos de 4 caracteres
-            chunks = [iban[i:i+4] for i in range(0, len(iban), 4)]
-            return " ".join(chunks)
-
     def action_invoice_print(self):
         """Reemplaza la acción de imprimir factura para usar nuestra plantilla personalizada"""
         self.ensure_one()

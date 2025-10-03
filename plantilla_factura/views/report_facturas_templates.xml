@@ -209,19 +209,37 @@
                 <div class="row totals-section page-break-inside-avoid">
                     <div class="col-7">
                         <div class="payment-info">
-                        <div class="payment-details">
-                          <strong>Comunicaciones de pago:</strong> 
-                          <span t-field="o.name"/> en esta cuenta:
-                          <t t-if="o.journal_id.bank_account_id">
-                            <span t-esc="o.format_iban(o.journal_id.bank_account_id.acc_number)"/>
-                          </t>
-                          <t t-elif="o.company_id.partner_id.bank_ids">
-                            <span t-esc="o.format_iban(o.company_id.partner_id.bank_ids[0].acc_number)"/>
-                          </t>
-                          <t t-else="">
-                            <span>No se ha configurado cuenta bancaria</span>
-                          </t>
-                        </div>
+                            <div class="payment-details">
+                              <strong>Comunicaciones de pago:</strong> 
+                              <span t-field="o.name"/> en esta cuenta:
+                              <t t-if="o.journal_id.bank_account_id">
+                                <t t-set="iban" t-value="o.journal_id.bank_account_id.acc_number"/>
+                                <t t-if="iban">
+                                  <t t-set="clean_iban" t-value="iban.replace(' ', '')"/>
+                                  <t t-if="len(clean_iban) >= 4 and clean_iban[:2].upper() == 'ES'">
+                                    <t t-esc="clean_iban[:4]"/> <t t-esc="clean_iban[4:8]"/> <t t-esc="clean_iban[8:12]"/> <t t-esc="clean_iban[12:14]"/> <t t-esc="clean_iban[14:]"/>
+                                  </t>
+                                  <t t-else="">
+                                    <t t-esc="iban"/>
+                                  </t>
+                                </t>
+                              </t>
+                              <t t-elif="o.company_id.partner_id.bank_ids">
+                                <t t-set="iban" t-value="o.company_id.partner_id.bank_ids[0].acc_number"/>
+                                <t t-if="iban">
+                                  <t t-set="clean_iban" t-value="iban.replace(' ', '')"/>
+                                  <t t-if="len(clean_iban) >= 4 and clean_iban[:2].upper() == 'ES'">
+                                    <t t-esc="clean_iban[:4]"/> <t t-esc="clean_iban[4:8]"/> <t t-esc="clean_iban[8:12]"/> <t t-esc="clean_iban[12:14]"/> <t t-esc="clean_iban[14:]"/>
+                                  </t>
+                                  <t t-else="">
+                                    <t t-esc="iban"/>
+                                  </t>
+                                </t>
+                              </t>
+                              <t t-else="">
+                                <span>No se ha configurado cuenta bancaria</span>
+                              </t>
+                            </div>
                             <t t-if="o.company_id.website">
                               <div class="terms-link">
                                 <strong>Términos y condiciones:</strong> 
