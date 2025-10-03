@@ -91,13 +91,14 @@ $eco-total-bg: #E8F5E9;     // Fondo para el total (verde muy claro/pastel)
         .field-label {
             color: $eco-text-grey;
             font-weight: 500;
-            padding-right: 15px;
+            padding: 8px 12px;
             width: 40%;
             vertical-align: top;
         }
         
         .field-value {
             color: #333;
+            padding: 8px 12px;
             font-weight: 500;
         }
     }
