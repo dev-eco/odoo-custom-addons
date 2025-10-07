@@ -20,11 +20,10 @@
               action="action_document_type"
               sequence="20"/>
               
-    <!-- Menú de configuración en Ajustes -->
+    <!-- Entrada de configuración en menú de Ajustes -->
     <menuitem id="menu_document_automation_settings" 
               name="Automatización de Documentos" 
-              parent="base.menu_administration" 
-              action="res_config_settings_action_document_automation" 
+              parent="base.menu_setting_config" 
               sequence="90" 
               groups="base.group_system"/>
 </odoo>
