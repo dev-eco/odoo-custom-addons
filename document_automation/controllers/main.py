@@ -235,7 +235,7 @@ class DocumentAutomationController(http.Controller):
             # Formateamos la respuesta con el estado actual
             return self._json_response(
                 success=True,
-                document: {
+                document={
                     'id': document.id,
                     'name': document.name,
                     'status': document.status,
