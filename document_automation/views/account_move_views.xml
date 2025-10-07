@@ -30,7 +30,10 @@
             </notebook>
             <!-- Indicador visual de procesamiento automático en la cabecera -->
             <xpath expr="//div[hasclass('oe_title')]" position="after">
-                <div invisible="not is_auto_processed" class="badge badge-info">
+                <!-- Añadido groups para cumplir con restricciones de permisos -->
+                <div invisible="not is_auto_processed" 
+                     class="badge badge-info"
+                     groups="account.group_account_invoice">
                     <i class="fa fa-robot"/> Procesada automáticamente
                 </div>
             </xpath>
@@ -43,6 +46,7 @@
         <field name="inherit_id" ref="account.view_invoice_tree"/>
         <field name="arch" type="xml">
             <field name="state" position="before">
+                <!-- El campo ya es invisible, así que no necesitamos ajustar permisos -->
                 <field name="is_auto_processed" invisible="1"/>
                 <field name="auto_processing_confidence" widget="percentage" optional="hide"/>
             </field>
@@ -56,7 +60,11 @@
         <field name="arch" type="xml">
             <xpath expr="//filter[@name='status']" position="after">
                 <separator/>
-                <filter string="Procesadas Automáticamente" name="auto_processed" domain="[('is_auto_processed', '=', True)]"/>
+                <!-- Los filtros de búsqueda no necesitan ajustes de permisos -->
+                <filter string="Procesadas Automáticamente" 
+                        name="auto_processed" 
+                        domain="[('is_auto_processed', '=', True)]"
+                        groups="account.group_account_invoice"/>
             </xpath>
         </field>
     </record>
