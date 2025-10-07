@@ -1,27 +1,12 @@
 {
-    'name': 'Document Automation',
-    'version': '1.0.0',
-    'summary': 'Automatización integral para documentos empresariales',
-    'description': """
-        Sistema completo para automatizar la captura y procesamiento de documentos en Odoo 17 CE:
-        
-        - Recepción de documentos por email
-        - Procesamiento de documentos escaneados
-        - OCR integrado con Tesseract
-        - Validación automática configurable
-        - Compatible con facturas, tickets, albaranes y más
-        - Soporte para escáneres en red local
-    """,
-    'category': 'Documents/Automation',
-    'author': 'Your Company',
-    'website': 'https://www.yourcompany.com',
-    'license': 'LGPL-3',
+    # Asegúrate de que esta sección existe y contiene 'mail'
     'depends': [
         'base', 
         'account', 
         'mail',
         'iap',
     ],
+    # Asegúrate de que estos archivos están incluidos
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
@@ -38,10 +23,4 @@
             'document_automation/static/src/js/document_widget.js',
         ],
     },
-    'external_dependencies': {
-        'python': ['pytesseract', 'pdf2image', 'pillow'],
-    },
-    'installable': True,
-    'application': True,
-    'auto_install': False,
 }

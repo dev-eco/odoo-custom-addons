@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Crear nuestra propia categoría de módulo para CE -->
+        <!-- Categoría del módulo -->
         <record id="module_category_document_automation" model="ir.module.category">
             <field name="name">Document Automation</field>
             <field name="description">Helps you manage your documents and automate processing.</field>
@@ -19,6 +19,13 @@
             <field name="name">Document Automation / Manager</field>
             <field name="category_id" ref="document_automation.module_category_document_automation"/>
             <field name="implied_ids" eval="[(4, ref('group_document_automation_user'))]"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+        
+        <!-- Grupo específico para acceso API -->
+        <record id="group_document_automation_api" model="res.groups">
+            <field name="name">Document Automation / API</field>
+            <field name="category_id" ref="document_automation.module_category_document_automation"/>
             <field name="users" eval="[(4, ref('base.user_admin'))]"/>
         </record>
 
