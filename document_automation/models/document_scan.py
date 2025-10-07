@@ -242,6 +242,45 @@ class DocumentScan(models.Model):
             else:
                 record.result_url = False
     
+    def action_view_result(self):
+        """Abre la vista del documento resultante"""
+        self.ensure_one()
+        
+        if not self.result_model or not self.result_record_id:
+            raise UserError(_("No hay documento resultante disponible para ver"))
+        
+        # Buscar la acción relacionada con este modelo
+        action_name = f"action_{self.result_model.replace('.', '_')}_form"
+        action = self.env.ref(f"{self.result_model.split('.')[0]}.{action_name}", False)
+        
+        if not action:
+            # Buscar cualquier acción para este modelo
+            action = self.env['ir.actions.act_window'].search([
+                ('res_model', '=', self.result_model),
+                ('view_mode', 'like', 'form'),
+            ], limit=1)
+        
+        if not action:
+            # Si no encontramos una acción, crear una básica
+            action = {
+                'name': _('Documento Resultante'),
+                'type': 'ir.actions.act_window',
+                'res_model': self.result_model,
+                'view_mode': 'form',
+                'target': 'current',
+            }
+        else:
+            action = action.read()[0]
+        
+        # Establecer el ID del registro a mostrar
+        action.update({
+            'res_id': self.result_record_id,
+            'views': [(False, 'form')],
+            'view_mode': 'form',
+        })
+        
+        return action
+    
     def action_process(self):
         """Inicia el procesamiento del documento"""
         self.ensure_one()
