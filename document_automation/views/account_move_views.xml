@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Modificación de la vista formulario para facturas -->
+    <record id="view_move_form_inherit_document_automation" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.document.automation</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <!-- Añadimos pestaña de automatización -->
+            <notebook position="inside">
+                <page string="Automatización" 
+                      attrs="{'invisible': [('is_auto_processed', '=', False)]}"
+                      groups="account.group_account_invoice">
+                    <group>
+                        <group>
+                            <field name="is_auto_processed" invisible="1"/>
+                            <field name="auto_processing_confidence" widget="percentage"/>
+                            <field name="auto_processing_date"/>
+                            <field name="document_scan_id"/>
+                        </group>
+                        <group>
+                            <button name="%(document_automation.action_document_scan)d" 
+                                    string="Ver Documento Original" 
+                                    type="action"
+                                    context="{'search_default_id': document_scan_id}" 
+                                    class="oe_link"
+                                    attrs="{'invisible': [('document_scan_id', '=', False)]}"/>
+                        </group>
+                    </group>
+                </page>
+            </notebook>
+            
+            <!-- Indicador visual de procesamiento automático en la cabecera -->
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <div attrs="{'invisible': [('is_auto_processed', '=', False)]}" class="badge badge-info">
+                    <i class="fa fa-robot"/> Procesada automáticamente
+                </div>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Vista de árbol para facturas -->
+    <record id="view_invoice_tree_inherit_document_automation" model="ir.ui.view">
+        <field name="name">account.move.tree.inherit.document.automation</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="before">
+                <field name="is_auto_processed" invisible="1"/>
+                <field name="auto_processing_confidence" widget="percentage" optional="hide"/>
+            </field>
+        </field>
+    </record>
+    
+    <!-- Vista de búsqueda para filtrar facturas automáticas -->
+    <record id="view_account_invoice_filter_inherit_document_automation" model="ir.ui.view">
+        <field name="name">account.move.select.inherit.document.automation</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='status']" position="after">
+                <separator/>
+                <filter string="Procesadas Automáticamente" name="auto_processed" domain="[('is_auto_processed', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de formulario para documentos escaneados -->
+    <record id="view_document_scan_form" model="ir.ui.view">
+        <field name="name">document.scan.form</field>
+        <field name="model">document.scan</field>
+        <field name="arch" type="xml">
+            <form string="Documento Escaneado">
+                <header>
+                    <button name="action_process" string="Procesar" type="object" 
+                            class="oe_highlight" attrs="{'invisible': [('status', 'not in', ['pending', 'error'])]}"/>
+                    <button name="action_reset" string="Reiniciar" type="object" 
+                            attrs="{'invisible': [('status', 'in', ['pending'])]}"/>
+                    <button name="action_force_manual" string="Marcar para Revisión Manual" type="object"
+                            attrs="{'invisible': [('status', '=', 'manual')]}"/>
+                    <field name="status" widget="statusbar" statusbar_visible="pending,processing,processed,manual,error"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_result" type="object" class="oe_stat_button" icon="fa-file-text-o"
+                                attrs="{'invisible': [('result_record_id', '=', False)]}">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Documento</span>
+                                <span class="o_stat_text">Final</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del documento"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="document_type_code" invisible="1"/>
+                            <field name="document_type_id"/>
+                            <field name="source"/>
+                            <field name="user_id"/>
+                            <field name="create_date" string="Fecha de recepción"/>
+                        </group>
+                        <group>
+                            <field name="confidence_score" widget="progressbar"/>
+                            <field name="processed_date"/>
+                            <field name="processing_time" widget="float_time"/>
+                            <field name="is_auto_validated" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Documento" name="document">
+                            <group>
+                                <field name="attachment_id"/>
+                                <field name="document_preview" widget="pdf_viewer" 
+                                       attrs="{'invisible': [('document_preview', '=', False)]}"/>
+                            </group>
+                        </page>
+                        <page string="Datos Extraídos" name="data">
+                            <group>
+                                <field name="ocr_data" widget="ace" options="{'mode': 'json'}"
+                                       attrs="{'invisible': [('ocr_data', '=', False)]}"/>
+                            </group>
+                            <group>
+                                <field name="ocr_text" attrs="{'invisible': [('ocr_text', '=', False)]}"/>
+                            </group>
+                        </page>
+                        <page string="Resultado" name="result">
+                            <group>
+                                <field name="result_model"/>
+                                <field name="result_record_id"/>
+                                <field name="result_url" widget="url"/>
+                            </group>
+                        </page>
+                        <page string="Historial" name="logs">
+                            <field name="log_ids" readonly="1">
+                                <tree>
+                                    <field name="create_date"/>
+                                    <field name="user_id"/>
+                                    <field name="action"/>
+                                    <field name="description"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Notas" name="notes">
+                            <field name="notes" placeholder="Notas adicionales sobre este documento"/>
+                        </page>
+                        <page string="Metadatos" name="metadata">
+                            <field name="metadata" widget="ace" options="{'mode': 'json'}"
+                                   attrs="{'invisible': [('metadata', '=', False)]}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vista de árbol para documentos escaneados -->
+    <record id="view_document_scan_tree" model="ir.ui.view">
+        <field name="name">document.scan.tree</field>
+        <field name="model">document.scan</field>
+        <field name="arch" type="xml">
+            <tree string="Documentos Escaneados" decoration-danger="has_error" decoration-warning="status=='manual'" decoration-info="status=='processing'" decoration-success="status=='processed'">
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <field name="source"/>
+                <field name="create_date" string="Fecha de recepción"/>
+                <field name="status"/>
+                <field name="has_error" invisible="1"/>
+                <field name="confidence_score" widget="percentage"/>
+                <field name="processed_date"/>
+                <field name="user_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <button name="action_process" string="Procesar" type="object" icon="fa-cogs" attrs="{'invisible': [('status', 'not in', ['pending', 'error'])]}"/>
+            </tree>
+        </field>
+    </record>
+    
+    <!-- Vista kanban para documentos escaneados -->
+    <record id="view_document_scan_kanban" model="ir.ui.view">
+        <field name="name">document.scan.kanban</field>
+        <field name="model">document.scan</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="status" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <field name="status"/>
+                <field name="create_date"/>
+                <field name="document_preview"/>
+                <field name="confidence_score"/>
+                <field name="user_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click">
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div class="o_kanban_tags_section">
+                                    <span t-if="record.document_type_id.raw_value" class="badge badge-pill badge-primary">
+                                        <field name="document_type_id"/>
+                                    </span>
+                                </div>
+                                <div>
+                                    <t t-if="record.document_preview.raw_value">
+                                        <div class="o_kanban_image_wrapper">
+                                            <img t-att-src="'data:image/png;base64,' + record.document_preview.raw_value" class="o_kanban_image" alt="Documento Preview"/>
+                                        </div>
+                                    </t>
+                                </div>
+                                <div>
+                                    <strong>Confianza: </strong>
+                                    <field name="confidence_score" widget="percentage"/>
+                                </div>
+                                <div>
+                                    <strong>Fecha: </strong>
+                                    <field name="create_date"/>
+                                </div>
+                                <div>
+                                    <strong>Responsable: </strong>
+                                    <field name="user_id"/>
+                                </div>
+                            </div>
+                            <div class="o_kanban_button">
+                                <button name="action_process" string="Procesar" type="object" 
+                                        class="btn btn-primary btn-sm" 
+                                        attrs="{'invisible': [('status', 'not in', ['pending', 'error'])]}"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!-- Vista de búsqueda para documentos escaneados -->
+    <record id="view_document_scan_search" model="ir.ui.view">
+        <field name="name">document.scan.search</field>
+        <field name="model">document.scan</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Documentos">
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <field name="user_id"/>
+                <field name="notes"/>
+                <filter string="Pendientes" name="pending" domain="[('status', '=', 'pending')]"/>
+                <filter string="Procesados" name="processed" domain="[('status', '=', 'processed')]"/>
+                <filter string="Error" name="error" domain="[('status', '=', 'error')]"/>
+                <filter string="Revisión Manual" name="manual" domain="[('status', '=', 'manual')]"/>
+                <filter string="Mis Documentos" name="my_documents" domain="[('user_id', '=', uid)]"/>
+                <filter string="Validados Automáticamente" name="auto_validated" domain="[('is_auto_validated', '=', True)]"/>
+                <filter string="Alta Confianza" name="high_confidence" domain="[('confidence_score', '>=', 90)]"/>
+                <filter string="Baja Confianza" name="low_confidence" domain="[('confidence_score', '>', 0), ('confidence_score', '<', 60)]"/>
+                <separator/>
+                <filter string="Recibidos Hoy" name="today" domain="[('create_date', '>=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Últimos 7 días" name="last_week" domain="[('create_date', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por...">
+                    <filter string="Tipo de Documento" name="document_type" domain="[]" context="{'group_by': 'document_type_id'}"/>
+                    <filter string="Estado" name="status" domain="[]" context="{'group_by': 'status'}"/>
+                    <filter string="Fuente" name="source" domain="[]" context="{'group_by': 'source'}"/>
+                    <filter string="Responsable" name="user_id" domain="[]" context="{'group_by': 'user_id'}"/>
+                    <filter string="Fecha de Recepción" name="create_date" domain="[]" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Vista de gráfico para documentos escaneados -->
+    <record id="view_document_scan_graph" model="ir.ui.view">
+        <field name="name">document.scan.graph</field>
+        <field name="model">document.scan</field>
+        <field name="arch" type="xml">
+            <graph string="Estadísticas de Documentos" type="bar">
+                <field name="document_type_id"/>
+                <field name="status"/>
+                <field name="confidence_score" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    
+    <!-- Vista de pivote para documentos escaneados -->
+    <record id="view_document_scan_pivot" model="ir.ui.view">
+        <field name="name">document.scan.pivot</field>
+        <field name="model">document.scan</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Documentos" display_quantity="true">
+                <field name="document_type_id" type="row"/>
+                <field name="status" type="col"/>
+                <field name="confidence_score" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    
+    <!-- Acción para documentos escaneados -->
+    <record id="action_document_scan" model="ir.actions.act_window">
+        <field name="name">Documentos</field>
+        <field name="res_model">document.scan</field>
+        <field name="view_mode">kanban,tree,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_document_scan_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay documentos para procesar
+            </p>
+            <p>
+                Escanea documentos físicos o recíbelos por email para procesarlos automáticamente.
+            </p>
+        </field>
+    </record>
+    
+    <!-- Acción para documentos pendientes -->
+    <record id="action_document_scan_pending" model="ir.actions.act_window">
+        <field name="name">Documentos Pendientes</field>
+        <field name="res_model">document.scan</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_document_scan_search"/>
+        <field name="domain">[('status', '=', 'pending')]</field>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay documentos pendientes
+            </p>
+            <p>
+                Todos los documentos han sido procesados.
+            </p>
+        </field>
+    </record>
+    
+    <!-- Acción para documentos con error -->
+    <record id="action_document_scan_error" model="ir.actions.act_window">
+        <field name="name">Documentos con Error</field>
+        <field name="res_model">document.scan</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_document_scan_search"/>
+        <field name="domain">[('status', '=', 'error')]</field>
+        <field name="context">{'search_default_error': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay documentos con error
+            </p>
+            <p>
+                Todos los documentos se han procesado correctamente.
+            </p>
+        </field>
+    </record>
+    
+    <!-- Vista de formulario para tipos de documento -->
+    <record id="view_document_type_form" model="ir.ui.view">
+        <field name="name">document.type.form</field>
+        <field name="model">document.type</field>
+        <field name="arch" type="xml">
+            <form string="Tipo de Documento">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_documents" type="object" class="oe_stat_button" icon="fa-files-o">
+                            <field name="document_count" string="Documentos" widget="statinfo"/>
+                        </button>
+                        <button name="action_test_mapping" type="object" class="oe_stat_button" icon="fa-flask">
+                            <span class="o_stat_text">Probar</span>
+                            <span class="o_stat_text">Mapeo</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del tipo de documento"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="success_rate" widget="progressbar"/>
+                            <field name="avg_confidence" widget="percentage"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Configuración" name="config">
+                            <group>
+                                <group string="Modelo Destino">
+                                    <field name="target_model"/>
+                                    <field name="target_model_defaults" widget="ace" options="{'mode': 'json'}" placeholder='{"field": "value"}'/>
+                                </group>
+                                <group string="OCR y Extracción">
+                                    <field name="ocr_template"/>
+                                    <field name="field_mappings" widget="ace" options="{'mode': 'json'}" placeholder='{"target_field": "ocr_field"}'/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Descripción" name="description">
+                            <field name="description" placeholder="Descripción detallada de este tipo de documento"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vista de árbol para tipos de documento -->
+    <record id="view_document_type_tree" model="ir.ui.view">
+        <field name="name">document.type.tree</field>
+        <field name="model">document.type</field>
+        <field name="arch" type="xml">
+            <tree string="Tipos de Documento">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="target_model"/>
+                <field name="document_count"/>
+                <field name="success_rate" widget="progressbar"/>
+                <field name="avg_confidence" widget="percentage"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+    
+    <!-- Vista de búsqueda para tipos de documento -->
+    <record id="view_document_type_search" model="ir.ui.view">
+        <field name="name">document.type.search</field>
+        <field name="model">document.type</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Tipos de Documento">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="target_model"/>
+                <field name="description"/>
+                <filter string="Activos" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactivos" name="inactive" domain="[('active', '=', False)]"/>
+                <filter string="Alta Tasa de Éxito" name="high_success" domain="[('success_rate', '>=', 90)]"/>
+                <filter string="Baja Tasa de Éxito" name="low_success" domain="[('success_rate', '<', 50), ('success_rate', '>', 0)]"/>
+                <group expand="0" string="Agrupar por...">
+                    <filter string="Modelo Destino" name="target_model" domain="[]" context="{'group_by': 'target_model'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Acción para tipos de documento -->
+    <record id="action_document_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Documento</field>
+        <field name="res_model">document.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_document_type_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay tipos de documento definidos
+            </p>
+            <p>
+                Define los tipos de documento que quieres procesar automáticamente.
+            </p>
+        </field>
+    </record>
+    
+    <!-- Acción para procesar lote de documentos -->
+    <record id="action_process_document_batch" model="ir.actions.server">
+        <field name="name">Procesar seleccionados</field>
+        <field name="model_id" ref="model_document_scan"/>
+        <field name="binding_model_id" ref="model_document_scan"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                action = records.action_process_batch()
+        </field>
+    </record>
+</odoo>

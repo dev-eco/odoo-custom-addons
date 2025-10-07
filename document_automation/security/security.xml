@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Grupo de seguridad para gestión de documentos automatizados -->
+        <record id="group_document_automation_user" model="res.groups">
+            <field name="name">Document Automation / User</field>
+            <field name="category_id" ref="base.module_category_documents_management"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <record id="group_document_automation_manager" model="res.groups">
+            <field name="name">Document Automation / Manager</field>
+            <field name="category_id" ref="base.module_category_documents_management"/>
+            <field name="implied_ids" eval="[(4, ref('group_document_automation_user'))]"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+
+        <!-- Reglas de acceso para los documentos -->
+        <record id="document_automation_company_rule" model="ir.rule">
+            <field name="name">Document Automation: Multi-company rule</field>
+            <field name="model_id" ref="model_document_scan"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
+</odoo>
