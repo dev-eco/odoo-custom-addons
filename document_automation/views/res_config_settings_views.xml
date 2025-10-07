@@ -65,7 +65,8 @@
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
-                                <label string="Configuración OCR Tesseract"/>
+                                <!-- Corregido: Agregada la clase o_form_label a la etiqueta sin atributo for -->
+                                <label string="Configuración OCR Tesseract" class="o_form_label"/>
                                 <div class="text-muted">
                                     Configuración del motor OCR Tesseract
                                 </div>
