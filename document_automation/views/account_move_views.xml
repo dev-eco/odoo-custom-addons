@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Modificación de la vista formulario para facturas -->
     <record id="view_move_form_inherit_document_automation" model="ir.ui.view">
@@ -8,8 +7,8 @@
         <field name="arch" type="xml">
             <!-- Añadimos pestaña de automatización -->
             <notebook position="inside">
-                <page string="Automatización" 
-                      attrs="{'invisible': [('is_auto_processed', '=', False)]}"
+                <page string="Automatización"
+                      invisible="not is_auto_processed"
                       groups="account.group_account_invoice">
                     <group>
                         <group>
@@ -19,26 +18,24 @@
                             <field name="document_scan_id"/>
                         </group>
                         <group>
-                            <button name="%(document_automation.action_document_scan)d" 
-                                    string="Ver Documento Original" 
+                            <button name="%(document_automation.action_document_scan)d"
+                                    string="Ver Documento Original"
                                     type="action"
-                                    context="{'search_default_id': document_scan_id}" 
+                                    context="{'search_default_id': document_scan_id}"
                                     class="oe_link"
-                                    attrs="{'invisible': [('document_scan_id', '=', False)]}"/>
+                                    invisible="not document_scan_id"/>
                         </group>
                     </group>
                 </page>
             </notebook>
-            
             <!-- Indicador visual de procesamiento automático en la cabecera -->
             <xpath expr="//div[hasclass('oe_title')]" position="after">
-                <div attrs="{'invisible': [('is_auto_processed', '=', False)]}" class="badge badge-info">
+                <div invisible="not is_auto_processed" class="badge badge-info">
                     <i class="fa fa-robot"/> Procesada automáticamente
                 </div>
             </xpath>
         </field>
     </record>
-    
     <!-- Vista de árbol para facturas -->
     <record id="view_invoice_tree_inherit_document_automation" model="ir.ui.view">
         <field name="name">account.move.tree.inherit.document.automation</field>
@@ -51,7 +48,6 @@
             </field>
         </field>
     </record>
-    
     <!-- Vista de búsqueda para filtrar facturas automáticas -->
     <record id="view_account_invoice_filter_inherit_document_automation" model="ir.ui.view">
         <field name="name">account.move.select.inherit.document.automation</field>
