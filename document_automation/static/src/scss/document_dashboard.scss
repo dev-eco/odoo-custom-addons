@@ -1,0 +1,169 @@
+// Estilos para el dashboard y widgets de automatización de documentos
+
+.o_document_automation_dashboard {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    
+    .o_document_card {
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.2s ease;
+        
+        &:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .o_document_card_title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        
+        .o_document_card_content {
+            display: flex;
+            align-items: center;
+            
+            .o_document_card_icon {
+                margin-right: 10px;
+                font-size: 2rem;
+                color: #6c757d;
+            }
+            
+            .o_document_card_info {
+                flex: 1;
+            }
+            
+            .o_document_card_value {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: #212529;
+            }
+            
+            .o_document_card_label {
+                font-size: 0.9rem;
+                color: #6c757d;
+            }
+        }
+    }
+    
+    .o_document_stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        
+        .o_document_stat_box {
+            flex: 1;
+            text-align: center;
+            padding: 15px 10px;
+            background-color: white;
+            border-radius: 4px;
+            margin: 0 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            
+            &:first-child {
+                margin-left: 0;
+            }
+            
+            &:last-child {
+                margin-right: 0;
+            }
+            
+            .o_document_stat_value {
+                font-size: 1.8rem;
+                font-weight: bold;
+                color: #007bff;
+            }
+            
+            .o_document_stat_label {
+                font-size: 0.9rem;
+                color: #6c757d;
+                margin-top: 5px;
+            }
+        }
+    }
+}
+
+// Estilos para el widget de visualización de documentos
+.o_document_widget {
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    
+    .o_document_preview {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        text-align: center;
+        
+        img {
+            max-width: 100%;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+    }
+    
+    .o_document_info {
+        margin-bottom: 10px;
+        
+        .o_document_info_item {
+            display: flex;
+            margin-bottom: 5px;
+            
+            .o_document_info_label {
+                font-weight: 600;
+                margin-right: 5px;
+            }
+            
+            .o_document_info_value {
+                flex: 1;
+            }
+        }
+    }
+    
+    .o_document_actions {
+        display: flex;
+        justify-content: space-between;
+        
+        .btn {
+            flex: 1;
+            margin: 0 5px;
+            
+            &:first-child {
+                margin-left: 0;
+            }
+            
+            &:last-child {
+                margin-right: 0;
+            }
+        }
+    }
+}
+
+// Estilos para el indicador de confianza de OCR
+.o_ocr_confidence_indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    
+    &.high {
+        background-color: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+    }
+    
+    &.medium {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #d39e00;
+    }
+    
+    &.low {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+}
