@@ -192,11 +192,11 @@
                 <filter string="Revisión Manual" name="manual" domain="[('status', '=', 'manual')]"/>
                 <filter string="Mis Documentos" name="my_documents" domain="[('user_id', '=', uid)]"/>
                 <filter string="Validados Automáticamente" name="auto_validated" domain="[('is_auto_validated', '=', True)]"/>
-                <filter string="Alta Confianza" name="high_confidence" domain="[('confidence_score', '>=', 90)]"/>
-                <filter string="Baja Confianza" name="low_confidence" domain="[('confidence_score', '>', 0), ('confidence_score', '<', 60)]"/>
+                <filter string="Alta Confianza" name="high_confidence" domain="[('confidence_score', '&gt;=', 90)]"/>
+                <filter string="Baja Confianza" name="low_confidence" domain="[('confidence_score', '&gt;', 0), ('confidence_score', '&lt;', 60)]"/>
                 <separator/>
-                <filter string="Recibidos Hoy" name="today" domain="[('create_date', '>=', context_today().strftime('%Y-%m-%d'))]"/>
-                <filter string="Últimos 7 días" name="last_week" domain="[('create_date', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Recibidos Hoy" name="today" domain="[('create_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Últimos 7 días" name="last_week" domain="[('create_date', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
                 <group expand="0" string="Agrupar por...">
                     <filter string="Tipo de Documento" name="document_type" domain="[]" context="{'group_by': 'document_type_id'}"/>
                     <filter string="Estado" name="status" domain="[]" context="{'group_by': 'status'}"/>
@@ -371,8 +371,8 @@
                 <field name="description"/>
                 <filter string="Activos" name="active" domain="[('active', '=', True)]"/>
                 <filter string="Inactivos" name="inactive" domain="[('active', '=', False)]"/>
-                <filter string="Alta Tasa de Éxito" name="high_success" domain="[('success_rate', '>=', 90)]"/>
-                <filter string="Baja Tasa de Éxito" name="low_success" domain="[('success_rate', '<', 50), ('success_rate', '>', 0)]"/>
+                <filter string="Alta Tasa de Éxito" name="high_success" domain="[('success_rate', '&gt;=', 90)]"/>
+                <filter string="Baja Tasa de Éxito" name="low_success" domain="[('success_rate', '&lt;', 50), ('success_rate', '&gt;', 0)]"/>
                 <group expand="0" string="Agrupar por...">
                     <filter string="Modelo Destino" name="target_model" domain="[]" context="{'group_by': 'target_model'}"/>
                 </group>
