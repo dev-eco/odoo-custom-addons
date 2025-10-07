@@ -8,17 +8,17 @@
             <form string="Documento Escaneado">
                 <header>
                     <button name="action_process" string="Procesar" type="object" 
-                            class="oe_highlight" attrs="{'invisible': [('status', 'not in', ['pending', 'error'])]}"/>
+                            class="oe_highlight" invisible="status not in ['pending', 'error']"/>
                     <button name="action_reset" string="Reiniciar" type="object" 
-                            attrs="{'invisible': [('status', 'in', ['pending'])]}"/>
+                            invisible="status in ['pending']"/>
                     <button name="action_force_manual" string="Marcar para Revisión Manual" type="object"
-                            attrs="{'invisible': [('status', '=', 'manual')]}"/>
+                            invisible="status == 'manual'"/>
                     <field name="status" widget="statusbar" statusbar_visible="pending,processing,processed,manual,error"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_result" type="object" class="oe_stat_button" icon="fa-file-text-o"
-                                attrs="{'invisible': [('result_record_id', '=', False)]}">
+                                invisible="result_record_id == False">
                             <div class="o_stat_info">
                                 <span class="o_stat_text">Documento</span>
                                 <span class="o_stat_text">Final</span>
@@ -51,16 +51,16 @@
                             <group>
                                 <field name="attachment_id"/>
                                 <field name="document_preview" widget="pdf_viewer" 
-                                       attrs="{'invisible': [('document_preview', '=', False)]}"/>
+                                       invisible="document_preview == False"/>
                             </group>
                         </page>
                         <page string="Datos Extraídos" name="data">
                             <group>
                                 <field name="ocr_data" widget="ace" options="{'mode': 'json'}"
-                                       attrs="{'invisible': [('ocr_data', '=', False)]}"/>
+                                       invisible="ocr_data == False"/>
                             </group>
                             <group>
-                                <field name="ocr_text" attrs="{'invisible': [('ocr_text', '=', False)]}"/>
+                                <field name="ocr_text" invisible="ocr_text == False"/>
                             </group>
                         </page>
                         <page string="Resultado" name="result">
@@ -85,7 +85,7 @@
                         </page>
                         <page string="Metadatos" name="metadata">
                             <field name="metadata" widget="ace" options="{'mode': 'json'}"
-                                   attrs="{'invisible': [('metadata', '=', False)]}"/>
+                                   invisible="metadata == False"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -114,7 +114,7 @@
                 <field name="processed_date"/>
                 <field name="user_id"/>
                 <field name="company_id" groups="base.group_multi_company"/>
-                <button name="action_process" string="Procesar" type="object" icon="fa-cogs" attrs="{'invisible': [('status', 'not in', ['pending', 'error'])]}"/>
+                <button name="action_process" string="Procesar" type="object" icon="fa-cogs" invisible="status not in ['pending', 'error']"/>
             </tree>
         </field>
     </record>
@@ -167,7 +167,7 @@
                             <div class="o_kanban_button">
                                 <button name="action_process" string="Procesar" type="object" 
                                         class="btn btn-primary btn-sm" 
-                                        attrs="{'invisible': [('status', 'not in', ['pending', 'error'])]}"/>
+                                        invisible="status not in ['pending', 'error']"/>
                             </div>
                         </div>
                     </t>
