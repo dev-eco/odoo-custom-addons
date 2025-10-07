@@ -6,7 +6,7 @@
             <field name="name">Factura</field>
             <field name="code">invoice</field>
             <field name="target_model">account.move</field>
-            <field name="target_model_defaults">{'move_type': 'in_invoice'}</field>
+            <field name="target_model_defaults">{"move_type": "in_invoice"}</field>
             <field name="ocr_template">standard_invoice</field>
             <field name="field_mappings">{
                 "partner_id": "partner_vat",
@@ -25,7 +25,7 @@
             <field name="name">Nota de Crédito</field>
             <field name="code">credit_note</field>
             <field name="target_model">account.move</field>
-            <field name="target_model_defaults">{'move_type': 'in_refund'}</field>
+            <field name="target_model_defaults">{"move_type": "in_refund"}</field>
             <field name="ocr_template">standard_invoice</field>
             <field name="field_mappings">{
                 "partner_id": "partner_vat",
@@ -44,7 +44,7 @@
             <field name="name">Albarán</field>
             <field name="code">delivery_note</field>
             <field name="target_model">stock.picking</field>
-            <field name="target_model_defaults">{'picking_type_code': 'incoming'}</field>
+            <field name="target_model_defaults">{"picking_type_code": "incoming"}</field>
             <field name="ocr_template">delivery_note</field>
             <field name="field_mappings">{
                 "partner_id": "partner_vat",
@@ -77,7 +77,7 @@
             <field name="name">Ticket</field>
             <field name="code">ticket</field>
             <field name="target_model">account.move</field>
-            <field name="target_model_defaults">{'move_type': 'in_invoice'}</field>
+            <field name="target_model_defaults">{"move_type": "in_invoice"}</field>
             <field name="ocr_template">receipt_ticket</field>
             <field name="field_mappings">{
                 "partner_id": "partner_vat",
@@ -94,7 +94,7 @@
         <record id="document_type_generic" model="document.type">
             <field name="name">Documento Genérico</field>
             <field name="code">generic</field>
-            <field name="target_model">documents.document</field>
+            <field name="target_model">ir.attachment</field>
             <field name="target_model_defaults">{}</field>
             <field name="ocr_template">generic</field>
             <field name="field_mappings">{
