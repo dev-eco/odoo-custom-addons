@@ -1,54 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Menú principal de automatización de documentos -->
-    <menuitem id="menu_document_automation_root"
+    <!-- Menú principal para automatización de documentos -->
+    <menuitem id="menu_document_automation_root" 
               name="Automatización de Documentos"
               web_icon="document_automation,static/description/icon.png"
               sequence="75"/>
-    
-    <!-- Submenú para documentos -->
-    <menuitem id="menu_document_automation_documents"
-              name="Documentos"
-              parent="menu_document_automation_root"
-              sequence="10"/>
-    
-    <!-- Elementos de menú para documentos -->
-    <menuitem id="menu_document_scan_all"
-              name="Todos los Documentos"
-              parent="menu_document_automation_documents"
+              
+    <!-- Submenús para documentos -->
+    <menuitem id="menu_document_automation_documents" 
+              name="Documentos" 
+              parent="menu_document_automation_root" 
               action="action_document_scan"
               sequence="10"/>
-    
-    <menuitem id="menu_document_scan_pending"
-              name="Documentos Pendientes"
-              parent="menu_document_automation_documents"
-              action="action_document_scan_pending"
-              sequence="20"/>
-    
-    <menuitem id="menu_document_scan_error"
-              name="Documentos con Error"
-              parent="menu_document_automation_documents"
-              action="action_document_scan_error"
-              sequence="30"/>
-    
-    <!-- Submenú para configuración -->
-    <menuitem id="menu_document_automation_config"
-              name="Configuración"
-              parent="menu_document_automation_root"
-              sequence="100"/>
-    
-    <!-- Elementos de menú para configuración -->
-    <menuitem id="menu_document_type"
-              name="Tipos de Documento"
-              parent="menu_document_automation_config"
+              
+    <!-- Submenús para tipos de documento -->
+    <menuitem id="menu_document_automation_types" 
+              name="Tipos de Documento" 
+              parent="menu_document_automation_root" 
               action="action_document_type"
-              sequence="10"/>
-    
-    <!-- Acceso a configuración desde Configuración General -->
-    <menuitem id="menu_document_automation_settings"
-              name="Automatización de Documentos"
-              parent="base.menu_administration"
-              action="base.action_res_config_settings"
-              sequence="90"
+              sequence="20"/>
+              
+    <!-- Menú de configuración en Ajustes -->
+    <menuitem id="menu_document_automation_settings" 
+              name="Automatización de Documentos" 
+              parent="base.menu_administration" 
+              action="res_config_settings_action_document_automation" 
+              sequence="90" 
               groups="base.group_system"/>
 </odoo>
