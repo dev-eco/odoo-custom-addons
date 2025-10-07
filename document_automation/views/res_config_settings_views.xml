@@ -6,7 +6,7 @@
         <field name="priority">20</field>
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('settings')]" position="inside">
+            <form position="inside">
                 <div class="app_settings_block" data-string="Automatización de Documentos" string="Automatización de Documentos" data-key="document_automation">
                     <h2>Automatización de Documentos</h2>
                     <div class="row mt16 o_settings_container" id="document_automation_settings">
@@ -42,10 +42,10 @@
                                         <label for="document_automation_api_key" string="API Key" class="o_light_label"/>
                                         <div class="d-flex">
                                             <field name="document_automation_api_key" 
-                                                  password="true" 
-                                                  attrs="{'invisible': [('document_automation_show_api_key', '=', True)]}"/>
+                                                   password="true" 
+                                                   attrs="{'invisible': [('document_automation_show_api_key', '=', True)]}"/>
                                             <field name="document_automation_api_key" 
-                                                  attrs="{'invisible': [('document_automation_show_api_key', '=', False)]}"/>
+                                                   attrs="{'invisible': [('document_automation_show_api_key', '=', False)]}"/>
                                             <field name="document_automation_show_api_key" widget="boolean_toggle"/>
                                         </div>
                                     </div>
@@ -122,7 +122,7 @@
                         </div>
                     </div>
                 </div>
-            </xpath>
+            </form>
         </field>
     </record>
 </odoo>
