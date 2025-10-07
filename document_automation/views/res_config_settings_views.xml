@@ -7,7 +7,8 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <form position="inside">
-                <div class="app_settings_block" data-string="Automatización de Documentos" string="Automatización de Documentos" data-key="document_automation">
+                <!-- Nota: Usamos setting en lugar de div para mejor integración con Odoo 17 -->
+                <setting id="document_automation_setting" string="Automatización de Documentos" help="Configuración para la automatización de documentos">
                     <h2>Automatización de Documentos</h2>
                     <div class="row mt16 o_settings_container" id="document_automation_settings">
                         <!-- Configuración de Email -->
@@ -65,8 +66,8 @@
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
-                                <!-- Corregido: Agregada la clase o_form_label a la etiqueta sin atributo for -->
-                                <label string="Configuración OCR Tesseract" class="o_form_label"/>
+                                <!-- Agregada clase o_form_label a todas las etiquetas sin atributo for -->
+                                <span class="o_form_label">Configuración OCR Tesseract</span>
                                 <div class="text-muted">
                                     Configuración del motor OCR Tesseract
                                 </div>
@@ -122,7 +123,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </setting>
             </form>
         </field>
     </record>
