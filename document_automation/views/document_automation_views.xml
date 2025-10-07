@@ -371,8 +371,7 @@
                 <field name="description"/>
                 <filter string="Activos" name="active" domain="[('active', '=', True)]"/>
                 <filter string="Inactivos" name="inactive" domain="[('active', '=', False)]"/>
-                <filter string="Alta Tasa de Éxito" name="high_success" domain="[('success_rate', '&gt;=', 90)]"/>
-                <filter string="Baja Tasa de Éxito" name="low_success" domain="[('success_rate', '&lt;', 50), ('success_rate', '&gt;', 0)]"/>
+                <!-- Eliminamos los filtros problemáticos que usan campos no almacenados -->
                 <group expand="0" string="Agrupar por...">
                     <filter string="Modelo Destino" name="target_model" domain="[]" context="{'group_by': 'target_model'}"/>
                 </group>
