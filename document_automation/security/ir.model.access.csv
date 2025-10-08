@@ -1,7 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_document_scan_user,document.scan user,model_document_scan,document_automation.group_document_automation_user,1,1,1,0
-access_document_scan_manager,document.scan manager,model_document_scan,document_automation.group_document_automation_manager,1,1,1,1
-access_document_type_user,document.type user,model_document_type,document_automation.group_document_automation_user,1,1,0,0
-access_document_type_manager,document.type manager,model_document_type,document_automation.group_document_automation_manager,1,1,1,1
-access_document_scan_log_user,document.scan.log user,model_document_scan_log,document_automation.group_document_automation_user,1,1,1,0
-access_document_scan_log_manager,document.scan.log manager,model_document_scan_log,document_automation.group_document_automation_manager,1,1,1,1
