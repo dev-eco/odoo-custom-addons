@@ -4,18 +4,17 @@ import json
 import logging
 import hmac
 import hashlib
-from datetime import datetime
 import traceback
+from datetime import datetime
 
 from odoo import http, _
-from odoo.http import request, Response, route
+from odoo.http import request, Response
 
 _logger = logging.getLogger(__name__)
 
 class DocumentAutomationController(http.Controller):
     
-    # Ruta de health check sin autenticación
-    @http.route(['/api/v1/invoice/health', '/api/v1/document/health'], type='http', auth='none', methods=['GET'], csrf=False, cors='*')
+    @http.route('/api/v1/invoice/health', type='http', auth='public', methods=['GET'], csrf=False, cors='*')
     def health_check(self, **kwargs):
         """Endpoint para verificar que la API está funcionando"""
         try:
@@ -27,94 +26,206 @@ class DocumentAutomationController(http.Controller):
             return self._http_response(response, 200)
         except Exception as e:
             _logger.error(f"Error en la API: {str(e)}")
-            _logger.error(traceback.format_exc())
             return self._http_response({"status": "error", "message": str(e)}, 500)
     
-    # Ruta principal para recibir documentos
-    @http.route('/api/v1/document/scan', type='http', auth='none', methods=['POST'], csrf=False, cors='*')
+    @http.route('/api/v1/document/scan', type='json', auth='public', methods=['POST'], csrf=False, cors='*')
     def receive_scanned_document(self, **kwargs):
         """Endpoint para recibir documentos escaneados desde el cliente externo"""
         try:
-            # Log ultra detallado para depuración
-            _logger.info("===== INICIO PETICIÓN API =====")
-            _logger.info(f"Headers: {dict(request.httprequest.headers)}")
-            _logger.info(f"Params: {request.params}")
-            _logger.info(f"Content-Type: {request.httprequest.headers.get('Content-Type')}")
-            _logger.info(f"Files: {request.httprequest.files}")
-            _logger.info(f"Method: {request.httprequest.method}")
-            _logger.info(f"URL: {request.httprequest.url}")
+            _logger.info("===== INICIO PETICIÓN DOCUMENTO =====")
+            _logger.info(f"Datos recibidos: {request.jsonrequest}")
             
-            # Autenticación simplificada - saltamos esto por ahora
+            # Obtener datos del JSON
+            json_data = request.jsonrequest
+            
+            # Verificar autenticación API Key
+            headers = request.httprequest.headers
+            api_key = headers.get('X-Api-Key')
+            timestamp = headers.get('X-Timestamp')
+            signature = headers.get('X-Signature')
+            
+            _logger.info(f"Headers de autenticación: API Key={api_key}, Timestamp={timestamp}")
+            
+            # Validamos la API Key (en desarrollo siempre permitimos)
             api_config = request.env['ir.config_parameter'].sudo()
+            valid_api_key = api_config.get_param('document_automation.api_key', '')
+            api_secret = api_config.get_param('document_automation.api_secret', '')
             api_debug_mode = api_config.get_param('document_automation.api_debug_mode', 'true').lower() == 'true'
             
-            # Verificación extra para el archivo
-            if not request.httprequest.files:
-                _logger.error("No se recibieron archivos en la petición multipart/form-data")
+            if not api_debug_mode and valid_api_key and api_key != valid_api_key:
+                _logger.error(f"API Key inválida: {api_key} != {valid_api_key}")
+                return {"success": False, "message": "Autenticación fallida"}
+            
+            # Verificar que tenemos los datos necesarios
+            if not json_data.get('pdf_file_b64'):
+                _logger.error("No se recibió archivo codificado en base64")
+                return {"success": False, "message": "No se recibió ningún archivo"}
+            
+            # Decodificar archivo
+            try:
+                file_data = base64.b64decode(json_data.get('pdf_file_b64'))
+                filename = json_data.get('filename', 'document.pdf')
+                document_type = json_data.get('document_type', 'generic')
+                supplier_name = json_data.get('supplier_name', '')
+                notes = json_data.get('notes', '')
+                user = json_data.get('user', 'system')
+                scanner_name = json_data.get('scanner_name', 'default_scanner')
                 
-                # Intenta obtener datos del cuerpo raw
-                content_type = request.httprequest.headers.get('Content-Type', '')
+                _logger.info(f"Archivo decodificado: {filename} ({len(file_data)} bytes)")
                 
-                if content_type.startswith('multipart/form-data'):
-                    _logger.info("Content-Type es multipart/form-data pero no se recibieron archivos")
-                    _logger.info(f"Content-Length: {request.httprequest.headers.get('Content-Length')}")
-                    
-                    # Verifica si hay datos en el cuerpo
-                    if request.httprequest.data:
-                        _logger.info(f"Hay datos en el cuerpo: {len(request.httprequest.data)} bytes")
-                    else:
-                        _logger.info("No hay datos en el cuerpo")
-                    
-                    return self._http_response({
-                        "success": False, 
-                        "message": "No se recibió ningún archivo. El Content-Type es multipart/form-data pero no se recibieron archivos."
-                    }, 400)
-                else:
-                    _logger.info(f"Content-Type incorrecto: {content_type}")
-                    return self._http_response({
-                        "success": False, 
-                        "message": f"Content-Type incorrecto: {content_type}. Debe ser multipart/form-data."
-                    }, 400)
+            except Exception as e:
+                _logger.error(f"Error decodificando archivo: {str(e)}")
+                return {"success": False, "message": f"Error decodificando archivo: {str(e)}"}
             
-            # Obtén el archivo enviado
-            file = None
-            for field_name, file_obj in request.httprequest.files.items():
-                _logger.info(f"Archivo recibido: {field_name} - {file_obj.filename}")
-                file = file_obj
-                break
+            # Buscamos el tipo de documento por código
+            document_type_obj = request.env['document.type'].sudo().search([('code', '=', document_type)], limit=1)
+            if not document_type_obj:
+                document_type_obj = request.env['document.type'].sudo().search([], limit=1)
             
-            if not file:
-                _logger.error("No se encontró archivo en la petición")
-                return self._http_response({"success": False, "message": "No se recibió ningún archivo identificable"}, 400)
-                
-            # Leemos los datos y el nombre del archivo
-            pdf_data = file.read()
-            filename = file.filename
+            # Creamos el registro de documento escaneado
+            document_vals = {
+                'name': filename,
+                'document_type_id': document_type_obj.id if document_type_obj else False,
+                'document_type_code': document_type,
+                'source': 'scanner',
+                'status': 'pending',
+                'notes': notes,
+            }
             
-            if not pdf_data:
-                _logger.error(f"El archivo {filename} está vacío")
-                return self._http_response({"success": False, "message": f"El archivo {filename} está vacío"}, 400)
-                
-            _logger.info(f"Archivo leído correctamente: {filename} ({len(pdf_data)} bytes)")
+            document = request.env['document.scan'].sudo().create(document_vals)
+            _logger.info(f"Documento creado: ID={document.id}")
             
-            # Resto del código como antes...
-            # [...]
+            # Creamos el adjunto
+            attachment = request.env['ir.attachment'].sudo().create({
+                'name': filename,
+                'type': 'binary',
+                'datas': base64.b64encode(file_data),
+                'res_model': 'document.scan',
+                'res_id': document.id,
+                'mimetype': 'application/pdf' if filename.lower().endswith('.pdf') else 'application/octet-stream',
+            })
             
+            # Asignamos el adjunto al documento
+            document.attachment_id = attachment.id
+            
+            # Procesamiento automático si está configurado
+            auto_process = api_config.get_param('document_automation.auto_process', 'false').lower() == 'true'
+            if auto_process:
+                try:
+                    document.action_process()
+                    _logger.info(f"Procesamiento automático iniciado para documento ID={document.id}")
+                except Exception as e:
+                    _logger.error(f"Error en procesamiento automático: {str(e)}")
+            
+            # Respuesta exitosa
+            _logger.info(f"Documento procesado correctamente: ID={document.id}")
+            return {
+                "success": True,
+                "message": _("Documento recibido correctamente"),
+                "document_id": document.id
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error al procesar documento: {str(e)}")
+            _logger.error(traceback.format_exc())
+            return {"success": False, "message": f"Error interno: {str(e)}"}
+    
+    @http.route('/api/v1/document/types', type='json', auth='public', methods=['POST'], csrf=False)
+    def get_document_types(self, **post):
+        """Endpoint para obtener los tipos de documentos disponibles"""
+        try:
+            # Verificamos la autenticación API Key
+            headers = request.httprequest.headers
+            api_key = headers.get('X-Api-Key')
+            
+            # Validamos la API Key (en desarrollo siempre permitimos)
+            api_config = request.env['ir.config_parameter'].sudo()
+            valid_api_key = api_config.get_param('document_automation.api_key', '')
+            api_debug_mode = api_config.get_param('document_automation.api_debug_mode', 'true').lower() == 'true'
+            
+            if not api_debug_mode and valid_api_key and api_key != valid_api_key:
+                _logger.error(f"API Key inválida: {api_key}")
+                return {"success": False, "message": "Autenticación fallida"}
+            
+            # Obtenemos los tipos de documentos activos
+            doc_types = request.env['document.type'].sudo().search([('active', '=', True)])
+            
+            # Formateamos la respuesta
+            types_data = []
+            for doc_type in doc_types:
+                types_data.append({
+                    'id': doc_type.id,
+                    'name': doc_type.name,
+                    'code': doc_type.code,
+                    'description': doc_type.description if hasattr(doc_type, 'description') else '',
+                    'sequence': doc_type.sequence,
+                })
+            
+            return {
+                "success": True,
+                "document_types": types_data
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error al obtener tipos de documento: {str(e)}")
+            return {"success": False, "message": f"Error interno: {str(e)}"}
+    
+    @http.route('/api/v1/document/status/<int:document_id>', type='http', auth='public', methods=['GET'], csrf=False)
+    def get_document_status(self, document_id, **post):
+        """Endpoint para verificar el estado de un documento procesado"""
+        try:
+            # Verificamos la autenticación API Key
+            headers = request.httprequest.headers
+            api_key = headers.get('X-Api-Key')
+            
+            # Validamos la API Key
+            api_config = request.env['ir.config_parameter'].sudo()
+            valid_api_key = api_config.get_param('document_automation.api_key', '')
+            api_debug_mode = api_config.get_param('document_automation.api_debug_mode', 'true').lower() == 'true'
+            
+            if not api_debug_mode and valid_api_key and api_key != valid_api_key:
+                _logger.error(f"API Key inválida: {api_key}")
+                return self._http_response({"success": False, "message": "Autenticación fallida"}, 401)
+            
+            # Obtenemos el documento
+            document = request.env['document.scan'].sudo().browse(document_id)
+            
+            if not document.exists():
+                return self._http_response({"success": False, "message": "Documento no encontrado"}, 404)
+            
+            # Preparamos información del documento
+            result_model = document.result_model
+            result_record_id = document.result_record_id
+            
+            result_data = None
+            if result_model and result_record_id:
+                record = request.env[result_model].sudo().browse(result_record_id)
+                if record.exists():
+                    # Información básica del registro creado
+                    result_data = {
+                        'id': record.id,
+                        'model': result_model,
+                        'name': record.display_name,
+                    }
+            
+            # Formateamos la respuesta con el estado actual
             return self._http_response({
                 "success": True,
-                "message": "Documento recibido correctamente",
-                "document_id": 123  # ID de prueba
+                "document": {
+                    'id': document.id,
+                    'name': document.name,
+                    'status': document.status,
+                    'document_type': document.document_type_code,
+                    'confidence': document.confidence_score,
+                    'processed_date': document.processed_date.isoformat() if document.processed_date else None,
+                    'result': result_data,
+                }
             }, 200)
-                
+            
         except Exception as e:
-            _logger.error(f"===== FIN PETICIÓN API (ERROR) =====")
-            _logger.error(f"Error al procesar documento escaneado: {str(e)}")
-            _logger.error(traceback.format_exc())
-            return self._http_response({
-                "success": False,
-                "message": f"Error interno: {str(e)}"
-            }, 500)        
-        
+            _logger.error(f"Error al obtener estado de documento: {str(e)}")
+            return self._http_response({"success": False, "message": f"Error interno: {str(e)}"}, 500)
+    
     def _http_response(self, data, status_code=200):
         """Helper para construir respuestas HTTP con formato JSON"""
         headers = [
@@ -128,15 +239,3 @@ class DocumentAutomationController(http.Controller):
             headers=headers,
             content_type='application/json'
         )
-
-    @http.route(['/api', '/api/v1', '/api/v1/document', '/api/v1/invoice'], type='http', auth='public', website=True)
-    def api_root_redirect(self, **kwargs):
-        """Proporciona una respuesta para las rutas base de la API en website"""
-        return request.redirect('/api/documentation')
-
-    @http.route('/api/documentation', type='http', auth='public', website=True)
-    def api_documentation(self, **kwargs):
-        """Página de documentación de la API"""
-        return http.request.render('document_automation.api_documentation', {
-            'api_base_url': request.httprequest.url_root.rstrip('/') + '/api/v1',
-        })
