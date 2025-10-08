@@ -11,6 +11,47 @@ _logger = logging.getLogger(__name__)
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
     
+    document_automation_enable_scanner = fields.Boolean(
+        string='Activar escáner local',
+        config_parameter='document_automation.enable_scanner'
+    )
+    document_automation_api_key = fields.Char(
+        string='API Key',
+        config_parameter='document_automation.api_key'
+    )
+    document_automation_api_secret = fields.Char(
+        string='API Secret',
+        config_parameter='document_automation.api_secret'
+    )
+    document_automation_show_api_key = fields.Boolean(
+        string='Mostrar API Key',
+        default=False
+    )
+    document_automation_auto_process = fields.Boolean(
+        string='Procesamiento automático',
+        config_parameter='document_automation.auto_process'
+    )
+    document_automation_api_debug_mode = fields.Boolean(
+        string='Modo debug API',
+        config_parameter='document_automation.api_debug_mode'
+    )
+    
+    # Configuración de procesamiento de correo
+    document_automation_email_enabled = fields.Boolean(
+        string='Activar procesamiento de correos',
+        config_parameter='document_automation.email_enabled'
+    )
+    document_automation_email_server = fields.Many2one(
+        'fetchmail.server',
+        string='Servidor de correo',
+        config_parameter='document_automation.email_server_id'
+    )
+    document_automation_email_folder = fields.Char(
+        string='Carpeta de correo',
+        config_parameter='document_automation.email_folder',
+        default='INBOX'
+    )
+
     # Configuración general
     document_automation_enable_email = fields.Boolean(
         string="Habilitar recepción por email",

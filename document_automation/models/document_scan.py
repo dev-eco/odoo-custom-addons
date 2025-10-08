@@ -2,6 +2,7 @@
 from odoo import models, fields, api, _
 from datetime import datetime
 import logging
+import time
 
 _logger = logging.getLogger(__name__)
 
@@ -107,34 +108,70 @@ class DocumentScan(models.Model):
             'description': description,
             'user_id': self.env.user.id,
         })
-
-class DocumentScanLog(models.Model):
-    _name = 'document.scan.log'
-    _description = 'Log de Documento Escaneado'
-    _order = 'create_date desc'
+        
+    @api.model
+    def _cron_check_email_documents(self):
+        """Proceso programado para verificar documentos en correos electrónicos
+        
+        Este método busca nuevos correos electrónicos en las bandejas de entrada configuradas,
+        extrae los adjuntos y los procesa como documentos.
+        """
+        _logger.info("Iniciando verificación de documentos por correo electrónico")
+        
+        try:
+            # Obtenemos configuración
+            config = self.env['ir.config_parameter'].sudo()
+            enabled = config.get_param('document_automation.email_enabled', 'false').lower() == 'true'
+            
+            if not enabled:
+                _logger.info("Procesamiento de correos desactivado en configuración")
+                return
+                
+            # Aquí implementaríamos la lógica real para procesar correos
+            # Por ahora, solo registramos una ejecución
+            _logger.info("Verificación de documentos por correo electrónico completada")
+            
+        except Exception as e:
+            _logger.error(f"Error al verificar documentos por correo: {e}")
     
-    document_id = fields.Many2one('document.scan', string='Documento', required=True, ondelete='cascade')
-    user_id = fields.Many2one('res.users', string='Usuario', default=lambda self: self.env.user.id)
-    type = fields.Selection([
-        ('info', 'Información'),
-        ('warning', 'Advertencia'),
-        ('error', 'Error'),
-        ('success', 'Éxito'),
-    ], string='Tipo', default='info')
-    description = fields.Text(string='Descripción', required=True)
-    action = fields.Char(string='Acción', compute='_compute_action')
-    
-    @api.depends('type', 'description')
-    def _compute_action(self):
-        """Calcula la acción basada en el tipo y descripción"""
-        for record in self:
-            if record.type == 'info':
-                record.action = 'Información'
-            elif record.type == 'warning':
-                record.action = 'Advertencia'
-            elif record.type == 'error':
-                record.action = 'Error'
-            elif record.type == 'success':
-                record.action = 'Éxito'
-            else:
-                record.action = 'Desconocido'
+    @api.model
+    def _cron_process_ocr_queue(self):
+        """Proceso programado para procesar la cola de OCR
+        
+        Este método busca documentos pendientes de procesamiento OCR
+        y los procesa en orden de prioridad.
+        """
+        _logger.info("Iniciando procesamiento de cola OCR")
+        
+        try:
+            # Buscamos documentos pendientes
+            docs_to_process = self.search([
+                ('status', '=', 'pending'),
+                ('attachment_id', '!=', False)
+            ], limit=10, order='create_date asc')
+            
+            if not docs_to_process:
+                _logger.info("No hay documentos pendientes en la cola OCR")
+                return
+                
+            # Procesamos cada documento
+            processed_count = 0
+            for doc in docs_to_process:
+                try:
+                    start_time = time.time()
+                    result = doc.action_process()
+                    processing_time = time.time() - start_time
+                    
+                    if result:
+                        doc.write({'processing_time': processing_time})
+                        processed_count += 1
+                        
+                except Exception as e:
+                    _logger.error(f"Error procesando documento {doc.id}: {e}")
+                    doc.write({'status': 'error'})
+                    doc._add_log('error', f"Error en procesamiento automático: {e}")
+            
+            _logger.info(f"Procesamiento de cola OCR completado. Documentos procesados: {processed_count}")
+            
+        except Exception as e:
+            _logger.error(f"Error al procesar cola OCR: {e}")
