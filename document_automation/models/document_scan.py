@@ -21,14 +21,16 @@ class DocumentScan(models.Model):
         ('email', 'Correo Electrónico'),
         ('api', 'API Externa')
     ], string='Fuente', default='scanner', required=True)
-    
+            
     status = fields.Selection([
         ('pending', 'Pendiente'),
         ('processing', 'Procesando'),
         ('done', 'Completado'),
+        ('processed', 'Procesado'),
+        ('manual', 'Revisión Manual'),
         ('error', 'Error')
     ], string='Estado', default='pending', required=True)
-    
+        
     confidence_score = fields.Float(string='Confianza OCR', default=0.0)
     processed_date = fields.Datetime(string='Fecha de Procesamiento')
     processing_time = fields.Float(string='Tiempo de Procesamiento (s)', default=0.0)
@@ -57,6 +59,44 @@ class DocumentScan(models.Model):
             else:
                 record.result_url = False
     
+    def action_reset(self):
+        """Reinicia el estado de procesamiento del documento para intentarlo de nuevo"""
+        self.ensure_one()
+        
+        # Verificamos que no esté en estado pendiente
+        if self.status == 'pending':
+            return
+        
+        # Volvemos a poner en estado pendiente
+        self.write({
+            'status': 'pending',
+            'processed_date': False,
+            'confidence_score': 0.0,
+            'processing_time': 0.0,
+        })
+        
+        self._add_log('info', 'Documento reiniciado para nuevo procesamiento')
+        
+        return True
+
+    def action_force_manual(self):
+        """Marca el documento para revisión manual"""
+        self.ensure_one()
+        
+        # Si ya está en revisión manual, no hacemos nada
+        if self.status == 'manual':
+            return
+        
+        # Marcamos para revisión manual
+        self.write({
+            'status': 'manual',
+            'processed_date': fields.Datetime.now(),
+        })
+        
+        self._add_log('warning', 'Documento marcado para revisión manual')
+        
+        return True
+
     def action_process(self):
         """Procesa el documento manualmente"""
         self.ensure_one()
