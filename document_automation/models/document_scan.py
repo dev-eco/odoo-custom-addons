@@ -22,7 +22,9 @@ class DocumentScan(models.Model):
         ('email', 'Correo Electrónico'),
         ('api', 'API Externa')
     ], string='Fuente', default='scanner', required=True)
-    
+
+    user_id = fields.Many2one('res.users', string='Usuario', default=lambda self: self.env.user.id)
+   
     status = fields.Selection([
         ('pending', 'Pendiente'),
         ('processing', 'Procesando'),
