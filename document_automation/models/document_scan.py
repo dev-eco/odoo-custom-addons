@@ -59,6 +59,42 @@ class DocumentScan(models.Model):
             else:
                 record.result_url = False
     
+    def action_view_result(self):
+    """Abre el documento resultado en una vista de formulario"""
+    self.ensure_one()
+    
+    if not self.result_model or not self.result_record_id:
+        raise UserError(_("No hay documento resultado asociado"))
+    
+    # Verificamos que el modelo y registro existan
+    record = self.env[self.result_model].sudo().browse(self.result_record_id)
+    if not record.exists():
+        raise UserError(_("El documento resultado ya no existe"))
+    
+    # Creamos la acción para abrir el documento
+    action = {
+        'type': 'ir.actions.act_window',
+        'name': _('Documento Resultado'),
+        'res_model': self.result_model,
+        'res_id': self.result_record_id,
+        'view_mode': 'form',
+        'target': 'current',
+    }
+    
+    # Si es una factura, usamos la acción predefinida para facturas
+    if self.result_model == 'account.move':
+        action = self.env.ref('account.action_move_out_invoice_type').read()[0]
+        action['views'] = [(self.env.ref('account.view_move_form').id, 'form')]
+        action['res_id'] = self.result_record_id
+    
+    # Si es un albarán, usamos la acción predefinida para albaranes
+    elif self.result_model == 'stock.picking':
+        action = self.env.ref('stock.action_picking_tree_all').read()[0]
+        action['views'] = [(self.env.ref('stock.view_picking_form').id, 'form')]
+        action['res_id'] = self.result_record_id
+    
+    return action
+
     def action_reset(self):
         """Reinicia el estado de procesamiento del documento para intentarlo de nuevo"""
         self.ensure_one()
