@@ -45,17 +45,17 @@
                     <notebook>
                         <page string="Vista previa">
                             <group>
-                                <field name="document_preview" widget="pdf_viewer" filename="name" readonly="1" attrs="{'invisible': [('document_preview', '=', False)]}"/>
+                                <field name="document_preview" widget="pdf_viewer" filename="name" readonly="1" invisible="document_preview == False"/>
                             </group>
                         </page>
                         <page string="Texto OCR">
-                            <field name="ocr_text" attrs="{'readonly': True}"/>
+                            <field name="ocr_text" readonly="1"/>
                         </page>
                         <page string="Datos extraídos">
-                            <field name="ocr_data" attrs="{'readonly': True}"/>
+                            <field name="ocr_data" readonly="1"/>
                         </page>
                         <page string="Metadatos">
-                            <field name="metadata" attrs="{'readonly': True}"/>
+                            <field name="metadata" readonly="1"/>
                         </page>
                         <page string="Resultado">
                             <group>
@@ -86,8 +86,7 @@
                 </div>
             </form>
         </field>
-    </record>
-    
+    </record>    
     <!-- Vista árbol para documento escaneado -->
     <record id="view_document_scan_tree" model="ir.ui.view">
         <field name="name">document.scan.tree</field>
