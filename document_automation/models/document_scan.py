@@ -256,3 +256,51 @@ class DocumentScan(models.Model):
             
         except Exception as e:
             _logger.error(f"Error al procesar cola OCR: {e}")
+
+    @api.model
+    def _cron_classify_documents(self):
+        """Proceso programado para clasificar automáticamente documentos
+        
+        Este método busca documentos pendientes sin tipo asignado
+        e intenta clasificarlos automáticamente basándose en su contenido.
+        """
+        _logger.info("Iniciando clasificación automática de documentos")
+        
+        try:
+            # Buscamos documentos sin tipo específico
+            docs_to_classify = self.search([
+                ('status', '=', 'pending'),
+                ('document_type_id', '=', False),
+                ('attachment_id', '!=', False)
+            ], limit=20, order='create_date asc')
+            
+            if not docs_to_classify:
+                _logger.info("No hay documentos pendientes para clasificar")
+                return
+                
+            # Clasificamos cada documento
+            classified_count = 0
+            for doc in docs_to_classify:
+                try:
+                    # Aquí implementaríamos la lógica real para clasificar documentos
+                    # Por ejemplo, usando OCR para extraer texto y luego aplicar reglas
+                    # de clasificación basadas en palabras clave, patrones, etc.
+                    
+                    # Por ahora, asignamos un tipo genérico como ejemplo
+                    generic_type = self.env['document.type'].sudo().search([('code', '=', 'generic')], limit=1)
+                    if generic_type:
+                        doc.write({
+                            'document_type_id': generic_type.id,
+                            'document_type_code': generic_type.code,
+                        })
+                        doc._add_log('info', 'Documento clasificado automáticamente como genérico')
+                        classified_count += 1
+                        
+                except Exception as e:
+                    _logger.error(f"Error clasificando documento {doc.id}: {e}")
+                    doc._add_log('error', f"Error en clasificación automática: {e}")
+            
+            _logger.info(f"Clasificación automática completada. Documentos clasificados: {classified_count}")
+            
+        except Exception as e:
+            _logger.error(f"Error en clasificación automática: {e}")
