@@ -27,23 +27,34 @@ class DocumentAutomationController(http.Controller):
         except Exception as e:
             _logger.error(f"Error en la API: {str(e)}")
             return self._http_response({"status": "error", "message": str(e)}, 500)
-
+    
     @http.route('/api/v1/document/scan', type='json', auth='public', methods=['POST'], csrf=False)
     def receive_scanned_document(self, **kwargs):
         """Endpoint para recibir documentos escaneados desde el cliente externo"""
         try:
             _logger.info("===== INICIO PETICIÓN DOCUMENTO =====")
-            
-            # Acceder directamente a los datos recibidos en kwargs
-            _logger.info(f"Datos recibidos: {kwargs}")
+            _logger.info(f"Argumentos recibidos: {list(kwargs.keys())}")
             
             # Verificar autenticación API Key
             headers = request.httprequest.headers
             api_key = headers.get('X-Api-Key')
+            timestamp = headers.get('X-Timestamp')
+            signature = headers.get('X-Signature')
             
-            # Validación de API Key (omitida para brevedad)
+            _logger.info(f"Headers de autenticación: API Key={api_key}, Timestamp={timestamp}")
             
-            # IMPORTANTE: Obtener el PDF directamente de los argumentos recibidos
+            # Validamos la API Key (en desarrollo siempre permitimos)
+            api_config = request.env['ir.config_parameter'].sudo()
+            valid_api_key = api_config.get_param('document_automation.api_key', '')
+            api_secret = api_config.get_param('document_automation.api_secret', '')
+            api_debug_mode = api_config.get_param('document_automation.api_debug_mode', 'true').lower() == 'true'
+            
+            if not api_debug_mode and valid_api_key and api_key != valid_api_key:
+                _logger.error(f"API Key inválida: {api_key} != {valid_api_key}")
+                return {"success": False, "message": "Autenticación fallida"}
+            
+            # Verificar que tenemos los datos necesarios
+            # Acceso directo a los valores pasados como argumentos
             pdf_file_b64 = kwargs.get('pdf_file_b64')
             if not pdf_file_b64:
                 _logger.error("No se recibió archivo codificado en base64")
@@ -61,7 +72,63 @@ class DocumentAutomationController(http.Controller):
                 
                 _logger.info(f"Archivo decodificado: {filename} ({len(file_data)} bytes)")
                 
-                # Resto del código igual...    
+            except Exception as e:
+                _logger.error(f"Error decodificando archivo: {str(e)}")
+                return {"success": False, "message": f"Error decodificando archivo: {str(e)}"}
+            
+            # Buscamos el tipo de documento por código
+            document_type_obj = request.env['document.type'].sudo().search([('code', '=', document_type)], limit=1)
+            if not document_type_obj:
+                document_type_obj = request.env['document.type'].sudo().search([], limit=1)
+            
+            # Creamos el registro de documento escaneado
+            document_vals = {
+                'name': filename,
+                'document_type_id': document_type_obj.id if document_type_obj else False,
+                'document_type_code': document_type,
+                'source': 'api',
+                'status': 'pending',
+                'notes': notes,
+                'user_id': request.env.ref('base.user_admin').id,
+            }
+            
+            document = request.env['document.scan'].sudo().create(document_vals)
+            _logger.info(f"Documento creado: ID={document.id}")
+            
+            # Creamos el adjunto
+            attachment = request.env['ir.attachment'].sudo().create({
+                'name': filename,
+                'type': 'binary',
+                'datas': base64.b64encode(file_data),
+                'res_model': 'document.scan',
+                'res_id': document.id,
+                'mimetype': 'application/pdf' if filename.lower().endswith('.pdf') else 'application/octet-stream',
+            })
+            
+            # Asignamos el adjunto al documento
+            document.write({'attachment_id': attachment.id})
+            
+            # Procesamiento automático si está configurado
+            auto_process = api_config.get_param('document_automation.auto_process', 'false').lower() == 'true'
+            if auto_process:
+                try:
+                    document.action_process()
+                    _logger.info(f"Procesamiento automático iniciado para documento ID={document.id}")
+                except Exception as e:
+                    _logger.error(f"Error en procesamiento automático: {str(e)}")
+            
+            # Respuesta exitosa
+            _logger.info(f"Documento procesado correctamente: ID={document.id}")
+            return {
+                "success": True,
+                "message": "Documento recibido correctamente",
+                "document_id": document.id
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error al procesar documento: {str(e)}")
+            _logger.error(traceback.format_exc())
+            return {"success": False, "message": f"Error interno: {str(e)}"}
     
     @http.route('/api/v1/document/types', type='json', auth='public', methods=['POST'], csrf=False)
     def get_document_types(self, **post):
