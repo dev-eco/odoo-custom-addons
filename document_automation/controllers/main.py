@@ -28,15 +28,16 @@ class DocumentAutomationController(http.Controller):
             _logger.error(f"Error en la API: {str(e)}")
             return self._http_response({"status": "error", "message": str(e)}, 500)
     
-    @http.route('/api/v1/document/scan', type='json', auth='public', methods=['POST'], csrf=False, cors='*')
+    @http.route('/api/v1/document/scan', type='json', auth='public', methods=['POST'], csrf=False)
     def receive_scanned_document(self, **kwargs):
         """Endpoint para recibir documentos escaneados desde el cliente externo"""
         try:
             _logger.info("===== INICIO PETICIÓN DOCUMENTO =====")
-            _logger.info(f"Datos recibidos: {request.jsonrequest}")
             
-            # Obtener datos del JSON
-            json_data = request.jsonrequest
+            # En rutas type='json', los datos JSON están disponibles en kwargs
+            # y también en request.jsonrequest
+            json_data = kwargs
+            _logger.info(f"Datos recibidos: {json_data}")
             
             # Verificar autenticación API Key
             headers = request.httprequest.headers
@@ -57,13 +58,14 @@ class DocumentAutomationController(http.Controller):
                 return {"success": False, "message": "Autenticación fallida"}
             
             # Verificar que tenemos los datos necesarios
-            if not json_data.get('pdf_file_b64'):
+            pdf_file_b64 = json_data.get('pdf_file_b64')
+            if not pdf_file_b64:
                 _logger.error("No se recibió archivo codificado en base64")
                 return {"success": False, "message": "No se recibió ningún archivo"}
             
             # Decodificar archivo
             try:
-                file_data = base64.b64decode(json_data.get('pdf_file_b64'))
+                file_data = base64.b64decode(pdf_file_b64)
                 filename = json_data.get('filename', 'document.pdf')
                 document_type = json_data.get('document_type', 'generic')
                 supplier_name = json_data.get('supplier_name', '')
@@ -106,7 +108,7 @@ class DocumentAutomationController(http.Controller):
             })
             
             # Asignamos el adjunto al documento
-            document.attachment_id = attachment.id
+            document.write({'attachment_id': attachment.id})
             
             # Procesamiento automático si está configurado
             auto_process = api_config.get_param('document_automation.auto_process', 'false').lower() == 'true'
@@ -117,7 +119,7 @@ class DocumentAutomationController(http.Controller):
                 except Exception as e:
                     _logger.error(f"Error en procesamiento automático: {str(e)}")
             
-            # Respuesta exitosa
+            # Respuesta exitosa - Para type='json', devolver directamente el diccionario
             _logger.info(f"Documento procesado correctamente: ID={document.id}")
             return {
                 "success": True,
