@@ -22,7 +22,7 @@ class DocumentScan(models.Model):
         ('email', 'Correo Electrónico'),
         ('api', 'API Externa')
     ], string='Fuente', default='scanner', required=True)
-            
+    
     status = fields.Selection([
         ('pending', 'Pendiente'),
         ('processing', 'Procesando'),
@@ -31,7 +31,7 @@ class DocumentScan(models.Model):
         ('manual', 'Revisión Manual'),
         ('error', 'Error')
     ], string='Estado', default='pending', required=True)
-        
+    
     confidence_score = fields.Float(string='Confianza OCR', default=0.0)
     processed_date = fields.Datetime(string='Fecha de Procesamiento')
     processing_time = fields.Float(string='Tiempo de Procesamiento (s)', default=0.0)
@@ -60,80 +60,6 @@ class DocumentScan(models.Model):
             else:
                 record.result_url = False
     
-    def action_view_result(self):
-    """Abre el documento resultado en una vista de formulario"""
-    self.ensure_one()
-    
-    if not self.result_model or not self.result_record_id:
-        raise UserError(_("No hay documento resultado asociado"))
-    
-    # Verificamos que el modelo y registro existan
-    record = self.env[self.result_model].sudo().browse(self.result_record_id)
-    if not record.exists():
-        raise UserError(_("El documento resultado ya no existe"))
-    
-    # Creamos la acción para abrir el documento
-    action = {
-        'type': 'ir.actions.act_window',
-        'name': _('Documento Resultado'),
-        'res_model': self.result_model,
-        'res_id': self.result_record_id,
-        'view_mode': 'form',
-        'target': 'current',
-    }
-    
-    # Si es una factura, usamos la acción predefinida para facturas
-    if self.result_model == 'account.move':
-        action = self.env.ref('account.action_move_out_invoice_type').read()[0]
-        action['views'] = [(self.env.ref('account.view_move_form').id, 'form')]
-        action['res_id'] = self.result_record_id
-    
-    # Si es un albarán, usamos la acción predefinida para albaranes
-    elif self.result_model == 'stock.picking':
-        action = self.env.ref('stock.action_picking_tree_all').read()[0]
-        action['views'] = [(self.env.ref('stock.view_picking_form').id, 'form')]
-        action['res_id'] = self.result_record_id
-    
-    return action
-
-    def action_reset(self):
-        """Reinicia el estado de procesamiento del documento para intentarlo de nuevo"""
-        self.ensure_one()
-        
-        # Verificamos que no esté en estado pendiente
-        if self.status == 'pending':
-            return
-        
-        # Volvemos a poner en estado pendiente
-        self.write({
-            'status': 'pending',
-            'processed_date': False,
-            'confidence_score': 0.0,
-            'processing_time': 0.0,
-        })
-        
-        self._add_log('info', 'Documento reiniciado para nuevo procesamiento')
-        
-        return True
-
-    def action_force_manual(self):
-        """Marca el documento para revisión manual"""
-        self.ensure_one()
-        
-        # Si ya está en revisión manual, no hacemos nada
-        if self.status == 'manual':
-            return
-        
-        # Marcamos para revisión manual
-        self.write({
-            'status': 'manual',
-            'processed_date': fields.Datetime.now(),
-        })
-        
-        self._add_log('warning', 'Documento marcado para revisión manual')
-        
-        return True
-
     def action_process(self):
         """Procesa el documento manualmente"""
         self.ensure_one()
@@ -175,6 +101,80 @@ class DocumentScan(models.Model):
             self._add_log('error', f'Error en procesamiento: {str(e)}')
             return False
     
+    def action_reset(self):
+        """Reinicia el estado de procesamiento del documento para intentarlo de nuevo"""
+        self.ensure_one()
+        
+        # Verificamos que no esté en estado pendiente
+        if self.status == 'pending':
+            return
+        
+        # Volvemos a poner en estado pendiente
+        self.write({
+            'status': 'pending',
+            'processed_date': False,
+            'confidence_score': 0.0,
+            'processing_time': 0.0,
+        })
+        
+        self._add_log('info', 'Documento reiniciado para nuevo procesamiento')
+        
+        return True
+
+    def action_force_manual(self):
+        """Marca el documento para revisión manual"""
+        self.ensure_one()
+        
+        # Si ya está en revisión manual, no hacemos nada
+        if self.status == 'manual':
+            return
+        
+        # Marcamos para revisión manual
+        self.write({
+            'status': 'manual',
+            'processed_date': fields.Datetime.now(),
+        })
+        
+        self._add_log('warning', 'Documento marcado para revisión manual')
+        
+        return True
+    
+    def action_view_result(self):
+        """Abre el documento resultado en una vista de formulario"""
+        self.ensure_one()
+        
+        if not self.result_model or not self.result_record_id:
+            raise UserError(_("No hay documento resultado asociado"))
+        
+        # Verificamos que el modelo y registro existan
+        record = self.env[self.result_model].sudo().browse(self.result_record_id)
+        if not record.exists():
+            raise UserError(_("El documento resultado ya no existe"))
+        
+        # Creamos la acción para abrir el documento
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': _('Documento Resultado'),
+            'res_model': self.result_model,
+            'res_id': self.result_record_id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+        
+        # Si es una factura, usamos la acción predefinida para facturas
+        if self.result_model == 'account.move':
+            action = self.env.ref('account.action_move_out_invoice_type').read()[0]
+            action['views'] = [(self.env.ref('account.view_move_form').id, 'form')]
+            action['res_id'] = self.result_record_id
+        
+        # Si es un albarán, usamos la acción predefinida para albaranes
+        elif self.result_model == 'stock.picking':
+            action = self.env.ref('stock.action_picking_tree_all').read()[0]
+            action['views'] = [(self.env.ref('stock.view_picking_form').id, 'form')]
+            action['res_id'] = self.result_record_id
+        
+        return action
+    
     def _add_log(self, log_type, description):
         """Añade una entrada de log al documento"""
         self.ensure_one()
@@ -185,7 +185,7 @@ class DocumentScan(models.Model):
             'description': description,
             'user_id': self.env.user.id,
         })
-        
+    
     @api.model
     def _cron_check_email_documents(self):
         """Proceso programado para verificar documentos en correos electrónicos
@@ -252,3 +252,35 @@ class DocumentScan(models.Model):
             
         except Exception as e:
             _logger.error(f"Error al procesar cola OCR: {e}")
+
+
+class DocumentScanLog(models.Model):
+    _name = 'document.scan.log'
+    _description = 'Log de Documento Escaneado'
+    _order = 'create_date desc'
+    
+    document_id = fields.Many2one('document.scan', string='Documento', required=True, ondelete='cascade')
+    user_id = fields.Many2one('res.users', string='Usuario', default=lambda self: self.env.user.id)
+    type = fields.Selection([
+        ('info', 'Información'),
+        ('warning', 'Advertencia'),
+        ('error', 'Error'),
+        ('success', 'Éxito'),
+    ], string='Tipo', default='info')
+    description = fields.Text(string='Descripción', required=True)
+    action = fields.Char(string='Acción', compute='_compute_action')
+    
+    @api.depends('type', 'description')
+    def _compute_action(self):
+        """Calcula la acción basada en el tipo y descripción"""
+        for record in self:
+            if record.type == 'info':
+                record.action = 'Información'
+            elif record.type == 'warning':
+                record.action = 'Advertencia'
+            elif record.type == 'error':
+                record.action = 'Error'
+            elif record.type == 'success':
+                record.action = 'Éxito'
+            else:
+                record.action = 'Desconocido'
