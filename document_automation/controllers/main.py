@@ -151,3 +151,16 @@ class DocumentAutomationController(http.Controller):
             headers=headers,
             content_type='application/json'
         )
+    # Agregar este método al final de la clase DocumentAutomationController
+
+    @http.route(['/api', '/api/v1', '/api/v1/document', '/api/v1/invoice'], type='http', auth='public', website=True)
+    def api_root_redirect(self, **kwargs):
+        """Proporciona una respuesta para las rutas base de la API en website"""
+        return request.redirect('/api/documentation')
+
+    @http.route('/api/documentation', type='http', auth='public', website=True)
+    def api_documentation(self, **kwargs):
+        """Página de documentación de la API"""
+        return http.request.render('document_automation.api_documentation', {
+            'api_base_url': request.httprequest.url_root.rstrip('/') + '/api/v1',
+        })
