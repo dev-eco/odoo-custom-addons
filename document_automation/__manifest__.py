@@ -12,7 +12,6 @@
         'security/ir.model.access.csv',
         'data/document_types.xml',
         'data/ir_cron.xml',
-        'data/ir_http_data.xml',
         'views/api_documentation.xml',
         'views/document_automation_views.xml',
         'views/res_config_settings_views.xml',
