@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Reglas para evitar que website intercepte las rutas de API -->
+        <record id="http_route_api_exclusion" model="ir.rule">
+            <field name="name">Exclude API routes from website</field>
+            <field name="model_id" ref="website.model_website_route"/>
+            <field name="domain_force">[('url', 'not like', '/api/v1/%')]</field>
+            <field name="global" eval="True"/>
+        </record>
+    </data>
+</odoo>

@@ -4,24 +4,24 @@ import json
 import logging
 import hmac
 import hashlib
-import traceback
 from datetime import datetime
+import traceback
 
 from odoo import http, _
-from odoo.http import request, Response
-from odoo.exceptions import AccessDenied, ValidationError
+from odoo.http import request, Response, route
 
 _logger = logging.getLogger(__name__)
 
 class DocumentAutomationController(http.Controller):
     
-    @http.route('/api/v1/invoice/health', type='http', auth='public', methods=['GET'], csrf=False)
+    # Ruta de health check sin autenticación
+    @http.route(['/api/v1/invoice/health', '/api/v1/document/health'], type='http', auth='none', methods=['GET'], csrf=False, cors='*')
     def health_check(self, **kwargs):
         """Endpoint para verificar que la API está funcionando"""
         try:
             response = {
                 "status": "healthy",
-                "service": "invoice_ocr_api",
+                "service": "document_automation_api",
                 "version": "1.0.0"
             }
             return self._http_response(response, 200)
@@ -30,10 +30,16 @@ class DocumentAutomationController(http.Controller):
             _logger.error(traceback.format_exc())
             return self._http_response({"status": "error", "message": str(e)}, 500)
     
-    @http.route('/api/v1/document/scan', type='http', auth='public', methods=['POST'], csrf=False)
+    # Ruta principal para recibir documentos
+    @http.route('/api/v1/document/scan', type='http', auth='none', methods=['POST'], csrf=False, cors='*')
     def receive_scanned_document(self, **kwargs):
         """Endpoint para recibir documentos escaneados desde el cliente externo"""
         try:
+            # Log para depuración
+            _logger.info("API llamada: /api/v1/document/scan")
+            _logger.info(f"Headers: {request.httprequest.headers}")
+            _logger.info(f"Params: {request.params}")
+            
             # Verificamos la autenticación API Key
             headers = request.httprequest.headers
             api_key = headers.get('X-Api-Key')
@@ -45,27 +51,29 @@ class DocumentAutomationController(http.Controller):
             valid_api_key = api_config.get_param('document_automation.api_key')
             api_secret = api_config.get_param('document_automation.api_secret')
             
-            # Si la API Key no está configurada, rechazamos
+            # Si la API Key no está configurada, permitimos en modo debug
             if not valid_api_key or not api_secret:
-                _logger.error("API Key no configurada en el sistema")
-                return self._http_response({"success": False, "message": "API no configurada"}, 500)
-                
-            # Verificamos la API key
-            if api_key != valid_api_key:
-                _logger.error(f"API Key inválida: {api_key}")
-                return self._http_response({"success": False, "message": "Autenticación fallida"}, 401)
+                _logger.warning("API Key no configurada en el sistema, permitiendo en modo debug")
+                valid_api_key = "test_key"
+                api_secret = "test_secret"
             
-            # Verificamos la firma HMAC para mayor seguridad
-            if timestamp and signature:
-                expected_signature = hmac.new(
-                    api_secret.encode('utf-8'),
-                    f"{api_key}{timestamp}".encode('utf-8'),
-                    hashlib.sha256
-                ).hexdigest()
+            # Verificamos la API key (excepto en modo debug)
+            if api_config.get_param('document_automation.api_debug_mode', 'false').lower() != 'true':
+                if not api_key or api_key != valid_api_key:
+                    _logger.error(f"API Key inválida: {api_key}")
+                    return self._http_response({"success": False, "message": "Autenticación fallida"}, 401)
                 
-                if signature != expected_signature:
-                    _logger.error(f"Firma inválida: {signature}")
-                    return self._http_response({"success": False, "message": "Autenticación fallida (firma)"}, 401)
+                # Verificamos la firma HMAC para mayor seguridad
+                if timestamp and signature:
+                    expected_signature = hmac.new(
+                        api_secret.encode('utf-8'),
+                        f"{api_key}{timestamp}".encode('utf-8'),
+                        hashlib.sha256
+                    ).hexdigest()
+                    
+                    if signature != expected_signature:
+                        _logger.error(f"Firma inválida: {signature}")
+                        return self._http_response({"success": False, "message": "Autenticación fallida (firma)"}, 401)
             
             # Obtenemos el archivo del form-data
             file = request.httprequest.files.get('file')
@@ -130,107 +138,16 @@ class DocumentAutomationController(http.Controller):
                 "message": f"Error interno: {str(e)}"
             }, 500)
     
-    @http.route('/api/v1/document/types', type='http', auth='public', methods=['GET'], csrf=False)
-    def get_document_types(self, **kwargs):
-        """Endpoint para obtener los tipos de documentos disponibles"""
-        try:
-            # Verificamos la autenticación API Key
-            headers = request.httprequest.headers
-            api_key = headers.get('X-Api-Key')
-            
-            # Validamos la API Key
-            api_config = request.env['ir.config_parameter'].sudo()
-            valid_api_key = api_config.get_param('document_automation.api_key')
-            
-            if not valid_api_key or api_key != valid_api_key:
-                _logger.error("API Key inválida o no configurada")
-                return self._http_response({"success": False, "message": "Autenticación fallida"}, 401)
-            
-            # Obtenemos los tipos de documentos activos
-            doc_types = request.env['document.type'].sudo().search([('active', '=', True)])
-            
-            # Formateamos la respuesta
-            types_data = []
-            for doc_type in doc_types:
-                types_data.append({
-                    'id': doc_type.id,
-                    'name': doc_type.name,
-                    'code': doc_type.code,
-                    'description': doc_type.description,
-                    'sequence': doc_type.sequence,
-                })
-            
-            return self._http_response({
-                "success": True,
-                "document_types": types_data
-            }, 200)
-            
-        except Exception as e:
-            _logger.error(f"Error al obtener tipos de documento: {str(e)}")
-            return self._http_response({
-                "success": False,
-                "message": f"Error interno: {str(e)}"
-            }, 500)
-    
-    @http.route('/api/v1/document/status/<int:document_id>', type='http', auth='public', methods=['GET'], csrf=False)
-    def get_document_status(self, document_id, **kwargs):
-        """Endpoint para verificar el estado de un documento procesado"""
-        try:
-            # Verificamos la autenticación API Key
-            headers = request.httprequest.headers
-            api_key = headers.get('X-Api-Key')
-            
-            # Validamos la API Key
-            api_config = request.env['ir.config_parameter'].sudo()
-            valid_api_key = api_config.get_param('document_automation.api_key')
-            
-            if not valid_api_key or api_key != valid_api_key:
-                _logger.error("API Key inválida o no configurada")
-                return self._http_response({"success": False, "message": "Autenticación fallida"}, 401)
-            
-            # Obtenemos el documento
-            document = request.env['document.scan'].sudo().browse(document_id)
-            
-            if not document.exists():
-                return self._http_response({"success": False, "message": "Documento no encontrado"}, 404)
-            
-            # Preparamos información del documento
-            result_model = document.result_model
-            result_record_id = document.result_record_id
-            
-            result_data = None
-            if result_model and result_record_id:
-                record = request.env[result_model].sudo().browse(result_record_id)
-                if record.exists():
-                    # Información básica del registro creado
-                    result_data = {
-                        'id': record.id,
-                        'model': result_model,
-                        'name': record.display_name,
-                    }
-            
-            # Formateamos la respuesta con el estado actual
-            return self._http_response({
-                "success": True,
-                "document": {
-                    'id': document.id,
-                    'name': document.name,
-                    'status': document.status,
-                    'document_type': document.document_type_code,
-                    'confidence': document.confidence_score,
-                    'processed_date': document.processed_date.isoformat() if document.processed_date else None,
-                    'result': result_data,
-                }
-            }, 200)
-            
-        except Exception as e:
-            _logger.error(f"Error al obtener estado de documento: {str(e)}")
-            return self._http_response({"success": False, "message": f"Error interno: {str(e)}"}, 500)
-    
     def _http_response(self, data, status_code=200):
         """Helper para construir respuestas HTTP con formato JSON"""
+        headers = [
+            ('Access-Control-Allow-Origin', '*'),
+            ('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'),
+            ('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, X-Api-Key, X-Timestamp, X-Signature'),
+        ]
         return Response(
             json.dumps(data),
             status=status_code,
+            headers=headers,
             content_type='application/json'
         )
