@@ -11,20 +11,21 @@ class DocumentScan(models.Model):
     _name = 'document.scan'
     _description = 'Documento Escaneado'
     _order = 'create_date desc'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     
-    name = fields.Char(string='Nombre', required=True)
+    name = fields.Char(string='Nombre', required=True, tracking=True)
     attachment_id = fields.Many2one('ir.attachment', string='Archivo', ondelete='cascade')
-    document_type_id = fields.Many2one('document.type', string='Tipo de Documento')
+    document_type_id = fields.Many2one('document.type', string='Tipo de Documento', tracking=True)
     document_type_code = fields.Char(string='Código de Tipo', index=True)
     
     source = fields.Selection([
         ('scanner', 'Escáner Local'),
         ('email', 'Correo Electrónico'),
         ('api', 'API Externa')
-    ], string='Fuente', default='scanner', required=True)
-
-    user_id = fields.Many2one('res.users', string='Usuario', default=lambda self: self.env.user.id)
-   
+    ], string='Fuente', default='scanner', required=True, tracking=True)
+    
+    user_id = fields.Many2one('res.users', string='Usuario', default=lambda self: self.env.user.id, tracking=True)
+    
     status = fields.Selection([
         ('pending', 'Pendiente'),
         ('processing', 'Procesando'),
@@ -32,7 +33,7 @@ class DocumentScan(models.Model):
         ('processed', 'Procesado'),
         ('manual', 'Revisión Manual'),
         ('error', 'Error')
-    ], string='Estado', default='pending', required=True)
+    ], string='Estado', default='pending', required=True, tracking=True)
     
     confidence_score = fields.Float(string='Confianza OCR', default=0.0)
     processed_date = fields.Datetime(string='Fecha de Procesamiento')
@@ -51,6 +52,7 @@ class DocumentScan(models.Model):
     company_id = fields.Many2one('res.company', string='Compañía', default=lambda self: self.env.company)
     
     document_preview = fields.Binary(related='attachment_id.datas', string='Vista previa')
+    metadata = fields.Text(string='Metadatos', help='Información adicional del documento en formato JSON')
     
     @api.depends('result_model', 'result_record_id')
     def _compute_result_url(self):
@@ -254,35 +256,3 @@ class DocumentScan(models.Model):
             
         except Exception as e:
             _logger.error(f"Error al procesar cola OCR: {e}")
-
-
-class DocumentScanLog(models.Model):
-    _name = 'document.scan.log'
-    _description = 'Log de Documento Escaneado'
-    _order = 'create_date desc'
-    
-    document_id = fields.Many2one('document.scan', string='Documento', required=True, ondelete='cascade')
-    user_id = fields.Many2one('res.users', string='Usuario', default=lambda self: self.env.user.id)
-    type = fields.Selection([
-        ('info', 'Información'),
-        ('warning', 'Advertencia'),
-        ('error', 'Error'),
-        ('success', 'Éxito'),
-    ], string='Tipo', default='info')
-    description = fields.Text(string='Descripción', required=True)
-    action = fields.Char(string='Acción', compute='_compute_action')
-    
-    @api.depends('type', 'description')
-    def _compute_action(self):
-        """Calcula la acción basada en el tipo y descripción"""
-        for record in self:
-            if record.type == 'info':
-                record.action = 'Información'
-            elif record.type == 'warning':
-                record.action = 'Advertencia'
-            elif record.type == 'error':
-                record.action = 'Error'
-            elif record.type == 'success':
-                record.action = 'Éxito'
-            else:
-                record.action = 'Desconocido'

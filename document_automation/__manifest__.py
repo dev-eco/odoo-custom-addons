@@ -17,9 +17,9 @@
     'website': 'https://ecocaucho.org',
     'license': 'LGPL-3',
     'depends': [
-        'base', 
-        'account', 
+        'base',
         'mail',
+        'account',
         'web',
     ],
     'data': [

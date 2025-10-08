@@ -1,47 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Menú principal para automatización de documentos -->
-    <menuitem id="menu_document_automation_root" 
+    <!-- Menú principal -->
+    <menuitem id="menu_document_automation_root"
               name="Automatización de Documentos"
               web_icon="document_automation,static/description/icon.png"
-              sequence="75"/>
-              
+              sequence="100"/>
+    
     <!-- Submenús para documentos -->
-    <menuitem id="menu_document_automation_documents" 
-              name="Documentos" 
-              parent="menu_document_automation_root" 
+    <menuitem id="menu_document_automation_documents"
+              name="Documentos"
+              parent="menu_document_automation_root"
+              sequence="10"/>
+    
+    <menuitem id="menu_document_scan"
+              name="Documentos Escaneados"
+              parent="menu_document_automation_documents"
               action="action_document_scan"
               sequence="10"/>
-              
-    <!-- Submenús para tipos de documento -->
-    <menuitem id="menu_document_automation_types" 
-              name="Tipos de Documento" 
-              parent="menu_document_automation_root" 
-              action="action_document_type"
-              sequence="20"/>
-              
-    <!-- Configuración como submenú del módulo -->
-    <menuitem id="menu_document_automation_settings" 
-              name="Configuración" 
-              parent="menu_document_automation_root" 
-              sequence="90" 
-              groups="base.group_system"/>
     
-    <!-- Definición de la acción para configuración -->
-    <record id="action_document_automation_config" model="ir.actions.act_window">
-        <field name="name">Configuración</field>
-        <field name="type">ir.actions.act_window</field>
-        <field name="res_model">res.config.settings</field>
-        <field name="view_mode">form</field>
-        <field name="target">inline</field>
-        <field name="context">{'module': 'document_automation'}</field>
-    </record>
-
-    <!-- Enlace a configuración desde el submenú -->
-    <menuitem id="menu_document_automation_config" 
-              name="Configuración General" 
-              parent="menu_document_automation_settings" 
-              action="action_document_automation_config"
-              sequence="10"
-              groups="base.group_system"/>
+    <menuitem id="menu_document_scan_pending"
+              name="Pendientes de Procesar"
+              parent="menu_document_automation_documents"
+              action="action_document_scan"
+              sequence="20"/>
+    
+    <!-- Submenús para configuración -->
+    <menuitem id="menu_document_automation_config"
+              name="Configuración"
+              parent="menu_document_automation_root"
+              sequence="100"/>
+    
+    <menuitem id="menu_document_type"
+              name="Tipos de Documento"
+              parent="menu_document_automation_config"
+              action="action_document_type"
+              sequence="10"/>
+    
+    <menuitem id="menu_document_scan_log"
+              name="Logs de Procesamiento"
+              parent="menu_document_automation_config"
+              action="action_document_scan_log"
+              sequence="20"/>
 </odoo>
