@@ -1457,22 +1457,25 @@ class DocumentAutomation(models.Model):
         }
     
     # Métodos utilitarios
-    def log_action(self, action_type, message):
-        """Registra una acción en el log del documento"""
-        level = 'info'
-        if action_type in ['error']:
-            level = 'error'
-        elif action_type in ['warning']:
-            level = 'warning'
-            
+    def log_action(self, action, message, level='info'):
+    """
+    Registra una acción en el historial del documento
+    """
+    # Lista de acciones válidas
+        valid_actions = ['create', 'write', 'process', 'validate', 'link', 'error', 'cancel', 'ocr', 
+                     'extract', 'classify', 'notify', 'duplicate', 'merge', 'export', 'import', 'other']
+
+    # Si la acción no es válida, usamos 'other'
+        if action not in valid_actions:
+            _logger.warning(f"Acción no válida: {action}. Se usará 'other'.")
+            action = 'other'
+
         log_vals = {
             'document_id': self.id,
-            'action': action_type,
-            'level': level,
+            'action': action,
             'message': message,
-            'user_id': self.env.user.id,
+            'level': level
         }
-        
         return self.env['document.automation.log'].create(log_vals)
     
     def notify_users(self, message, user_ids=None):
@@ -1552,17 +1555,26 @@ class DocumentAutomationLog(models.Model):
     document_id = fields.Many2one('document.automation', 'Documento', required=True, ondelete='cascade')
     user_id = fields.Many2one('res.users', 'Usuario', default=lambda self: self.env.user)
     
-    # Modificar esta línea para incluir 'write'
+    # Modificar esta línea para incluir 'write' y 'ocr'
     action = fields.Selection([
         ('create', 'Creación'),
-        ('write', 'Modificación'),  # Añadir esta opción
+        ('write', 'Modificación'),
         ('process', 'Procesamiento'),
         ('validate', 'Validación'),
         ('link', 'Vinculación'),
         ('error', 'Error'),
-        ('cancel', 'Cancelación')
-    ], string='Acción', required=True)
-    
+        ('cancel', 'Cancelación'),
+        ('ocr', 'Reconocimiento de texto'),
+        ('extract', 'Extracción de datos'),
+        ('classify', 'Clasificación'),
+        ('notify', 'Notificación'),
+        ('duplicate', 'Duplicado detectado'),
+        ('merge', 'Fusión'),
+        ('export', 'Exportación'),
+        ('import', 'Importación'),
+        ('other', 'Otra acción')  # Opción genérica para casos no previstos
+    ], string='Acción', required=True)    
+
     level = fields.Selection([
         ('info', 'Información'),
         ('warning', 'Advertencia'),
