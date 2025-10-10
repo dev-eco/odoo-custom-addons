@@ -1,5 +1,12 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_document_rule_user,document.rule.user,model_document_rule,document_automation.group_document_automation_user,1,0,0,0
-access_document_rule_manager,document.rule.manager,model_document_rule,document_automation.group_document_automation_manager,1,1,1,1
-access_document_template_user,document.template.user,model_document_template,document_automation.group_document_automation_user,1,0,0,0
-access_document_template_manager,document.template.manager,model_document_template,document_automation.group_document_automation_manager,1,1,1,1
+access_document_automation_user,document.automation.user,model_document_automation,group_document_automation_user,1,1,1,0
+access_document_automation_manager,document.automation.manager,model_document_automation,group_document_automation_manager,1,1,1,1
+access_document_type_user,document.type.user,model_document_type,group_document_automation_user,1,0,0,0
+access_document_type_manager,document.type.manager,model_document_type,group_document_automation_manager,1,1,1,1
+access_document_template_user,document.template.user,model_document_template,group_document_automation_user,1,0,0,0
+access_document_template_manager,document.template.manager,model_document_template,group_document_automation_manager,1,1,1,1
+access_document_rule_user,document.rule.user,model_document_rule,group_document_automation_user,1,0,0,0
+access_document_rule_manager,document.rule.manager,model_document_rule,group_document_automation_manager,1,1,1,1
+access_document_log_user,document.log.user,model_document_log,group_document_automation_user,1,0,0,0
+access_document_log_manager,document.log.manager,model_document_log,group_document_automation_manager,1,1,1,1
+access_document_import_wizard,document.import.wizard,model_document_import_wizard,group_document_automation_user,1,1,1,0
