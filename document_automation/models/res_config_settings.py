@@ -3,7 +3,37 @@ from odoo import models, fields, api
 
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
+
+    document_automation_enabled = fields.Boolean(
+        "Activar automatización documental",
+        config_parameter='document_automation.enabled'
+    )
     
+    document_ocr_enabled = fields.Boolean(
+        "Activar OCR",
+        config_parameter='document_automation.ocr_enabled',
+        default=True
+    )
+    
+    document_ocr_languages = fields.Char(
+        "Idiomas OCR",
+        config_parameter='document_automation.ocr_languages',
+        default="spa+eng"
+    )
+    
+    # Nuevos campos para Gemini
+    gemini_api_key = fields.Char(
+        'Gemini API Key', 
+        config_parameter='document_automation.gemini_api_key'
+    )
+    
+    default_extraction_method = fields.Selection([
+        ('tesseract_only', 'Solo Tesseract'),
+        ('tesseract_gemini', 'Tesseract + Gemini AI'),
+        ('gemini_direct', 'Gemini AI directo')
+    ], string="Método de extracción predeterminado", 
+       default='tesseract_gemini',
+       config_parameter='document_automation.default_extraction_method')    
     # Configuración general
     document_automation_enabled = fields.Boolean(
         "Activar automatización documental",
@@ -49,37 +79,6 @@ class ResConfigSettings(models.TransientModel):
         help="Ruta absoluta a la carpeta que será monitoreada"
     )
     
-     document_automation_enabled = fields.Boolean(
-        "Activar automatización documental",
-        config_parameter='document_automation.enabled'
-    )
-    
-    document_ocr_enabled = fields.Boolean(
-        "Activar OCR",
-        config_parameter='document_automation.ocr_enabled',
-        default=True
-    )
-    
-    document_ocr_languages = fields.Char(
-        "Idiomas OCR",
-        config_parameter='document_automation.ocr_languages',
-        default="spa+eng"
-    )
-    
-    # Nuevos campos para Gemini
-    gemini_api_key = fields.Char(
-        'Gemini API Key', 
-        config_parameter='document_automation.gemini_api_key'
-    )
-    
-    default_extraction_method = fields.Selection([
-        ('tesseract_only', 'Solo Tesseract'),
-        ('tesseract_gemini', 'Tesseract + Gemini AI'),
-        ('gemini_direct', 'Gemini AI directo')
-    ], string="Método de extracción predeterminado", 
-       default='tesseract_gemini',
-       config_parameter='document_automation.default_extraction_method')
-
     @api.model
     def get_values(self):
         res = super(ResConfigSettings, self).get_values()
