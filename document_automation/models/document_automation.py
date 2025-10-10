@@ -189,7 +189,13 @@ class DocumentAutomation(models.Model):
         compute='_compute_duplicate_id',
         help="Referencia al documento original del que éste podría ser duplicado"
     )
-    
+
+    extraction_method = fields.Selection([
+        ('tesseract_only', 'Solo Tesseract'),
+        ('tesseract_gemini', 'Tesseract + Gemini AI'),
+        ('gemini_direct', 'Gemini AI directo')
+        ], string='Método extracción', default=lambda self: self._get_default_extraction_method())    
+
     # Campos relacionales
     attachment_ids = fields.One2many(
         'ir.attachment',
@@ -217,6 +223,157 @@ class DocumentAutomation(models.Model):
          'Ya existe un documento con el mismo contenido en esta compañía')
     ]
     
+ @api.model
+    def _get_default_extraction_method(self):
+        return self.env['ir.config_parameter'].sudo().get_param(
+            'document_automation.default_extraction_method', 'tesseract_gemini')
+    
+    def _extract_text_with_tesseract(self):
+        """
+        Extrae texto del documento utilizando Tesseract optimizado
+        """
+        self.ensure_one()
+        
+        if not self.document_file:
+            return False
+            
+        # Obtener idiomas configurados
+        ocr_languages = self.env['ir.config_parameter'].sudo().get_param(
+            'document_automation.ocr_languages', 'spa+eng')
+            
+        # Utilizar el modelo de OCR
+        ocr_model = self.env['document.ocr']
+        extracted_text = ocr_model.extract_text_from_document(
+            self.document_file, 
+            self.file_type, 
+            langs=ocr_languages
+        )
+        
+        if extracted_text:
+            self.write({
+                'ocr_text': extracted_text
+            })
+            self.log_action('ocr', _('Texto extraído mediante OCR'))
+            return True
+        else:
+            self.log_action('error', _('Error al extraer texto mediante OCR'), 'error')
+            return False
+    
+    def _extract_data_with_ai(self):
+        """
+        Extrae datos estructurados utilizando IA
+        """
+        self.ensure_one()
+        
+        extraction_method = self.extraction_method or self._get_default_extraction_method()
+        extraction_model = self.env['document.extraction']
+        
+        try:
+            if extraction_method == 'tesseract_only':
+                # Con Tesseract solo extraemos texto, no datos estructurados
+                return False
+                
+            elif extraction_method == 'tesseract_gemini':
+                # Primero verificamos si ya tenemos texto extraído
+                if not self.ocr_text:
+                    success = self._extract_text_with_tesseract()
+                    if not success:
+                        raise UserError(_("No se pudo extraer texto con OCR"))
+                
+                # Luego usamos Gemini para extraer datos del texto
+                document_type = self.document_type_id.name if self.document_type_id else None
+                extracted_data = extraction_model.extract_data_with_gemini_from_text(
+                    self.ocr_text, document_type)
+                
+            elif extraction_method == 'gemini_direct':
+                # Usamos Gemini directamente sobre la imagen/PDF
+                document_type = self.document_type_id.name if self.document_type_id else None
+                extracted_data = extraction_model.extract_data_with_gemini_from_image(
+                    self.document_file, self.file_type, document_type)
+            
+            # Validar datos y calcular confianza
+            validated_data, confidence = extraction_model.validate_extracted_data(
+                extracted_data, self.document_type_id.name if self.document_type_id else None)
+            
+            # Guardar datos extraídos
+            if validated_data:
+                self.write({
+                    'extracted_data': json.dumps(validated_data, indent=2),
+                    'confidence_score': confidence,
+                })
+                self.log_action('extract', _('Datos extraídos con IA'))
+                return True
+            else:
+                self.log_action('error', _('No se pudieron extraer datos con IA'), 'warning')
+                return False
+                
+        except Exception as e:
+            self.log_action('error', _('Error en extracción de datos: %s') % str(e), 'error')
+            _logger.error("Error al extraer datos con IA: %s", str(e))
+            return False
+    
+    def process_document(self):
+        """
+        Procesa el documento para extraer información
+        """
+        self.ensure_one()
+        
+        # Actualizar estado
+        self.write({
+            'state': 'processing',
+            'processed_date': fields.Datetime.now(),
+        })
+        
+        try:
+            success = False
+            extraction_method = self.extraction_method or self._get_default_extraction_method()
+            
+            # Primer paso: extraer texto con OCR si es necesario
+            if extraction_method in ['tesseract_only', 'tesseract_gemini']:
+                ocr_success = self._extract_text_with_tesseract()
+                if not ocr_success and extraction_method == 'tesseract_only':
+                    raise UserError(_("No se pudo extraer texto con OCR"))
+            
+            # Segundo paso: extraer datos estructurados si corresponde
+            if extraction_method in ['tesseract_gemini', 'gemini_direct']:
+                extraction_success = self._extract_data_with_ai()
+                success = success or extraction_success
+            else:
+                success = True
+            
+            # Intentar detectar el tipo de documento si no está definido
+            if not self.document_type_id:
+                self._detect_document_type()
+            
+            # Actualizar estado según resultado
+            if success and self.extracted_data:
+                self.write({
+                    'state': 'to_validate',
+                })
+            elif self.ocr_text:
+                self.write({
+                    'state': 'to_validate',
+                    'status_message': _('Se extrajo texto pero no datos estructurados'),
+                })
+            else:
+                self.write({
+                    'state': 'error',
+                    'status_message': _('No se pudo procesar el documento'),
+                })
+            
+            # Detectar posibles duplicados
+            self._detect_duplicates()
+            
+            return True
+        except Exception as e:
+            self.write({
+                'state': 'error',
+                'status_message': str(e),
+            })
+            self.log_action('error', str(e), 'error')
+            return False
+
+
     @api.constrains('document_file')
     def _check_document_file(self):
         for record in self:

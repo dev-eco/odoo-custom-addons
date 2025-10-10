@@ -28,30 +28,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Configuración de correo electrónico -->
-                            <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
-                                <div class="o_setting_left_pane">
-                                    <field name="document_scan_email_enabled"/>
-                                </div>
-                                <div class="o_setting_right_pane">
-                                    <label for="document_scan_email_enabled"/>
-                                    <div class="text-muted">
-                                        Procesa automáticamente documentos recibidos por correo
-                                    </div>
-                                    
-                                    <div class="content-group" invisible="document_scan_email_enabled == False">
-                                        <div class="mt16">
-                                            <label for="document_email_whitelist" string="Lista blanca de correos"/>
-                                            <field name="document_email_whitelist" placeholder="ejemplo@dominio.com, otro@dominio.com"/>
-                                        </div>
-                                        <div class="mt8">
-                                            <label for="document_allowed_domains" string="Dominios permitidos"/>
-                                            <field name="document_allowed_domains" placeholder="dominio.com, otrodominio.org"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             
                             <!-- Configuración de OCR -->
                             <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
@@ -73,21 +49,31 @@
                                 </div>
                             </div>
                             
-                            <!-- Carpeta vigilada -->
+                            <!-- Configuración de Gemini AI -->
                             <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
-                                <div class="o_setting_left_pane">
-                                    <field name="document_watch_folder_enabled"/>
-                                </div>
                                 <div class="o_setting_right_pane">
-                                    <label for="document_watch_folder_enabled"/>
+                                    <label for="gemini_api_key" string="Gemini AI"/>
                                     <div class="text-muted">
-                                        Monitoriza una carpeta para procesar documentos automáticamente
+                                        Configura la integración con Google Gemini AI para extracción avanzada
                                     </div>
                                     
-                                    <div class="content-group" invisible="document_watch_folder_enabled == False">
+                                    <div class="content-group">
                                         <div class="mt16">
-                                            <label for="document_watch_folder_path" string="Ruta de carpeta"/>
-                                            <field name="document_watch_folder_path" placeholder="/path/to/watch/folder"/>
+                                            <label for="gemini_api_key" string="API Key"/>
+                                            <field name="gemini_api_key" password="True" placeholder="Introduce tu Gemini API Key"/>
+                                        </div>
+                                        
+                                        <div class="mt16">
+                                            <label for="default_extraction_method" string="Método de extracción"/>
+                                            <field name="default_extraction_method" widget="radio"/>
+                                        </div>
+                                        
+                                        <div class="mt8 text-muted">
+                                            <ul>
+                                                <li><strong>Solo Tesseract:</strong> Sólo extrae texto sin estructura.</li>
+                                                <li><strong>Tesseract + Gemini:</strong> Extrae texto con Tesseract y usa Gemini para estructurar los datos (recomendado).</li>
+                                                <li><strong>Gemini directo:</strong> Envía la imagen directamente a Gemini para análisis (más preciso pero consume más créditos).</li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>

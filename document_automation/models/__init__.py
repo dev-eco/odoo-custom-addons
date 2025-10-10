@@ -1,4 +1,6 @@
 # Primero los modelos fundamentales
+from . import document_ocr
+from . import document_extraction
 from . import document_type  # Modelo base sin dependencias
 from . import res_config_settings  # Configuración general
 
