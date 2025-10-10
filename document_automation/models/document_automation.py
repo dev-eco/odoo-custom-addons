@@ -223,7 +223,7 @@ class DocumentAutomation(models.Model):
          'Ya existe un documento con el mismo contenido en esta compañía')
     ]
     
- @api.model
+    @api.model
     def _get_default_extraction_method(self):
         return self.env['ir.config_parameter'].sudo().get_param(
             'document_automation.default_extraction_method', 'tesseract_gemini')
