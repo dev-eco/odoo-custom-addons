@@ -26,8 +26,8 @@
                             <field name="condition" placeholder="Condición Python que debe cumplirse para aplicar esta regla..."/>
                         </page>
                         <page string="Acción" name="action">
-                            <field name="action_python" attrs="{'invisible': [('action_type', '!=', 'python')]}" placeholder="Código Python a ejecutar..."/>
-                            <field name="action_data" attrs="{'invisible': [('action_type', '!=', 'set_field'), ('action_type', '!=', 'create_record')]}" placeholder="Datos de la acción en formato JSON..."/>
+                            <field name="action_python" invisible="action_type != 'python'" placeholder="Código Python a ejecutar..."/>
+                            <field name="action_data" invisible="action_type not in ('set_field', 'create_record')" placeholder="Datos de la acción en formato JSON..."/>
                         </page>
                     </notebook>
                 </sheet>
