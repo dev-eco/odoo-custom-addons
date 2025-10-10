@@ -1,4 +1,3 @@
-<!-- security/ir.model.access.csv -->
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_document_automation_user,document.automation.user,model_document_automation,group_document_automation_user,1,1,1,0
 access_document_automation_manager,document.automation.manager,model_document_automation,group_document_automation_manager,1,1,1,1
