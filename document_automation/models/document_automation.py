@@ -228,16 +228,33 @@ class DocumentAutomation(models.Model):
             if len(file_content) > 10 * 1024 * 1024:  # 10 MB en bytes
                 raise ValidationError(_("El tamaño del archivo no puede exceder 10 MB."))
     
-    # Métodos computados
     @api.depends('document_file')
     def _compute_file_size(self):
         for record in self:
-            if record.document_file:
-                content = base64.b64decode(record.document_file)
-                record.file_size = len(content) / 1024  # Tamaño en KB
-            else:
-                record.file_size = 0
-    
+            record.file_size = 0
+            if not record.document_file:
+                continue
+                
+            try:
+                # Asegurar que los datos base64 tengan el padding correcto
+                data = record.document_file
+                # Si es string, convertir a bytes para Python 3
+                if isinstance(data, str):
+                    # Asegurarnos que el padding es correcto añadiendo '=' si es necesario
+                    missing_padding = len(data) % 4
+                    if missing_padding:
+                        data += '=' * (4 - missing_padding)
+                    # Convertir a bytes si es necesario
+                    if not isinstance(data, bytes):
+                        data = data.encode('utf-8')
+                        
+                # Decodificar y calcular tamaño
+                content = base64.b64decode(data)
+                record.file_size = len(content)
+            except Exception as e:
+                # Registrar error pero continuar
+                _logger.warning("Error calculando tamaño de archivo para documento %s: %s", record.id, e)    
+
     @api.depends('document_file', 'filename')
     def _compute_file_type(self):
         for record in self:
