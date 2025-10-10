@@ -5,6 +5,7 @@ import json
 class DocumentType(models.Model):
     _name = 'document.type'
     _description = 'Tipo de Documento'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'sequence, name'
     
     name = fields.Char('Nombre', required=True, translate=True)
