@@ -1,7 +1,12 @@
-# models/__init__.py
-from . import document_automation
-from . import document_type
+# Primero los modelos fundamentales
+from . import document_type  # Modelo base sin dependencias
+from . import res_config_settings  # Configuración general
+
+# Luego modelos principales
+from . import document_automation  # Modelo principal
+
 from . import document_template
 from . import document_rule
-from . import mail_thread
-from . import res_config_settings
+
+# Finalmente extensiones y funcionalidades adicionales
+from . import mail_thread  # Extensión de mail.thread
