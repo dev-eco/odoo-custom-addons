@@ -5,27 +5,27 @@
         <field name="name">document.automation.form</field>
         <field name="model">document.automation</field>
         <field name="arch" type="xml">
-            <form string="Documento">
+            <form string="Documento" class="o_document_automation_form">
                 <header>
                     <field name="state" widget="statusbar" statusbar_visible="draft,processing,to_validate,validated,linked"/>
                     <button name="action_process" type="object" 
                             string="Procesar" class="oe_highlight" 
-                            attrs="{'invisible': [('state', 'not in', ['draft', 'error'])]}"/>
+                            invisible="state not in ('draft', 'error')"/>
                     <button name="action_validate" type="object" 
                             string="Validar" class="oe_highlight" 
-                            attrs="{'invisible': [('state', 'not in', ['to_validate', 'error'])]}"/>
+                            invisible="state not in ('to_validate', 'error')"/>
                     <button name="action_view_result" type="object" 
                             string="Ver documento resultante" class="oe_highlight" 
-                            attrs="{'invisible': [('result_model', '=', False)]}"/>
+                            invisible="result_model == False"/>
                     <button name="action_reset" type="object" 
-                            string="Reiniciar" attrs="{'invisible': [('state', 'in', ['draft', 'cancelled'])]}"/>
+                            string="Reiniciar" invisible="state in ('draft', 'cancelled')"/>
                     <button name="action_cancel" type="object" 
-                            string="Cancelar" attrs="{'invisible': [('state', 'in', ['cancelled', 'validated', 'linked'])]}"/>
+                            string="Cancelar" invisible="state in ('cancelled', 'validated', 'linked')"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_errors" type="object" class="oe_stat_button" icon="fa-exclamation-triangle"
-                                attrs="{'invisible': [('error_count', '=', 0)]}">
+                                invisible="error_count == 0">
                             <field name="error_count" widget="statinfo" string="Errores"/>
                         </button>
                     </div>
@@ -38,19 +38,19 @@
                         <group>
                             <field name="document_type_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="source"/>
-                            <field name="confidence_score" widget="percentage" attrs="{'invisible': [('confidence_score', '=', 0)]}"/>
+                            <field name="confidence_score" widget="percentage" invisible="confidence_score == 0"/>
                             <field name="user_id"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                         <group>
                             <field name="create_date" readonly="1"/>
-                            <field name="processed_date" readonly="1" attrs="{'invisible': [('processed_date', '=', False)]}"/>
-                            <field name="validated_date" readonly="1" attrs="{'invisible': [('validated_date', '=', False)]}"/>
+                            <field name="processed_date" readonly="1" invisible="processed_date == False"/>
+                            <field name="validated_date" readonly="1" invisible="validated_date == False"/>
                             <field name="result_model" invisible="1"/>
                             <field name="result_id" invisible="1"/>
-                            <field name="result_reference" attrs="{'invisible': [('result_reference', '=', False)]}"/>
-                            <field name="is_duplicate" readonly="1" attrs="{'invisible': [('is_duplicate', '=', False)]}"/>
-                            <field name="duplicate_id" readonly="1" attrs="{'invisible': [('duplicate_id', '=', False)]}" options="{'no_create': True}"/>
+                            <field name="result_reference" invisible="result_reference == False"/>
+                            <field name="is_duplicate" readonly="1" invisible="is_duplicate == False"/>
+                            <field name="duplicate_id" readonly="1" invisible="duplicate_id == False" options="{'no_create': True}"/>
                         </group>
                     </group>
                     
@@ -63,13 +63,13 @@
                                 <field name="file_size" readonly="1" widget="float_time"/>
                             </group>
                         </page>
-                        <page string="Texto Extraído" name="text" attrs="{'invisible': [('ocr_text', '=', False)]}">
+                        <page string="Texto Extraído" name="text" invisible="ocr_text == False">
                             <field name="ocr_text" readonly="1"/>
                         </page>
-                        <page string="Datos Extraídos" name="data" attrs="{'invisible': [('extracted_data', '=', False)]}">
+                        <page string="Datos Extraídos" name="data" invisible="extracted_data == False">
                             <field name="extracted_data" readonly="1" widget="ace" options="{'mode': 'json'}"/>
                         </page>
-                        <page string="Tipos Detectados" name="types" attrs="{'invisible': [('detected_type_ids', '=', False)]}">
+                        <page string="Tipos Detectados" name="types" invisible="detected_type_ids == False">
                             <field name="detected_type_ids" readonly="1" widget="many2many_tags"/>
                         </page>
                         <page string="Adjuntos" name="attachments">
@@ -95,7 +95,7 @@
                     </notebook>
                     
                     <div class="alert alert-info" role="alert" 
-                         attrs="{'invisible': [('status_message', '=', False)]}"
+                         invisible="status_message == False"
                          style="margin-top: 15px;">
                         <field name="status_message" readonly="1"/>
                     </div>
@@ -124,8 +124,8 @@
                 <field name="result_reference"/>
                 <templates>
                     <t t-name="kanban-box">
-                        <div t-attf-class="oe_kanban_card oe_kanban_global_click">
-                            <div class="oe_kanban_content">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click o_document_kanban_card o_status_{{record.state.raw_value}}">
+                            <div class="o_kanban_content">
                                 <div class="o_kanban_record_top mb8">
                                     <div class="o_kanban_record_headings mt4">
                                         <strong class="o_kanban_record_title">
@@ -140,12 +140,7 @@
                                             <span class="fa fa-ellipsis-v"/>
                                         </a>
                                         <div class="dropdown-menu" role="menu">
-                                            <t t-if="widget.editable">
-                                                <a role="menuitem" type="edit" class="dropdown-item">Editar</a>
-                                            </t>
-                                            <t t-if="widget.deletable">
-                                                <a role="menuitem" type="delete" class="dropdown-item">Eliminar</a>
-                                            </t>
+                                            <a role="menuitem" type="edit" class="dropdown-item">Editar</a>
                                         </div>
                                     </div>
                                 </div>
@@ -216,7 +211,7 @@
                 <separator/>
                 <filter string="Duplicados" name="duplicates" domain="[('is_duplicate', '=', True)]"/>
                 <filter string="Mis documentos" name="my_documents" domain="[('user_id', '=', uid)]"/>
-                <filter string="Recibidos hoy" name="today" domain="[('create_date', '>=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                <filter string="Recibidos hoy" name="today" domain="[('create_date', '>=', context_today().strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <group expand="0" string="Agrupar por">
                     <filter string="Tipo de documento" name="groupby_type" context="{'group_by': 'document_type_id'}"/>
@@ -283,4 +278,199 @@
               parent="menu_document_automation_root" 
               action="action_document_automation" 
               sequence="10"/>
+
+    <!-- Vista formulario para document_type -->
+    <record id="view_document_type_form" model="ir.ui.view">
+        <field name="name">document.type.form</field>
+        <field name="model">document.type</field>
+        <field name="arch" type="xml">
+            <form string="Tipo de Documento">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_documents" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="document_count" widget="statinfo" string="Documentos"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Nombre del tipo de documento"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="model_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="sequence" groups="base.group_no_one"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="success_rate" widget="progressbar"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Detección" name="detection">
+                            <group>
+                                <group string="Palabras clave">
+                                    <field name="keywords" placeholder="Palabras clave separadas por comas..." nolabel="1"/>
+                                </group>
+                                <group string="Patrones regulares">
+                                    <field name="regex_patterns" placeholder="Patrones regex, uno por línea..." nolabel="1"/>
+                                </group>
+                            </group>
+                            <group string="Patrones avanzados">
+                                <field name="advanced_patterns" widget="ace" options="{'mode': 'json'}" placeholder="Patrones avanzados en formato JSON..."/>
+                            </group>
+                        </page>
+                        <page string="Extracción" name="extraction">
+                            <group string="Plantilla de extracción">
+                                <field name="extraction_template" widget="ace" options="{'mode': 'json'}" nolabel="1" placeholder="Plantilla JSON para la extracción de datos..."/>
+                            </group>
+                            <div class="text-center mb-3">
+                                <button name="generate_template_skeleton" string="Generar plantilla" type="object" class="btn btn-primary" invisible="extraction_template != False or model_id == False"/>
+                            </div>
+                        </page>
+                        <page string="Flujo de trabajo" name="workflow">
+                            <group>
+                                <field name="approval_required"/>
+                            </group>
+                            <group string="Usuarios a notificar" invisible="approval_required == False">
+                                <field name="notify_user_ids" widget="many2many_tags" nolabel="1"/>
+                            </group>
+                            <group string="Aprobadores" invisible="approval_required == False">
+                                <field name="approval_user_ids" widget="many2many_tags" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista tree para document_type -->
+    <record id="view_document_type_tree" model="ir.ui.view">
+        <field name="name">document.type.tree</field>
+        <field name="model">document.type</field>
+        <field name="arch" type="xml">
+            <tree string="Tipos de Documento">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="model_id"/>
+                <field name="document_count"/>
+                <field name="success_rate" widget="progressbar"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action para Tipos de Documento -->
+    <record id="action_document_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Documento</field>
+        <field name="res_model">document.type</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_document_type" 
+              name="Tipos de Documento" 
+              parent="menu_document_automation_root" 
+              action="action_document_type" 
+              sequence="20"/>
+
+    <!-- Vista de configuración -->
+    <record id="res_config_settings_view_form_document_automation" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.document.automation</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <!-- En Odoo 17, la estructura de configuraciones ha cambiado -->
+            <xpath expr="//div[hasclass('settings')]" position="inside">
+                <div class="app_settings_block" data-string="Automatización Documental" id="document_automation_settings">
+                    <h2>Configuración de Automatización Documental</h2>
+                    
+                    <div class="row mt16 o_settings_container">
+                        <!-- Configuración general -->
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="document_automation_enabled"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="document_automation_enabled"/>
+                                <div class="text-muted">
+                                    Activa el procesamiento automático de documentos
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de correo electrónico -->
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
+                            <div class="o_setting_left_pane">
+                                <field name="document_scan_email_enabled"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="document_scan_email_enabled"/>
+                                <div class="text-muted">
+                                    Procesa automáticamente documentos recibidos por correo
+                                </div>
+                                
+                                <div class="content-group" invisible="document_scan_email_enabled == False">
+                                    <div class="mt16">
+                                        <label for="document_email_whitelist" string="Lista blanca de correos"/>
+                                        <field name="document_email_whitelist" placeholder="ejemplo@dominio.com, otro@dominio.com"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <label for="document_allowed_domains" string="Dominios permitidos"/>
+                                        <field name="document_allowed_domains" placeholder="dominio.com, otrodominio.org"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Configuración de OCR -->
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
+                            <div class="o_setting_left_pane">
+                                <field name="document_ocr_enabled"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="document_ocr_enabled"/>
+                                <div class="text-muted">
+                                    Utiliza OCR para extraer texto de documentos escaneados
+                                </div>
+                                
+                                <div class="content-group" invisible="document_ocr_enabled == False">
+                                    <div class="mt16">
+                                        <label for="document_ocr_languages" string="Idiomas OCR"/>
+                                        <field name="document_ocr_languages" placeholder="spa+eng"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Carpeta vigilada -->
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
+                            <div class="o_setting_left_pane">
+                                <field name="document_watch_folder_enabled"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="document_watch_folder_enabled"/>
+                                <div class="text-muted">
+                                    Monitoriza una carpeta para procesar documentos automáticamente
+                                </div>
+                                
+                                <div class="content-group" invisible="document_watch_folder_enabled == False">
+                                    <div class="mt16">
+                                        <label for="document_watch_folder_path" string="Ruta de carpeta"/>
+                                        <field name="document_watch_folder_path" placeholder="/path/to/watch/folder"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
 </odoo>
