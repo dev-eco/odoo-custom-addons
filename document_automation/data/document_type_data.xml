@@ -1,0 +1,167 @@
+<!-- data/document_type_data.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Tipos de documento predefinidos -->
+        <record id="document_type_invoice" model="document.type">
+            <field name="name">Factura</field>
+            <field name="code">invoice</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="sequence">10</field>
+            <field name="keywords">factura,invoice,recibo,importe,total,nif,cif,vat,iva</field>
+            <field name="regex_patterns">(?:Factura|Invoice)[: ]\s*([A-Za-z0-9_\-/]+)
+(?:NIF|CIF|VAT)[: ]?\s*([A-Za-z0-9]{8,15})
+(?:Total|Amount)[: ]\s*(?:EUR|€|USD|\$)?\s*([0-9.,]+)</field>
+            <field name="extraction_template">{
+  "fields": [
+    {
+      "name": "invoice_number",
+      "type": "text",
+      "patterns": [
+        {"regex": "(?:Factura|Invoice)[: ]\\s*([A-Za-z0-9_\\-/]+)"},
+        {"regex": "No\\.?[: ]\\s*([A-Za-z0-9_\\-/]+)"}
+      ]
+    },
+    {
+      "name": "invoice_date",
+      "type": "date",
+      "patterns": [
+        {"regex": "(?:Fecha|Date)[: ]\\s*(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4})"}
+      ]
+    },
+    {
+      "name": "vat",
+      "type": "text",
+      "patterns": [
+        {"regex": "(?:NIF|CIF|VAT)[: ]?\\s*([A-Za-z0-9]{8,15})"}
+      ]
+    },
+    {
+      "name": "amount_total",
+      "type": "amount",
+      "patterns": [
+        {"regex": "(?:Total|Amount)[: ]\\s*(?:EUR|€|USD|\\$)?\\s*([0-9.,]+)"}
+      ]
+    },
+    {
+      "name": "amount_tax",
+      "type": "amount",
+      "patterns": [
+        {"regex": "(?:IVA|VAT|Tax)[: ]\\s*(?:\\d{1,2}[%])?[: ]\\s*(?:EUR|€|USD|\\$)?\\s*([0-9.,]+)"}
+      ]
+    },
+    {
+      "name": "amount_untaxed",
+      "type": "amount",
+      "patterns": [
+        {"regex": "(?:Base|Subtotal|Net)[: ]\\s*(?:EUR|€|USD|\\$)?\\s*([0-9.,]+)"}
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "field": "invoice_number",
+      "condition": "required",
+      "critical": false
+    },
+    {
+      "field": "vat",
+      "condition": "required",
+      "critical": true
+    }
+  ]
+}</field>
+        </record>
+        
+        <record id="document_type_purchase_order" model="document.type">
+            <field name="name">Pedido de compra</field>
+            <field name="code">purchase_order</field>
+            <field name="model_id" ref="purchase.model_purchase_order"/>
+            <field name="sequence">20</field>
+            <field name="keywords">pedido,compra,order,purchase,proveedor,supplier,vendor</field>
+            <field name="regex_patterns">(?:Pedido|Order|No[.:])[: ]\s*([A-Za-z0-9_\-/]+)
+(?:Proveedor|Vendor|Supplier)[: ]\s*([A-Za-z0-9\s]+)</field>
+            <field name="extraction_template">{
+  "fields": [
+    {
+      "name": "order_number",
+      "type": "text",
+      "patterns": [
+        {"regex": "(?:Pedido|Order|No[.:])[: ]\\s*([A-Za-z0-9_\\-/]+)"}
+      ]
+    },
+    {
+      "name": "date_order",
+      "type": "date",
+      "patterns": [
+        {"regex": "(?:Fecha|Date)[: ]\\s*(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4})"}
+      ]
+    },
+    {
+      "name": "vendor_vat",
+      "type": "text",
+      "patterns": [
+        {"regex": "(?:NIF|CIF|VAT)[: ]?\\s*([A-Za-z0-9]{8,15})"}
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "field": "vendor_vat",
+      "condition": "required",
+      "critical": true
+    }
+  ]
+}</field>
+        </record>
+        
+        <record id="document_type_delivery" model="document.type">
+            <field name="name">Albarán de entrega</field>
+            <field name="code">delivery</field>
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="sequence">30</field>
+            <field name="keywords">albarán,albaran,delivery,note,entrega,mercancía</field>
+            <field name="regex_patterns">(?:Albarán|Albaran|Delivery|Note)[: ]\s*([A-Za-z0-9_\-/]+)
+(?:Pedido|Order)[: ]\s*(?:Ref|Referencia)?[: ]?\s*([A-Za-z0-9_\-/]+)</field>
+            <field name="extraction_template">{
+  "fields": [
+    {
+      "name": "delivery_number",
+      "type": "text",
+      "patterns": [
+        {"regex": "(?:Albarán|Albaran|Delivery|Note)[: ]\\s*([A-Za-z0-9_\\-/]+)"}
+      ]
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "patterns": [
+        {"regex": "(?:Fecha|Date)[: ]\\s*(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4})"}
+      ]
+    },
+    {
+      "name": "order_reference",
+      "type": "text",
+      "patterns": [
+        {"regex": "(?:Pedido|Order)[: ]\\s*(?:Ref|Referencia)?[: ]?\\s*([A-Za-z0-9_\\-/]+)"}
+      ]
+    },
+    {
+      "name": "partner_vat",
+      "type": "text",
+      "patterns": [
+        {"regex": "(?:NIF|CIF|VAT)[: ]?\\s*([A-Za-z0-9]{8,15})"}
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "field": "delivery_number",
+      "condition": "required",
+      "critical": false
+    }
+  ]
+}</field>
+        </record>
+    </data>
+</odoo>

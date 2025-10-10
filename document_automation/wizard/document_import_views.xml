@@ -1,0 +1,44 @@
+<!-- wizard/document_import_views.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_document_import_wizard_form" model="ir.ui.view">
+        <field name="name">document.import.wizard.form</field>
+        <field name="model">document.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Importar Documento">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Descripción del documento"/>
+                            <field name="document_type_id" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="filename" invisible="1"/>
+                            <field name="document_file" filename="filename" widget="binary" placeholder="Seleccione un archivo..."/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Notas adicionales sobre este documento..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_import" string="Importar" type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <record id="action_document_import_wizard" model="ir.actions.act_window">
+        <field name="name">Importar Documento</field>
+        <field name="res_model">document.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    
+    <menuitem id="menu_document_import_wizard"
+              name="Importar Documento"
+              parent="menu_document_automation_root"
+              action="action_document_import_wizard"
+              sequence="20"/>
+</odoo>
