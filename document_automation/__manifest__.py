@@ -18,9 +18,11 @@
     # Añadir definición de assets aquí
     'assets': {
         'web.assets_backend': [
-            '/document_automation/static/src/js/document_preview.js',
+#            '/document_automation/static/src/js/document_preview.js',
             '/document_automation/static/src/scss/document_automation.scss',
-            '/document_automation/static/src/xml/document_preview.xml',
+            '/document_automation/static/src/components/document_preview/document_preview.js',
+            '/document_automation/static/src/components/document_preview/document_preview.xml',
+#            '/document_automation/static/src/xml/document_preview.xml',
         ],
     },
     'data': [
