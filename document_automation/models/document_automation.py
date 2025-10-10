@@ -226,7 +226,7 @@ class DocumentAutomation(models.Model):
     @api.model
     def _get_default_extraction_method(self):
         return self.env['ir.config_parameter'].sudo().get_param(
-            'document_automation.default_extraction_method', 'tesseract_gemini')
+            'document_automation.extraction_method', 'tesseract_gemini')
     
     def _extract_text_with_tesseract(self):
         """

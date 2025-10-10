@@ -64,8 +64,8 @@
                                         </div>
                                         
                                         <div class="mt16">
-                                            <label for="default_extraction_method" string="Método de extracción"/>
-                                            <field name="default_extraction_method" widget="radio"/>
+                                            <label for="extraction_method" string="Método de extracción"/>
+                                            <field name="extraction_method" widget="radio"/>
                                         </div>
                                         
                                         <div class="mt8 text-muted">

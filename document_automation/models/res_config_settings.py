@@ -27,13 +27,13 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='document_automation.gemini_api_key'
     )
     
-    default_extraction_method = fields.Selection([
+    extraction_method = fields.Selection([
         ('tesseract_only', 'Solo Tesseract'),
         ('tesseract_gemini', 'Tesseract + Gemini AI'),
         ('gemini_direct', 'Gemini AI directo')
     ], string="Método de extracción predeterminado", 
        default='tesseract_gemini',
-       config_parameter='document_automation.default_extraction_method')    
+       config_parameter='document_automation.extraction_method')    
     # Configuración general
     document_automation_enabled = fields.Boolean(
         "Activar automatización documental",
