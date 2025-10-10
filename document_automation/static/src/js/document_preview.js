@@ -1,23 +1,15 @@
-odoo.define('document_automation.preview', function(require) {
+odoo.define('document_automation.preview', function (require) {
     "use strict";
 
-    // Importamos solo las dependencias esenciales
-    var core = require('web.core');
-    var _t = core._t;
-    var QWeb = core.qweb;
-    var FieldBinary = require('web.basic_fields').FieldBinary;
-    var registry = require('web.field_registry');
-    var Dialog = require('web.Dialog');
+    const AbstractField = require('web.AbstractField');
+    const core = require('web.core');
+    const registry = require('web.field_registry');
+    const Dialog = require('web.Dialog');
+    const _t = core._t;
 
-    /**
-     * Widget de Previsualización de Documentos
-     */
-    var DocumentPreviewWidget = FieldBinary.extend({
-        description: _t("Campo binario con vista previa"),
-        supportedTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/tiff'],
-        events: _.extend({}, FieldBinary.prototype.events, {
-            'click .o_document_preview_button': '_onClickPreview',
-        }),
+    const DocumentPreviewField = AbstractField.extend({
+        className: 'o_field_document_preview',
+        supportedFieldTypes: ['binary'],
         
         init: function (parent, name, record, options) {
             this._super.apply(this, arguments);
@@ -26,7 +18,7 @@ odoo.define('document_automation.preview', function(require) {
             this.filename = record.data.filename || '';
             
             if (this.filename) {
-                var extension = this.filename.split('.').pop().toLowerCase();
+                const extension = this.filename.split('.').pop().toLowerCase();
                 if (['pdf'].includes(extension)) {
                     this.documentType = 'pdf';
                 } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extension)) {
@@ -35,41 +27,56 @@ odoo.define('document_automation.preview', function(require) {
             }
         },
         
-        _render: function () {
-            this._super.apply(this, arguments);
-            
-            if (this.value && this.previewEnabled && (this.documentType === 'pdf' || this.documentType === 'image')) {
-                var $previewButton = $('<button>', {
-                    class: 'btn btn-sm btn-primary o_document_preview_button ms-2',  // ms-2 en lugar de ml-2 para BS5
-                    type: 'button',
-                    text: _t('Vista previa')
-                });
-                
-                this.$el.find('.o_clear_file_button').after($previewButton);
-            }
-        },
-        
-        _onClickPreview: function () {
-            var fileData = this.value;
-            
-            if (!fileData) {
+        _renderReadonly: function () {
+            this.$el.empty();
+            if (!this.value) {
                 return;
             }
             
-            var $content = $('<div>', {
+            // Crear enlace de descarga
+            const $link = $('<a>', {
+                href: 'data:application/octet-stream;base64,' + this.value,
+                download: this.filename || '',
+                class: 'o_form_uri o_field_widget',
+                html: $('<i>', {class: 'fa fa-download'}).prop('outerHTML') + ' ' + (this.filename || this.name),
+            });
+            
+            // Crear botón de vista previa
+            if (this.previewEnabled && (this.documentType === 'pdf' || this.documentType === 'image')) {
+                const $previewButton = $('<button>', {
+                    class: 'btn btn-sm btn-primary ms-2',
+                    text: _t('Vista previa')
+                });
+                $previewButton.on('click', this._onClickPreview.bind(this));
+                
+                this.$el.append($link, $previewButton);
+            } else {
+                this.$el.append($link);
+            }
+        },
+        
+        _onClickPreview: function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            
+            if (!this.value) {
+                return;
+            }
+            
+            const $content = $('<div>', {
                 class: 'o_document_preview_container'
             });
             
             if (this.documentType === 'pdf') {
                 $content.append($('<embed>', {
-                    src: 'data:application/pdf;base64,' + fileData,
+                    src: 'data:application/pdf;base64,' + this.value,
                     type: 'application/pdf',
                     width: '100%',
                     height: '500px'
                 }));
             } else if (this.documentType === 'image') {
                 $content.append($('<img>', {
-                    src: 'data:image;base64,' + fileData,
+                    src: 'data:image;base64,' + this.value,
                     class: 'img-fluid',
                     alt: this.filename || 'Imagen'
                 }));
@@ -87,9 +94,7 @@ odoo.define('document_automation.preview', function(require) {
         }
     });
     
-    // Registramos el widget
-    registry.add('document_preview', DocumentPreviewWidget);
+    registry.add('document_preview', DocumentPreviewField);
     
-    // Simplificamos la exportación para enfocarnos en el widget principal
-    return DocumentPreviewWidget;
+    return DocumentPreviewField;
 });
