@@ -9,4 +9,4 @@ from . import document_template
 from . import document_rule
 
 # Finalmente extensiones y funcionalidades adicionales
-from . import mail_thread  # Extensión de mail.thread
+#from . import mail_thread  # Extensión de mail.thread
