@@ -1458,9 +1458,6 @@ class DocumentAutomation(models.Model):
     
     # Métodos utilitarios
     def log_action(self, action, message, level='info'):
-    """
-    Registra una acción en el historial del documento
-    """
     # Lista de acciones válidas
         valid_actions = ['create', 'write', 'process', 'validate', 'link', 'error', 'cancel', 'ocr', 
                      'extract', 'classify', 'notify', 'duplicate', 'merge', 'export', 'import', 'other']
@@ -1473,7 +1470,7 @@ class DocumentAutomation(models.Model):
         log_vals = {
             'document_id': self.id,
             'action': action,
-            'message': message,
+            'message': f"{action}: {message}",
             'level': level
         }
         return self.env['document.automation.log'].create(log_vals)
