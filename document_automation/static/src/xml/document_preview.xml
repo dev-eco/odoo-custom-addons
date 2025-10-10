@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="DocumentPreview">
+        <div class="o_document_preview">
+            <div t-if="widget.mode !== 'readonly'" class="o_input_file_container">
+                <t t-call="FieldBinary.FieldBinaryViewEdit" />
+            </div>
+            <div t-else="" class="o_field_binary_file">
+                <t t-call="FieldBinary.FieldBinaryViewReadonly" />
+            </div>
+        </div>
+    </t>
+</templates>

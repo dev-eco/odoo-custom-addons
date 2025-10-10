@@ -20,6 +20,7 @@
         'web.assets_backend': [
             '/document_automation/static/src/js/document_preview.js',
             '/document_automation/static/src/scss/document_automation.scss',
+            '/document_automation/static/src/xml/document_preview.xml',
         ],
     },
     'data': [
