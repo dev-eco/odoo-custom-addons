@@ -2,7 +2,7 @@
 from . import models
 from . import wizard
 from . import controllers
-from . import tests
+# from . import tests
 
 def post_init_hook(cr, registry):
     """Inicialización después de instalación"""
