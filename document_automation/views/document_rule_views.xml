@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario para reglas de documentos -->
+    <record id="view_document_rule_form" model="ir.ui.view">
+        <field name="name">document.rule.form</field>
+        <field name="model">document.rule</field>
+        <field name="arch" type="xml">
+            <form string="Regla de Automatización">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Nombre de la regla"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="document_type_id"/>
+                        </group>
+                        <group>
+                            <field name="action_type"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Condición" name="condition">
+                            <field name="condition" placeholder="Condición Python que debe cumplirse para aplicar esta regla..."/>
+                        </page>
+                        <page string="Acción" name="action">
+                            <field name="action_python" attrs="{'invisible': [('action_type', '!=', 'python')]}" placeholder="Código Python a ejecutar..."/>
+                            <field name="action_data" attrs="{'invisible': [('action_type', '!=', 'set_field'), ('action_type', '!=', 'create_record')]}" placeholder="Datos de la acción en formato JSON..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista árbol para reglas de documentos -->
+    <record id="view_document_rule_tree" model="ir.ui.view">
+        <field name="name">document.rule.tree</field>
+        <field name="model">document.rule</field>
+        <field name="arch" type="xml">
+            <tree string="Reglas de Automatización" decoration-muted="active == False">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <field name="action_type"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista búsqueda para reglas de documentos -->
+    <record id="view_document_rule_search" model="ir.ui.view">
+        <field name="name">document.rule.search</field>
+        <field name="model">document.rule</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Reglas">
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <filter string="Activas" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactivas" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Tipo de documento" name="groupby_type" context="{'group_by': 'document_type_id'}"/>
+                    <filter string="Tipo de acción" name="groupby_action" context="{'group_by': 'action_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción para reglas de documentos -->
+    <record id="action_document_rule" model="ir.actions.act_window">
+        <field name="name">Reglas de Automatización</field>
+        <field name="res_model">document.rule</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_document_rule_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primera regla de automatización
+            </p>
+            <p>
+                Las reglas de automatización te permiten definir acciones
+                automáticas a realizar cuando se procesa un documento.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú para reglas de documentos -->
+    <menuitem id="menu_document_rule" 
+              name="Reglas" 
+              parent="menu_document_automation_root" 
+              action="action_document_rule" 
+              sequence="40"/>
+</odoo>
