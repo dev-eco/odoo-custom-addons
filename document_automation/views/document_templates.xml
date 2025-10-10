@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="assets_backend" inherit_id="web.assets_backend">
-        <xpath expr="." position="inside">
-            <script type="text/javascript" src="/document_automation/static/src/js/document_preview.js"></script>
-            <link rel="stylesheet" type="text/scss" href="/document_automation/static/src/scss/document_automation.scss"/>
-        </xpath>
-    </template>
-
+    <!-- QWeb Templates para Document Automation -->
     <template id="document_automation_templates" name="Document Automation Templates">
         <t t-name="DocumentPreview">
             <div class="o_document_preview">

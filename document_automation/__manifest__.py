@@ -1,4 +1,3 @@
-# __manifest__.py
 {
     'name': 'Automatización Documental Avanzada',
     'version': '17.0.1.0.0',
@@ -14,11 +13,14 @@
         'purchase',
         'stock',
         'web',
-        'queue_job',  # Para procesamiento asíncrono
+        'queue_job',
     ],
-    'external_dependencies': {
-        'python': ['pytesseract', 'pdf2image', 'python-magic', 'invoice2data', 'pdfplumber', 'regex'],
-        'bin': ['tesseract', 'pdftoppm'],
+    # Añadir definición de assets aquí
+    'assets': {
+        'web.assets_backend': [
+            '/document_automation/static/src/js/document_preview.js',
+            '/document_automation/static/src/scss/document_automation.scss',
+        ],
     },
     'data': [
         # Seguridad
@@ -32,32 +34,18 @@
         'data/ir_cron_data.xml',
         
         # Vistas
-        'views/assets.xml',
+        # Eliminar 'views/assets.xml' de esta lista
         'views/document_automation_views.xml',
         'views/document_type_views.xml',
         'views/document_template_views.xml',
         'views/document_rule_views.xml',
         'views/res_config_settings_views.xml',
+        'views/document_templates.xml',
         
         # Wizards
         'wizard/document_import_views.xml',
     ],
-    'demo': [
-        # Datos de demo para pruebas
-    ],
-    'images': [
-        'static/description/banner.png',
-    ],
     'installable': True,
     'application': True,
     'auto_install': False,
-    'uninstall_hook': 'uninstall_hook',
-    'post_init_hook': 'post_init_hook',
-    'assets': {
-        'web.assets_backend': [
-            'document_automation/static/src/js/document_preview.js',
-            'document_automation/static/src/scss/document_automation.scss',
-        ],
-    },
-    'sequence': 1,  # Prioridad de carga
 }
