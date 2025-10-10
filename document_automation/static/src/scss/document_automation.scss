@@ -1,0 +1,239 @@
+/**
+ * Estilos específicos para el módulo de Automatización Documental
+ * 
+ * Este archivo contiene todos los estilos CSS necesarios para la interfaz
+ * del módulo, mejorando la experiencia visual y la usabilidad.
+ */
+
+// Variables de colores para todo el módulo (consistentes con el tema de Odoo)
+$document-primary: #875A7B;       // Púrpura de Odoo para elementos principales
+$document-success: #00A09D;       // Verde para estados positivos (procesado, validado)
+$document-warning: #F0AD4E;       // Amarillo para estados de atención (pendiente, en proceso)
+$document-danger: #D9534F;        // Rojo para estados críticos (error, rechazado)
+$document-info: #5BC0DE;          // Azul para estados informativos (en revisión)
+$document-light-bg: #F9F9F9;      // Fondo claro para áreas de contenido
+$document-border: #DDDDDD;        // Color para bordes y separadores
+
+// Espaciado consistente
+$document-spacing-xs: 0.25rem;    // 4px - Espaciado extra pequeño
+$document-spacing-sm: 0.5rem;     // 8px - Espaciado pequeño
+$document-spacing-md: 1rem;       // 16px - Espaciado medio
+$document-spacing-lg: 1.5rem;     // 24px - Espaciado grande
+$document-spacing-xl: 2rem;       // 32px - Espaciado extra grande
+
+/**
+ * Estilos para la vista de formulario de documentos
+ * Mejora la visualización y organización de la información del documento
+ */
+.o_document_automation_form {
+    // Mejora el encabezado del documento
+    .o_document_header {
+        display: flex;
+        align-items: center;
+        margin-bottom: $document-spacing-md;
+        
+        .o_document_icon {
+            font-size: 1.5rem;
+            margin-right: $document-spacing-sm;
+            color: $document-primary;
+        }
+        
+        .o_document_title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+    }
+    
+    // Estiliza las secciones de información
+    .o_document_section {
+        background-color: $document-light-bg;
+        border: 1px solid $document-border;
+        border-radius: 4px;
+        padding: $document-spacing-md;
+        margin-bottom: $document-spacing-md;
+        
+        .o_document_section_title {
+            font-weight: bold;
+            margin-bottom: $document-spacing-sm;
+            color: $document-primary;
+            border-bottom: 1px solid $document-border;
+            padding-bottom: $document-spacing-xs;
+        }
+    }
+    
+    // Estilos para diferentes estados del documento
+    .o_document_state {
+        padding: $document-spacing-xs $document-spacing-sm;
+        border-radius: 3px;
+        font-weight: bold;
+        display: inline-block;
+        
+        &.o_state_draft { 
+            background-color: rgba($document-info, 0.2); 
+            color: darken($document-info, 20%);
+        }
+        
+        &.o_state_processing { 
+            background-color: rgba($document-warning, 0.2); 
+            color: darken($document-warning, 20%);
+        }
+        
+        &.o_state_validated, &.o_state_linked { 
+            background-color: rgba($document-success, 0.2); 
+            color: darken($document-success, 20%);
+        }
+        
+        &.o_state_error { 
+            background-color: rgba($document-danger, 0.2); 
+            color: darken($document-danger, 20%);
+        }
+    }
+    
+    // Mejora la visualización de datos extraídos
+    .o_document_extracted_data {
+        font-family: monospace;
+        background-color: #f5f5f5;
+        padding: $document-spacing-sm;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    // Área de visualización de documentos
+    .o_document_preview_area {
+        min-height: 200px;
+        border: 1px dashed $document-border;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: $document-spacing-md;
+        
+        img {
+            max-width: 100%;
+            max-height: 300px;
+        }
+        
+        embed {
+            width: 100%;
+            height: 400px;
+        }
+    }
+}
+
+/**
+ * Estilos para la vista Kanban de documentos
+ * Mejora la visualización de tarjetas en la vista Kanban
+ */
+.o_kanban_view {
+    .o_kanban_record {
+        &.o_document_kanban_card {
+            // Estilo base para tarjetas de documentos
+            border-left: 3px solid transparent;
+            
+            // Colores de borde según el estado
+            &.o_status_draft { border-left-color: $document-info; }
+            &.o_status_processing { border-left-color: $document-warning; }
+            &.o_status_validated, &.o_status_linked { border-left-color: $document-success; }
+            &.o_status_error { border-left-color: $document-danger; }
+            
+            // Interior de la tarjeta
+            .o_document_kanban_content {
+                display: flex;
+                
+                .o_document_kanban_thumbnail {
+                    width: 80px;
+                    height: 80px;
+                    margin-right: $document-spacing-sm;
+                    background-color: #f0f0f0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 3px;
+                    overflow: hidden;
+                    
+                    img {
+                        max-width: 100%;
+                        max-height: 100%;
+                    }
+                }
+                
+                .o_document_kanban_details {
+                    flex: 1;
+                    
+                    .o_document_kanban_title {
+                        font-weight: bold;
+                        margin-bottom: $document-spacing-xs;
+                    }
+                    
+                    .o_document_kanban_type {
+                        color: #666;
+                        font-size: 0.9em;
+                    }
+                    
+                    .o_document_kanban_date {
+                        color: #999;
+                        font-size: 0.8em;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Estilos para el widget de previsualización de documentos
+ * Define la apariencia del diálogo de previsualización
+ */
+.o_document_preview_container {
+    padding: $document-spacing-sm;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    
+    // Asegura que las imágenes se ajusten correctamente
+    img {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        max-height: 70vh;
+    }
+    
+    // Ajusta el tamaño del visor de PDF
+    embed {
+        width: 100%;
+        height: 70vh;
+    }
+}
+
+/**
+ * Ajustes para mejorar la responsividad en móviles
+ */
+@media (max-width: 768px) {
+    .o_document_automation_form {
+        .o_document_header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .o_document_preview_area {
+            min-height: 150px;
+            
+            embed, img {
+                max-height: 200px;
+            }
+        }
+    }
+    
+    .o_kanban_view .o_kanban_record.o_document_kanban_card {
+        .o_document_kanban_content {
+            flex-direction: column;
+            
+            .o_document_kanban_thumbnail {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: $document-spacing-sm;
+            }
+        }
+    }
+}
