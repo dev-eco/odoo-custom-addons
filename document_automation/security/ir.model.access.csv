@@ -10,3 +10,4 @@ access_document_rule_manager,document.rule.manager,model_document_rule,group_doc
 access_document_import_wizard,document.import.wizard,model_document_import_wizard,group_document_automation_user,1,1,1,0
 access_document_automation_log_user,document.automation.log.user,model_document_automation_log,group_document_automation_user,1,0,0,0
 access_document_automation_log_manager,document.automation.log.manager,model_document_automation_log,group_document_automation_manager,1,1,1,1
+access_document_validate_wizard,document.validate.wizard,model_document_validate_wizard,group_document_automation_user,1,1,1,0

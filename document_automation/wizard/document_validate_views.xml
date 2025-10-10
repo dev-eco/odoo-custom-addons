@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario para el asistente de validación -->
+    <record id="view_document_validate_wizard_form" model="ir.ui.view">
+        <field name="name">document.validate.wizard.form</field>
+        <field name="model">document.validate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Validar Documento">
+                <sheet>
+                    <group>
+                        <field name="document_id" invisible="1"/>
+                        <field name="note" placeholder="Notas sobre la validación..."/>
+                    </group>
+                    <group string="Datos extraídos">
+                        <field name="partner_id"/>
+                        <field name="reference"/>
+                        <field name="date"/>
+                        <field name="amount"/>
+                    </group>
+                    <group string="Datos originales" invisible="extraction_result == False">
+                        <field name="extraction_result" widget="ace" options="{'mode': 'json'}" readonly="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_validate" type="object" string="Validar" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Acción para abrir el asistente -->
+    <record id="action_document_validate_wizard" model="ir.actions.act_window">
+        <field name="name">Validar Documento</field>
+        <field name="res_model">document.validate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_document_automation"/>
+        <field name="binding_view_types">form</field>
+    </record>
+</odoo>
