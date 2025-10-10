@@ -1544,57 +1544,32 @@ class DocumentAutomation(models.Model):
         
         return True
 
-
 class DocumentAutomationLog(models.Model):
     _name = 'document.automation.log'
-    _description = 'Registro de Acciones en Documentos'
+    _description = 'Registro de actividad de documento'
     _order = 'create_date desc'
+
+    document_id = fields.Many2one('document.automation', 'Documento', required=True, ondelete='cascade')
+    user_id = fields.Many2one('res.users', 'Usuario', default=lambda self: self.env.user)
     
-    document_id = fields.Many2one(
-        'document.automation',
-        string='Documento',
-        required=True,
-        ondelete='cascade',
-        index=True
-    )
-    
-    create_date = fields.Datetime(
-        string='Fecha',
-        readonly=True
-    )
-    
-    user_id = fields.Many2one(
-        'res.users',
-        string='Usuario',
-        readonly=True,
-        default=lambda self: self.env.user
-    )
-    
+    # Modificar esta línea para incluir 'write'
     action = fields.Selection([
         ('create', 'Creación'),
+        ('write', 'Modificación'),  # Añadir esta opción
         ('process', 'Procesamiento'),
-        ('ocr', 'Extracción de texto'),
-        ('classify', 'Clasificación'),
-        ('extract', 'Extracción de datos'),
         ('validate', 'Validación'),
+        ('link', 'Vinculación'),
         ('error', 'Error'),
-        ('warning', 'Advertencia'),
-        ('reset', 'Reinicio'),
-        ('cancel', 'Cancelación'),
-        ('unlink', 'Eliminación'),
-        ('other', 'Otra acción')
+        ('cancel', 'Cancelación')
     ], string='Acción', required=True)
     
     level = fields.Selection([
         ('info', 'Información'),
         ('warning', 'Advertencia'),
         ('error', 'Error')
-    ], string='Nivel', required=True, default='info')
+    ], string='Nivel', default='info')
     
-    message = fields.Text(
-        string='Mensaje',
-        required=True
-    )
+    message = fields.Text('Mensaje')
     
     def name_get(self):
         return [(record.id, f"{record.create_date} - {record.action}") for record in self]
