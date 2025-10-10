@@ -1,95 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="res_config_settings_view_form_document_automation" model="ir.ui.view">
-        <field name="name">res.config.settings.view.form.inherit.document.automation</field>
+    <!-- Vista de formulario de configuración independiente -->
+    <record id="view_document_automation_config_form" model="ir.ui.view">
+        <field name="name">document.automation.config.form</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="priority" eval="70"/>
         <field name="arch" type="xml">
-            <!-- Usar el nuevo XPath para Odoo 17 -->
-            <xpath expr="//div[hasclass('app_settings_block')]" position="after">
-                <div class="app_settings_block" data-string="Automatización Documental" id="document_automation_settings">
-                    <h2>Configuración de Automatización Documental</h2>
-                    
-                    <div class="row mt16 o_settings_container">
-                        <!-- Configuración general -->
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="document_automation_enabled"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="document_automation_enabled"/>
-                                <div class="text-muted">
-                                    Activa el procesamiento automático de documentos
+            <form string="Configuración de Automatización Documental" class="oe_form_configuration">
+                <header>
+                    <button string="Guardar" type="object" name="execute" class="oe_highlight"/>
+                    <button string="Cancelar" type="object" name="cancel" class="oe_link" special="cancel"/>
+                </header>
+                <sheet>
+                    <div class="app_settings_block">
+                        <h2>Configuración de Automatización Documental</h2>
+                        
+                        <div class="row mt16 o_settings_container">
+                            <!-- Configuración general -->
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                    <field name="document_automation_enabled"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="document_automation_enabled"/>
+                                    <div class="text-muted">
+                                        Activa el procesamiento automático de documentos
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Configuración de correo electrónico -->
-                        <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
-                            <div class="o_setting_left_pane">
-                                <field name="document_scan_email_enabled"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="document_scan_email_enabled"/>
-                                <div class="text-muted">
-                                    Procesa automáticamente documentos recibidos por correo
+                            <!-- Configuración de correo electrónico -->
+                            <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
+                                <div class="o_setting_left_pane">
+                                    <field name="document_scan_email_enabled"/>
                                 </div>
-                                
-                                <div class="content-group" invisible="document_scan_email_enabled == False">
-                                    <div class="mt16">
-                                        <label for="document_email_whitelist" string="Lista blanca de correos"/>
-                                        <field name="document_email_whitelist" placeholder="ejemplo@dominio.com, otro@dominio.com"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="document_scan_email_enabled"/>
+                                    <div class="text-muted">
+                                        Procesa automáticamente documentos recibidos por correo
                                     </div>
-                                    <div class="mt8">
-                                        <label for="document_allowed_domains" string="Dominios permitidos"/>
-                                        <field name="document_allowed_domains" placeholder="dominio.com, otrodominio.org"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Configuración de OCR -->
-                        <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
-                            <div class="o_setting_left_pane">
-                                <field name="document_ocr_enabled"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="document_ocr_enabled"/>
-                                <div class="text-muted">
-                                    Utiliza OCR para extraer texto de documentos escaneados
-                                </div>
-                                
-                                <div class="content-group" invisible="document_ocr_enabled == False">
-                                    <div class="mt16">
-                                        <label for="document_ocr_languages" string="Idiomas OCR"/>
-                                        <field name="document_ocr_languages" placeholder="spa+eng"/>
+                                    
+                                    <div class="content-group" invisible="document_scan_email_enabled == False">
+                                        <div class="mt16">
+                                            <label for="document_email_whitelist" string="Lista blanca de correos"/>
+                                            <field name="document_email_whitelist" placeholder="ejemplo@dominio.com, otro@dominio.com"/>
+                                        </div>
+                                        <div class="mt8">
+                                            <label for="document_allowed_domains" string="Dominios permitidos"/>
+                                            <field name="document_allowed_domains" placeholder="dominio.com, otrodominio.org"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Carpeta vigilada -->
-                        <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
-                            <div class="o_setting_left_pane">
-                                <field name="document_watch_folder_enabled"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="document_watch_folder_enabled"/>
-                                <div class="text-muted">
-                                    Monitoriza una carpeta para procesar documentos automáticamente
+                            
+                            <!-- Configuración de OCR -->
+                            <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
+                                <div class="o_setting_left_pane">
+                                    <field name="document_ocr_enabled"/>
                                 </div>
-                                
-                                <div class="content-group" invisible="document_watch_folder_enabled == False">
-                                    <div class="mt16">
-                                        <label for="document_watch_folder_path" string="Ruta de carpeta"/>
-                                        <field name="document_watch_folder_path" placeholder="/path/to/watch/folder"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="document_ocr_enabled"/>
+                                    <div class="text-muted">
+                                        Utiliza OCR para extraer texto de documentos escaneados
+                                    </div>
+                                    
+                                    <div class="content-group" invisible="document_ocr_enabled == False">
+                                        <div class="mt16">
+                                            <label for="document_ocr_languages" string="Idiomas OCR"/>
+                                            <field name="document_ocr_languages" placeholder="spa+eng"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Carpeta vigilada -->
+                            <div class="col-12 col-lg-6 o_setting_box" invisible="document_automation_enabled == False">
+                                <div class="o_setting_left_pane">
+                                    <field name="document_watch_folder_enabled"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="document_watch_folder_enabled"/>
+                                    <div class="text-muted">
+                                        Monitoriza una carpeta para procesar documentos automáticamente
+                                    </div>
+                                    
+                                    <div class="content-group" invisible="document_watch_folder_enabled == False">
+                                        <div class="mt16">
+                                            <label for="document_watch_folder_path" string="Ruta de carpeta"/>
+                                            <field name="document_watch_folder_path" placeholder="/path/to/watch/folder"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </xpath>
+                </sheet>
+            </form>
         </field>
     </record>
+
+    <!-- Acción para abrir la configuración -->
+    <record id="action_document_automation_config" model="ir.actions.act_window">
+        <field name="name">Configuración</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="view_id" ref="view_document_automation_config_form"/>
+    </record>
+
+    <!-- Elemento de menú para la configuración -->
+    <menuitem id="menu_document_automation_config"
+              name="Configuración"
+              parent="menu_document_automation_root"
+              action="action_document_automation_config"
+              sequence="90"/>
 </odoo>
