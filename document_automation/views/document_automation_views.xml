@@ -137,7 +137,7 @@
                                     </div>
                                     <div class="o_dropdown_kanban dropdown">
                                         <a class="dropdown-toggle o-no-caret btn" role="button" data-toggle="dropdown">
-                                            <span class="fa fa-ellipsis-v"/>
+                                            <span class="fa fa-ellipsis-v" title="Opciones"/>
                                         </a>
                                         <div class="dropdown-menu" role="menu">
                                             <a role="menuitem" type="edit" class="dropdown-item">Editar</a>
@@ -148,7 +148,7 @@
                                     <div class="oe_kanban_bottom_left">
                                         <t t-if="record.result_reference.raw_value">
                                             <span class="oe_kanban_bottom_left">
-                                                <i class="fa fa-link"/> <field name="result_reference"/>
+                                                <i class="fa fa-link" title="Documento Vinculado"/> <field name="result_reference"/>
                                             </span>
                                         </t>
                                         <t t-else="">
