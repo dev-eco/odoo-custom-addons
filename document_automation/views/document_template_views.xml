@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario para plantillas de documentos -->
+    <record id="view_document_template_form" model="ir.ui.view">
+        <field name="name">document.template.form</field>
+        <field name="model">document.template</field>
+        <field name="arch" type="xml">
+            <form string="Plantilla de Documento">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <!-- Botones de acción podrían ir aquí -->
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Nombre de la plantilla"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="document_type_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Contenido" name="content">
+                            <field name="template_content" widget="ace" options="{'mode': 'json'}" placeholder="Contenido de la plantilla..."/>
+                        </page>
+                        <page string="Configuración" name="configuration">
+                            <group>
+                                <field name="field_mapping" widget="ace" options="{'mode': 'json'}" placeholder="Mapeo de campos en formato JSON..."/>
+                            </group>
+                        </page>
+                        <page string="Instrucciones" name="instructions">
+                            <field name="description" placeholder="Instrucciones detalladas sobre el uso de la plantilla..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista tree para plantillas de documentos -->
+    <record id="view_document_template_tree" model="ir.ui.view">
+        <field name="name">document.template.tree</field>
+        <field name="model">document.template</field>
+        <field name="arch" type="xml">
+            <tree string="Plantillas de Documentos">
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda para plantillas de documentos -->
+    <record id="view_document_template_search" model="ir.ui.view">
+        <field name="name">document.template.search</field>
+        <field name="model">document.template</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Plantillas">
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <filter string="Activas" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactivas" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Tipo de documento" name="groupby_type" context="{'group_by': 'document_type_id'}"/>
+                    <filter string="Compañía" name="groupby_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción para plantillas de documentos -->
+    <record id="action_document_template" model="ir.actions.act_window">
+        <field name="name">Plantillas de Documentos</field>
+        <field name="res_model">document.template</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_document_template_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear tu primera plantilla de documento
+            </p>
+            <p>
+                Las plantillas de documentos te permiten definir formatos estándar
+                para diferentes tipos de documentos y automatizar su creación.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú para plantillas de documentos -->
+    <menuitem id="menu_document_template" 
+              name="Plantillas" 
+              parent="menu_document_automation_root" 
+              action="action_document_template" 
+              sequence="30"/>
+</odoo>
