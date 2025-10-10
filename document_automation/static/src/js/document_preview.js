@@ -1,10 +1,14 @@
 /**
  * Módulo de Previsualización de Documentos
- * 
- * Este módulo extiende la funcionalidad estándar de Odoo para permitir
- * la previsualización de documentos escaneados directamente en la interfaz.
  */
-odoo.define('document_automation.preview', function (require) {
+odoo.define('document_automation.preview', [
+    'web.core',
+    'web.Widget',
+    'web.basic_fields',
+    'web.field_registry',
+    'web.utils',
+    'web.Dialog'
+], function (require) {
     "use strict";
 
     // Importamos las dependencias necesarias de Odoo
@@ -13,6 +17,7 @@ odoo.define('document_automation.preview', function (require) {
     var FieldBinary = require('web.basic_fields').FieldBinary;
     var registry = require('web.field_registry');
     var utils = require('web.utils');
+    var Dialog = require('web.Dialog');
     
     // Traducción
     var _t = core._t;
@@ -20,9 +25,6 @@ odoo.define('document_automation.preview', function (require) {
 
     /**
      * Widget de Previsualización de Documentos
-     * 
-     * Este widget extiende el campo binario estándar añadiendo capacidades
-     * de previsualización para documentos PDF e imágenes comunes.
      */
     var DocumentPreviewWidget = FieldBinary.extend({
         template: 'DocumentPreview',
@@ -33,7 +35,6 @@ odoo.define('document_automation.preview', function (require) {
         
         /**
          * Inicializa el widget de previsualización.
-         * Configura las opciones de visualización y determina el tipo de documento.
          */
         init: function (parent, name, record, options) {
             this._super.apply(this, arguments);
@@ -54,8 +55,6 @@ odoo.define('document_automation.preview', function (require) {
         
         /**
          * Renderiza el widget y añade botones de previsualización cuando es aplicable.
-         * 
-         * @override
          */
         _render: function () {
             // Primero renderizamos el campo binario normal
@@ -76,9 +75,6 @@ odoo.define('document_automation.preview', function (require) {
         
         /**
          * Maneja el evento de clic en el botón de previsualización.
-         * Abre un diálogo modal con el documento incrustado.
-         * 
-         * @private
          */
         _onClickPreview: function () {
             var self = this;
@@ -154,7 +150,6 @@ odoo.define('document_automation.preview', function (require) {
             ev.stopPropagation();
             
             // Aquí podríamos implementar una previsualización en miniatura para la vista Kanban
-            // similar a la función _onClickPreview del widget DocumentPreviewWidget
         }
     });
     
