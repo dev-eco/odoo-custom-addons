@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="assets_backend" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/document_automation/static/src/js/document_preview.js"></script>
+            <link rel="stylesheet" type="text/scss" href="/document_automation/static/src/scss/document_automation.scss"/>
+        </xpath>
+    </template>
+
+    <template id="document_automation_templates" name="Document Automation Templates">
+        <t t-name="DocumentPreview">
+            <div class="o_document_preview">
+                <div class="o_document_image">
+                    <!-- Template for document preview widget -->
+                </div>
+                <div class="o_document_info">
+                    <div class="o_document_name">
+                        <t t-esc="widget.record.name.value"/>
+                    </div>
+                    <div class="o_document_type">
+                        <t t-esc="widget.record.document_type_id.value"/>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
