@@ -51,7 +51,7 @@ class AccountMove(models.Model):
         # Buscar un adjunto PDF existente
         pdf_attachment = self.attachment_ids.filtered(
             lambda a: a.mimetype == 'application/pdf' and 
-            (a.name.endswith('.pdf') or 'factura' in a.name.lower() or self.name in a.name)
+            (a.name.endswith('.pdf') or 'factura' in a.name.lower() or (self.name and self.name in a.name))
         )
         
         if pdf_attachment:
@@ -59,9 +59,16 @@ class AccountMove(models.Model):
         
         # Generar PDF si no existe
         try:
-            # Intentar generar el PDF usando el reporte de factura
-            report = self.env.ref('account.account_invoices')
-            pdf_content, _ = report._render_qweb_pdf(self.ids)
+            # Obtener el reporte correcto según el tipo de factura
+            if self.move_type in ('out_invoice', 'out_refund'):
+                report_name = 'account.report_invoice'
+            else:
+                report_name = 'account.report_invoice_with_payments'
+                
+            report = self.env.ref(report_name)
+            # Importante: usar report.render_qweb_pdf en lugar de _render_qweb_pdf
+            # y pasar self.id (no self.ids) para evitar problemas con listas
+            pdf_content, _ = report.render_qweb_pdf(self.id)
             
             # Crear el adjunto
             attachment_vals = {

@@ -5,17 +5,15 @@
         <field name="model">account.invoice.download.wizard</field>
         <field name="arch" type="xml">
             <form string="Descargar Facturas Individuales">
+                <header>
+                    <button name="action_download_all" 
+                            string="Descargar Todas" 
+                            type="object"
+                            class="btn-primary"/>
+                </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_download_all" 
-                                string="Descargar Todas" 
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-download"/>
-                    </div>
-                    
                     <p class="alert alert-info" role="alert">
-                        Seleccione cada factura para descargar su PDF individualmente, o use el botón "Descargar Todas" para iniciar la descarga de todos los PDFs.
+                        Seleccione cada factura para descargar su PDF individualmente, o use el botón "Descargar Todas" en la parte superior para iniciar la descarga de todos los PDFs.
                     </p>
                     
                     <field name="download_line_ids" nolabel="1">
