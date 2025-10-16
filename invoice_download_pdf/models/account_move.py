@@ -1,3 +1,4 @@
+from odoo import SUPERUSER_ID
 from odoo import models, api, fields
 import base64
 import logging
@@ -58,53 +59,54 @@ class AccountMove(models.Model):
         
         # Generar PDF si no existe
         try:
-            # En Odoo 17, podemos generar un PDF directamente desde el modelo
-            # sin depender de encontrar un reporte específico
-            pdf_content = self.env['ir.actions.report'].sudo()._render_qweb_pdf(
-                'account.report_invoice', self.ids)[0]
-            
-            # Crear el adjunto
-            attachment_vals = {
-                'name': f"{self.name or 'Factura'}.pdf",
-                'datas': base64.b64encode(pdf_content),
-                'res_model': 'account.move',
-                'res_id': self.id,
-                'mimetype': 'application/pdf',
-            }
-            return self.env['ir.attachment'].create(attachment_vals)
+            # Usar una impresión directa con el usuario administrador para evitar problemas de autenticación
+            # Esto garantiza que tengamos los permisos necesarios para acceder a todos los recursos
+            return self.sudo().with_context(force_report_rendering=True)._generate_pdf_and_attach()
         except Exception as e:
-            # Si el método anterior falla, intentamos una segunda aproximación
-            try:
-                # Usar el método de impresión estándar de Odoo para facturas
-                action = self.env.ref('account.account_invoices')
-                if not action:
-                    raise UserError('No se encontró el informe de facturas')
-                    
-                # Obtener el contexto y los datos para el informe
-                data = {}
-                pdf_content = action._render([self.id], data)[0]
-                
-                attachment_vals = {
-                    'name': f"{self.name or 'Factura'}.pdf",
-                    'datas': base64.b64encode(pdf_content),
-                    'res_model': 'account.move',
-                    'res_id': self.id,
-                    'mimetype': 'application/pdf',
-                }
-                return self.env['ir.attachment'].create(attachment_vals)
-            except Exception as e2:
-                _logger.error(f"Error al generar PDF para factura {self.id}: {str(e2)}")
-                
-                # Tercer método: Usar la API web directamente
-                try:
-                    # Crear un adjunto vacío con el nombre correcto
-                    attachment_vals = {
-                        'name': f"{self.name or 'Factura'}.pdf",
-                        'datas': base64.b64encode(b"Factura sin PDF generado"),
-                        'res_model': 'account.move',
-                        'res_id': self.id,
-                        'mimetype': 'application/pdf',
-                    }
-                    return self.env['ir.attachment'].create(attachment_vals)
-                except:
-                    return False
+            _logger.error(f"Error al generar PDF para factura {self.id}: {str(e)}")
+            return False
+
+    def _generate_pdf_and_attach(self):
+        """Método auxiliar para generar el PDF y adjuntarlo a la factura"""
+        self.ensure_one()
+        
+        # Determinar el nombre correcto del reporte según el tipo de factura
+        if self.move_type in ('out_invoice', 'out_refund'):
+            report_name = 'account.report_invoice'
+        else:
+            report_name = 'account.report_invoice'  # Usar el mismo para facturas de proveedor
+        
+        # Preparar el contexto adecuado para la generación del PDF
+        context = dict(self.env.context)
+        context.update({
+            'active_model': 'account.move',
+            'active_id': self.id,
+            'active_ids': [self.id],
+            'default_model': 'account.move',
+            'default_res_id': self.id,
+            'model': 'account.move',
+            'res_id': self.id,
+            'force_web_access': True,  # Forzar acceso web para evitar problemas de autenticación
+            'uid': SUPERUSER_ID,  # Usar el superusuario para evitar problemas de permisos
+        })
+        
+        # Obtener la acción de reporte
+        report_action = self.env.ref(report_name).with_context(context).report_action(self)
+        report_action['close_on_report_download'] = False
+        
+        # Generar el PDF
+        pdf_content = self.env['ir.actions.report'].with_context(context)._render_qweb_pdf(report_name, [self.id])[0]
+        
+        # Crear el adjunto
+        attachment_vals = {
+            'name': f"{self.name or 'Factura'}.pdf",
+            'datas': base64.b64encode(pdf_content),
+            'res_model': 'account.move',
+            'res_id': self.id,
+            'mimetype': 'application/pdf',
+            # Asegurar que el adjunto está vinculado correctamente
+            'type': 'binary',
+        }
+        attachment = self.env['ir.attachment'].create(attachment_vals)
+        
+        return attachment

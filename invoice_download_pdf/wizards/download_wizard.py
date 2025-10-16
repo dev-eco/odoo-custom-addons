@@ -51,7 +51,7 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
                         })
         
         return records
-    
+        
     def action_download_all(self):
         """Descarga todas las facturas en un archivo ZIP"""
         # Verificar que hay líneas válidas para descargar
@@ -67,42 +67,56 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         # Para múltiples facturas, crear un archivo ZIP
         zip_buffer = io.BytesIO()
         
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for line in valid_lines:
-                # Obtener el contenido del PDF
-                attachment_data = line.attachment_id.datas
-                if attachment_data:
-                    pdf_content = base64.b64decode(attachment_data)
-                    
-                    # Crear un nombre de archivo limpio (sin caracteres problemáticos)
-                    clean_name = line.name.replace('/', '_').replace('\\', '_')
-                    if not clean_name.lower().endswith('.pdf'):
-                        clean_name += '.pdf'
+        try:
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for line in valid_lines:
+                    try:
+                        # Obtener el contenido del PDF
+                        pdf_content = base64.b64decode(line.attachment_id.datas)
                         
-                    # Añadir el PDF al archivo ZIP
-                    zip_file.writestr(clean_name, pdf_content)
-        
-        # Crear un nombre para el archivo ZIP
-        company_name = self.env.user.company_id.name or 'company'
-        today = fields.Date.today().strftime('%Y%m%d')
-        zip_name = f"facturas_{company_name}_{today}.zip"
-        zip_name = zip_name.replace(' ', '_')
-        
-        # Crear un adjunto con el archivo ZIP
-        attachment_vals = {
-            'name': zip_name,
-            'datas': base64.b64encode(zip_buffer.getvalue()),
-            'mimetype': 'application/zip',
-        }
-        
-        attachment = self.env['ir.attachment'].create(attachment_vals)
-        
-        # Devolver acción para descargar el archivo ZIP
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f"/web/content/{attachment.id}?download=true",
-            'target': 'self',
-        }
+                        # Validar que el contenido es realmente un PDF
+                        if pdf_content[:4] != b'%PDF':
+                            _logger.warning(f"El archivo {line.name} no parece ser un PDF válido")
+                            # Crear un PDF de aviso simple
+                            pdf_content = b"%PDF-1.4\n1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n2 0 obj\n<</Type/Pages/Count 1/Kids[3 0 R]>>\nendobj\n3 0 obj\n<</Type/Page/MediaBox[0 0 595 842]/Resources<<>>/Contents 4 0 R>>\nendobj\n4 0 obj\n<</Length 44>>stream\nBT /F1 12 Tf 100 700 Td (PDF no disponible) Tj ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000015 00000 n \n0000000060 00000 n \n0000000111 00000 n \n0000000198 00000 n \ntrailer\n<</Size 5/Root 1 0 R>>\nstartxref\n292\n%%EOF\n"
+                        
+                        # Crear un nombre de archivo limpio
+                        clean_name = f"{line.invoice_id.name or f'Factura-{line.invoice_id.id}'}"
+                        clean_name = clean_name.replace('/', '_').replace('\\', '_')
+                        if not clean_name.lower().endswith('.pdf'):
+                            clean_name += '.pdf'
+                            
+                        # Añadir el PDF al archivo ZIP
+                        zip_file.writestr(clean_name, pdf_content)
+                    except Exception as e:
+                        _logger.error(f"Error al procesar factura {line.invoice_id.id} para ZIP: {str(e)}")
+                        # Continuar con la siguiente factura
+                        continue
+            
+            # Crear un nombre para el archivo ZIP
+            company_name = self.env.user.company_id.name or 'company'
+            today = fields.Date.today().strftime('%Y%m%d')
+            zip_name = f"facturas_{company_name}_{today}.zip"
+            zip_name = zip_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+            
+            # Crear un adjunto con el archivo ZIP
+            attachment_vals = {
+                'name': zip_name,
+                'datas': base64.b64encode(zip_buffer.getvalue()),
+                'mimetype': 'application/zip',
+            }
+            
+            attachment = self.env['ir.attachment'].create(attachment_vals)
+            
+            # Devolver acción para descargar el archivo ZIP
+            return {
+                'type': 'ir.actions.act_url',
+                'url': f"/web/content/{attachment.id}?download=true",
+                'target': 'self',
+            }
+        except Exception as e:
+            _logger.error(f"Error al crear archivo ZIP: {str(e)}")
+            raise UserError(f"Error al crear archivo ZIP: {str(e)}")
 
 class AccountInvoiceDownloadLine(models.TransientModel):
     _name = 'account.invoice.download.line'
