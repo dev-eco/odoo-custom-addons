@@ -1,8 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Definir formato de papel personalizado -->
-    <record id="paperformat_facturas_personalizadas" model="report.paperformat">
-        <field name="name">Formato Facturas Personalizadas</field>
+    <!-- 
+        ============================================================================
+        PLANTILLA DE FACTURA PERSONALIZADA ECOCAUCHO - v2.0
+        ============================================================================
+        
+        IMPORTANTE: Esta versión NO reemplaza la plantilla estándar de Odoo.
+        En su lugar, crea un reporte adicional que coexiste con el estándar.
+        
+        Esto permite:
+        - Elegir entre plantilla estándar o personalizada
+        - Desinstalar el módulo sin romper facturas existentes
+        - Mantener compatibilidad con actualizaciones de Odoo
+        ============================================================================
+    -->
+    
+    <!-- 
+        Formato de papel personalizado para las facturas de EcoCaucho
+        Configurado para aprovechar mejor el espacio en A4
+    -->
+    <record id="paperformat_facturas_ecocaucho" model="report.paperformat">
+        <field name="name">Formato Facturas EcoCaucho</field>
         <field name="format">A4</field>
         <field name="orientation">Portrait</field>
         <field name="margin_top">35</field>
@@ -14,36 +32,63 @@
         <field name="dpi">90</field>
     </record>
     
-    <!-- Definir el informe personalizado -->
-    <record id="action_report_factura_personalizada" model="ir.actions.report">
-        <field name="name">Factura</field>
+    <!-- 
+        Reporte personalizado de EcoCaucho
+        
+        NOTA CRÍTICA: Este reporte tiene un ID único (action_report_factura_ecocaucho)
+        y NO sobrescribe ningún reporte existente de Odoo.
+        
+        El nombre "Factura EcoCaucho" lo hace fácilmente distinguible del reporte
+        estándar en el menú de impresión.
+    -->
+    <record id="action_report_factura_ecocaucho" model="ir.actions.report">
+        <!-- Nombre que aparecerá en el menú de impresión -->
+        <field name="name">Factura EcoCaucho</field>
+        
+        <!-- Modelo al que se aplica (facturas y documentos contables) -->
         <field name="model">account.move</field>
+        
+        <!-- Tipo de reporte: PDF generado con QWeb -->
         <field name="report_type">qweb-pdf</field>
+        
+        <!-- Referencia a la plantilla QWeb que renderiza el contenido -->
         <field name="report_name">plantilla_factura.report_factura_personalizada</field>
+        
+        <!-- Archivo de plantilla (mismo que report_name en este caso) -->
         <field name="report_file">plantilla_factura.report_factura_personalizada</field>
-        <field name="print_report_name">'Factura - %s' % (object.name)</field>
+        
+        <!-- Expresión Python para generar el nombre del archivo descargado -->
+        <field name="print_report_name">'Factura EcoCaucho - %s' % (object.name)</field>
+        
+        <!-- Hacer que este reporte aparezca en el menú contextual de facturas -->
         <field name="binding_model_id" ref="account.model_account_move"/>
         <field name="binding_type">report</field>
-        <field name="paperformat_id" ref="paperformat_facturas_personalizadas"/>
+        
+        <!-- Usar nuestro formato de papel personalizado -->
+        <field name="paperformat_id" ref="paperformat_facturas_ecocaucho"/>
     </record>
     
-    <!-- Reemplazar los informes predeterminados -->
-    <record id="account.account_invoices" model="ir.actions.report">
-        <field name="report_name">plantilla_factura.report_factura_personalizada</field>
-        <field name="report_file">plantilla_factura.report_factura_personalizada</field>
-        <field name="paperformat_id" ref="paperformat_facturas_personalizadas"/>
-    </record>
+    <!-- 
+        ============================================================================
+        ❌ ELIMINADO EN v2.0 - NO REEMPLAZAMOS REPORTES ESTÁNDAR
+        ============================================================================
+        
+        Las siguientes líneas estaban en v1.0 y causaban el problema de no poder
+        desinstalar el módulo:
+        
+        <record id="account.account_invoices" model="ir.actions.report">
+            ...
+        </record>
+        
+        <function model="ir.config_parameter" name="set_param" .../>
+        <function model="ir.actions.report" name="unlink_action" .../>
+        <function model="ir.actions.report" name="create_action" .../>
+        
+        Estas operaciones modificaban permanentemente el sistema y dejaban
+        referencias rotas al desinstalar.
+        
+        En v2.0, el reporte personalizado coexiste pacíficamente con el estándar.
+        ============================================================================
+    -->
     
-    <record id="account.account_invoices_without_payment" model="ir.actions.report">
-        <field name="report_name">plantilla_factura.report_factura_personalizada</field>
-        <field name="report_file">plantilla_factura.report_factura_personalizada</field>
-        <field name="paperformat_id" ref="paperformat_facturas_personalizadas"/>
-    </record>
-    
-    <!-- Reemplazar referencia en parámetros del sistema -->
-    <function model="ir.config_parameter" name="set_param" eval="('account.default_invoice_report', 'plantilla_factura.action_report_factura_personalizada')"/>
-    
-    <!-- Hacer que este reporte sea el predeterminado para todos los casos de uso -->
-    <function model="ir.actions.report" name="unlink_action" eval="[ref('account.account_invoices')]"/>
-    <function model="ir.actions.report" name="create_action" eval="[ref('action_report_factura_personalizada')]"/>
 </odoo>

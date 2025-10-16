@@ -1,1 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_account_move_plantilla_factura,access_account_move_plantilla_factura,account.model_account_move,account.group_account_invoice,1,1,1,1
+access_account_move_line_plantilla_factura,access_account_move_line_plantilla_factura,account.model_account_move_line,account.group_account_invoice,1,1,1,1
