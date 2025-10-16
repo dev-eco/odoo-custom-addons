@@ -53,7 +53,7 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         return records
     
     def action_download_all(self):
-        """Permite descargar todas las facturas como archivos individuales"""
+        """Descarga todas las facturas en un archivo ZIP"""
         # Verificar que hay líneas válidas para descargar
         valid_lines = self.download_line_ids.filtered(lambda l: l.attachment_id)
         
@@ -63,90 +63,42 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         if len(valid_lines) == 1:
             # Si solo hay una factura, la descargamos directamente
             return valid_lines[0].action_download()
-            
-        # Para múltiples facturas, creamos una página HTML con enlaces
-        html_content = """
-        <html>
-        <head>
-            <title>Descarga de Facturas</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                h1 { color: #4c4c4c; }
-                table { border-collapse: collapse; width: 100%; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                tr:nth-child(even) { background-color: #f9f9f9; }
-                .download-link { color: #1a73e8; text-decoration: none; }
-                .download-link:hover { text-decoration: underline; }
-            </style>
-            <script>
-                // Esta función descarga automáticamente todas las facturas
-                function downloadAll() {
-                    var links = document.querySelectorAll('.download-link');
-                    var delay = 1000; // 1 segundo entre descargas
-                    
-                    links.forEach(function(link, index) {
-                        setTimeout(function() {
-                            link.click();
-                        }, delay * index);
-                    });
-                }
+        
+        # Para múltiples facturas, crear un archivo ZIP
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for line in valid_lines:
+                # Obtener el contenido del PDF
+                pdf_content = base64.b64decode(line.attachment_id.datas)
                 
-                // Iniciar la descarga automáticamente después de cargar la página
-                window.onload = function() {
-                    downloadAll();
-                }
-            </script>
-        </head>
-        <body>
-            <h1>Descarga de Facturas</h1>
-            <p>Se iniciarán las descargas automáticamente. Si algún archivo no se descarga, haga clic en el enlace correspondiente.</p>
-            <table>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Cliente/Proveedor</th>
-                    <th>Fecha</th>
-                    <th>Importe</th>
-                    <th>Descargar</th>
-                </tr>
-        """
+                # Crear un nombre de archivo limpio (sin caracteres problemáticos)
+                clean_name = line.name.replace('/', '_').replace('\\', '_')
+                if not clean_name.lower().endswith('.pdf'):
+                    clean_name += '.pdf'
+                    
+                # Añadir el PDF al archivo ZIP
+                zip_file.writestr(clean_name, pdf_content)
         
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        # Crear un nombre para el archivo ZIP
+        zip_name = f"facturas_{self.env.user.company_id.name}_{fields.Date.today()}.zip"
+        zip_name = zip_name.replace(' ', '_')
         
-        for line in valid_lines:
-            download_url = f"{base_url}/web/content/{line.attachment_id.id}?download=true"
-            html_content += f"""
-                <tr>
-                    <td>{line.name}</td>
-                    <td>{line.invoice_id.partner_id.name}</td>
-                    <td>{line.invoice_id.invoice_date or ''}</td>
-                    <td>{line.invoice_id.amount_total} {line.invoice_id.currency_id.name}</td>
-                    <td><a href="{download_url}" class="download-link" target="_blank">Descargar</a></td>
-                </tr>
-            """
-            
-        html_content += """
-            </table>
-        </body>
-        </html>
-        """
-        
-        # Crear un adjunto con la página HTML
+        # Crear un adjunto con el archivo ZIP
         attachment_vals = {
-            'name': 'descargar_facturas.html',
-            'datas': base64.b64encode(html_content.encode('utf-8')),
-            'mimetype': 'text/html',
+            'name': zip_name,
+            'datas': base64.b64encode(zip_buffer.getvalue()),
+            'mimetype': 'application/zip',
         }
         
         attachment = self.env['ir.attachment'].create(attachment_vals)
         
-        # Devolver acción para abrir la página HTML
+        # Devolver acción para descargar el archivo ZIP
         return {
             'type': 'ir.actions.act_url',
             'url': f"/web/content/{attachment.id}?download=true",
             'target': 'self',
         }
-
 class AccountInvoiceDownloadLine(models.TransientModel):
     _name = 'account.invoice.download.line'
     _description = 'Línea de descarga de factura individual'

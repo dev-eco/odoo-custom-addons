@@ -61,14 +61,14 @@ class AccountMove(models.Model):
         try:
             # Obtener el reporte correcto según el tipo de factura
             if self.move_type in ('out_invoice', 'out_refund'):
-                report_name = 'account.report_invoice'
+                report_xml_id = 'account.account_invoices'
             else:
-                report_name = 'account.report_invoice_with_payments'
-                
-            report = self.env.ref(report_name)
-            # Importante: usar report.render_qweb_pdf en lugar de _render_qweb_pdf
-            # y pasar self.id (no self.ids) para evitar problemas con listas
-            pdf_content, _ = report.render_qweb_pdf(self.id)
+                report_xml_id = 'account.account_invoices_without_payment'
+            
+            # Usar la API correcta de Odoo 17 para generar PDFs
+            report_action = self.env.ref(report_xml_id)
+            report = self.env['ir.actions.report']._get_report_from_name(report_action.report_name)
+            pdf_content, _ = report._render_qweb_pdf(self.id)
             
             # Crear el adjunto
             attachment_vals = {
