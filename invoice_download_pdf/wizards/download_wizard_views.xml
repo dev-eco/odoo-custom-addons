@@ -6,19 +6,33 @@
         <field name="arch" type="xml">
             <form string="Descargar Facturas Individuales">
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_download_all" 
+                                string="Descargar Todas" 
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-download"/>
+                    </div>
+                    
                     <p class="alert alert-info" role="alert">
-                        Seleccione cada factura para descargar su PDF individualmente
+                        Seleccione cada factura para descargar su PDF individualmente, o use el botón "Descargar Todas" para iniciar la descarga de todos los PDFs.
                     </p>
+                    
                     <field name="download_line_ids" nolabel="1">
-                        <tree>
+                        <tree decoration-danger="state == 'error'">
                             <field name="name"/>
-                            <field name="invoice_id"/>
                             <field name="partner_id"/>
                             <field name="invoice_date"/>
                             <field name="amount_total" sum="Total"/>
                             <field name="currency_id" invisible="1"/>
-                            <field name="state" decoration-success="state == 'posted'" decoration-warning="state == 'draft'"/>
-                            <button name="action_download" string="Descargar PDF" type="object" class="oe_highlight" icon="fa-download"/>
+                            <field name="state" invisible="1"/>
+                            <field name="notes" invisible="1"/>
+                            <button name="action_download" 
+                                    string="Descargar PDF" 
+                                    type="object" 
+                                    class="oe_highlight" 
+                                    icon="fa-download"
+                                    attrs="{'invisible': [('state', '=', 'error')]}"/>
                         </tree>
                     </field>
                 </sheet>
