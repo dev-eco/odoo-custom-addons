@@ -68,17 +68,45 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         
         return records
 
+    def _find_matching_pdf_attachment(self, invoice):
+        """Encuentra un adjunto PDF que coincida con la factura, considerando variaciones en el nombre"""
+        # 1. Buscar primero por MIME type
+        pdf_attachments = invoice.attachment_ids.filtered(
+            lambda a: a.mimetype == 'application/pdf'
+        )
+        
+        if not pdf_attachments:
+            return False
+        
+        # Si solo hay un PDF, lo usamos directamente
+        if len(pdf_attachments) == 1:
+            return pdf_attachments[0]
+        
+        # 2. Si hay varios PDFs, intentamos encontrar uno que coincida con el nombre de la factura
+        if invoice.name:
+            # Normalizar el nombre de la factura (quitar caracteres especiales)
+            normalized_name = invoice.name.replace('/', '_').replace('\\', '_').replace(' ', '_')
+            
+            for attachment in pdf_attachments:
+                # Normalizar el nombre del adjunto
+                normalized_attachment_name = attachment.name.replace('/', '_').replace('\\', '_').replace(' ', '_')
+                
+                # Verificar si el nombre normalizado de la factura está en el nombre normalizado del adjunto
+                if normalized_name in normalized_attachment_name:
+                    return attachment
+        
+        # 3. Si no encontramos una coincidencia específica, devolvemos el primer PDF
+        return pdf_attachments[0]
+
     def _generate_invoice_pdf(self, invoice):
         """Genera o recupera el PDF para una factura priorizando adjuntos existentes"""
         try:
             # 1. BUSCAR PRIMERO SI YA EXISTE UN PDF ADJUNTO
-            existing_pdf = invoice.attachment_ids.filtered(
-                lambda a: a.mimetype == 'application/pdf'
-            )
+            existing_pdf = self._find_matching_pdf_attachment(invoice)
             
             if existing_pdf:
-                _logger.info(f"Usando PDF existente para factura {invoice.id}")
-                return existing_pdf[0]
+                _logger.info(f"Usando PDF existente para factura {invoice.id}: {existing_pdf.name}")
+                return existing_pdf
             
             # 2. USAR EL MÉTODO DIRECTO CON EL INFORME IDENTIFICADO
             try:
