@@ -16,6 +16,7 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         string='Facturas para descargar'
     )
     
+    # wizards/download_wizard.py - CORRECCIÓN
     @api.model
     def create(self, vals):
         """Sobrescribe el método create para generar las líneas de descarga"""
@@ -23,44 +24,33 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         if res.invoice_ids:
             # Generar líneas para cada factura seleccionada
             for invoice in res.invoice_ids:
-                # Primero intentamos obtener el PDF adjunto generado por Odoo
-                pdf_attachment = invoice.attachment_ids.filtered(
-                    lambda a: a.mimetype == 'application/pdf' and 
-                    (a.name.endswith('.pdf') or 'factura' in a.name.lower() or invoice.name in a.name)
+                # Verificamos que tenga adjuntos
+                pdf_attachments = invoice.attachment_ids.filtered(
+                    lambda a: a.mimetype == 'application/pdf'
                 )
                 
-                # Si no encontramos un adjunto, generamos uno nuevo
-                if not pdf_attachment:
+                if not pdf_attachments:
+                    # En Odoo 17, podríamos necesitar generar el PDF primero
                     try:
-                        # Generar el PDF para esta factura
-                        pdf_content, _ = self.env['ir.actions.report']._render_qweb_pdf(
-                            'account.report_invoice', invoice.ids
+                        # Intentamos imprimir la factura para generar el PDF
+                        invoice.action_invoice_print()
+                        # Recargamos la factura para obtener los adjuntos actualizados
+                        invoice.invalidate_cache()
+                        pdf_attachments = invoice.attachment_ids.filtered(
+                            lambda a: a.mimetype == 'application/pdf'
                         )
-                        
-                        # Crear el adjunto
-                        attachment_vals = {
-                            'name': f"{invoice.name or 'Factura'}.pdf",
-                            'datas': base64.b64encode(pdf_content),
-                            'res_model': 'account.move',
-                            'res_id': invoice.id,
-                            'type': 'binary',
-                            'mimetype': 'application/pdf',
-                        }
-                        pdf_attachment = self.env['ir.attachment'].create(attachment_vals)
                     except Exception as e:
                         _logger.error(f"Error al generar PDF para factura {invoice.id}: {str(e)}")
                         continue
-                else:
-                    # Si hay múltiples, tomamos el primero
-                    pdf_attachment = pdf_attachment[0]
                 
-                # Crear línea de descarga
-                self.env['account.invoice.download.line'].create({
-                    'wizard_id': res.id,
-                    'invoice_id': invoice.id,
-                    'name': f"{invoice.name or f'Factura-{invoice.id}'}.pdf",
-                    'attachment_id': pdf_attachment.id if pdf_attachment else False,
-                })
+                if pdf_attachments:
+                    # Crear línea de descarga con el primer PDF adjunto
+                    self.env['account.invoice.download.line'].create({
+                        'wizard_id': res.id,
+                        'invoice_id': invoice.id,
+                        'name': f"{invoice.name or f'Factura-{invoice.id}'}.pdf",
+                        'attachment_id': pdf_attachments[0].id,
+                    })
                 
         return res
 

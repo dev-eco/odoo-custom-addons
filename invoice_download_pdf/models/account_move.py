@@ -10,7 +10,7 @@ class AccountMove(models.Model):
             return
             
         # Filtrar solo facturas válidas (publicadas)
-        valid_invoices = self.filtered(lambda inv: inv.state == 'posted' and inv.move_type in ('out_invoice', 'in_invoice', 'out_refund', 'in_refund'))
+        valid_invoices = self.filtered(lambda inv: inv.state == 'posted' and inv.move_type in ('out_invoice', 'in_invoice', 'out_refund', 'in_refund')           and inv.attachment_ids)
         
         if not valid_invoices:
             return {
