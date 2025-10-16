@@ -70,18 +70,22 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for line in valid_lines:
                 # Obtener el contenido del PDF
-                pdf_content = base64.b64decode(line.attachment_id.datas)
-                
-                # Crear un nombre de archivo limpio (sin caracteres problemáticos)
-                clean_name = line.name.replace('/', '_').replace('\\', '_')
-                if not clean_name.lower().endswith('.pdf'):
-                    clean_name += '.pdf'
+                attachment_data = line.attachment_id.datas
+                if attachment_data:
+                    pdf_content = base64.b64decode(attachment_data)
                     
-                # Añadir el PDF al archivo ZIP
-                zip_file.writestr(clean_name, pdf_content)
+                    # Crear un nombre de archivo limpio (sin caracteres problemáticos)
+                    clean_name = line.name.replace('/', '_').replace('\\', '_')
+                    if not clean_name.lower().endswith('.pdf'):
+                        clean_name += '.pdf'
+                        
+                    # Añadir el PDF al archivo ZIP
+                    zip_file.writestr(clean_name, pdf_content)
         
         # Crear un nombre para el archivo ZIP
-        zip_name = f"facturas_{self.env.user.company_id.name}_{fields.Date.today()}.zip"
+        company_name = self.env.user.company_id.name or 'company'
+        today = fields.Date.today().strftime('%Y%m%d')
+        zip_name = f"facturas_{company_name}_{today}.zip"
         zip_name = zip_name.replace(' ', '_')
         
         # Crear un adjunto con el archivo ZIP
@@ -99,6 +103,7 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
             'url': f"/web/content/{attachment.id}?download=true",
             'target': 'self',
         }
+
 class AccountInvoiceDownloadLine(models.TransientModel):
     _name = 'account.invoice.download.line'
     _description = 'Línea de descarga de factura individual'
