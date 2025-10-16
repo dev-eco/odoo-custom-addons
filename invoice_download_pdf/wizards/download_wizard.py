@@ -28,34 +28,65 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
             if wizard.invoice_ids:
                 # Generar líneas para cada factura seleccionada
                 for invoice in wizard.invoice_ids:
-                    # Asegurar que la factura tenga un PDF adjunto
-                    pdf_attachment = invoice.ensure_invoice_pdf()
+                    # Intentamos encontrar el PDF adjunto o generarlo
+                    pdf_data = None
+                    
+                    # 1. Buscar un adjunto PDF existente
+                    pdf_attachment = invoice.attachment_ids.filtered(
+                        lambda a: a.mimetype == 'application/pdf'
+                    )
                     
                     if pdf_attachment:
-                        # Crear línea de descarga
-                        self.env['account.invoice.download.line'].create({
-                            'wizard_id': wizard.id,
-                            'invoice_id': invoice.id,
-                            'name': f"{invoice.name or f'Factura-{invoice.id}'}.pdf",
-                            'attachment_id': pdf_attachment.id,
-                        })
+                        pdf_data = pdf_attachment[0]
                     else:
-                        # Crear línea sin adjunto para informar al usuario
-                        self.env['account.invoice.download.line'].create({
-                            'wizard_id': wizard.id,
-                            'invoice_id': invoice.id,
-                            'name': f"{invoice.name or f'Factura-{invoice.id}'}.pdf",
-                            'attachment_id': False,
-                            'state': 'error',
-                            'notes': 'No se pudo generar el PDF',
-                        })
+                        # 2. Si no existe, intentar generarlo
+                        try:
+                            # Usar el método estándar de impresión de facturas
+                            pdf_data = self._generate_invoice_pdf(invoice)
+                        except Exception as e:
+                            _logger.error(f"Error generando PDF para factura {invoice.id}: {str(e)}")
+                    
+                    # Crear la línea de descarga
+                    line_vals = {
+                        'wizard_id': wizard.id,
+                        'invoice_id': invoice.id,
+                        'name': f"{invoice.name or f'Factura-{invoice.id}'}.pdf",
+                        'state': 'valid' if pdf_data else 'error',
+                    }
+                    
+                    if pdf_data:
+                        line_vals['attachment_id'] = pdf_data.id
+                    else:
+                        line_vals['notes'] = 'No se pudo generar el PDF'
+                    
+                    self.env['account.invoice.download.line'].create(line_vals)
         
         return records
-        
+    
+    def _generate_invoice_pdf(self, invoice):
+        """Genera un PDF para una factura"""
+        # Método simplificado que usa el estándar de Odoo para generar PDFs
+        try:
+            # Usar PRINT para generar el PDF
+            pdf_content, _ = self.env.ref('account.action_account_invoice_report')._render_qweb_pdf(invoice.ids)
+            
+            # Crear un adjunto
+            attachment_vals = {
+                'name': f"{invoice.name or 'Factura'}.pdf",
+                'datas': base64.b64encode(pdf_content),
+                'res_model': 'account.move',
+                'res_id': invoice.id,
+                'mimetype': 'application/pdf',
+            }
+            return self.env['ir.attachment'].create(attachment_vals)
+        except Exception as e:
+            _logger.error(f"Error en _generate_invoice_pdf: {str(e)}")
+            return False
+    
     def action_download_all(self):
         """Descarga todas las facturas en un archivo ZIP"""
         # Verificar que hay líneas válidas para descargar
-        valid_lines = self.download_line_ids.filtered(lambda l: l.attachment_id)
+        valid_lines = self.download_line_ids.filtered(lambda l: l.attachment_id and l.state == 'valid')
         
         if not valid_lines:
             raise UserError('No hay facturas con PDF disponible para descargar')
@@ -74,15 +105,8 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
                         # Obtener el contenido del PDF
                         pdf_content = base64.b64decode(line.attachment_id.datas)
                         
-                        # Validar que el contenido es realmente un PDF
-                        if pdf_content[:4] != b'%PDF':
-                            _logger.warning(f"El archivo {line.name} no parece ser un PDF válido")
-                            # Crear un PDF de aviso simple
-                            pdf_content = b"%PDF-1.4\n1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n2 0 obj\n<</Type/Pages/Count 1/Kids[3 0 R]>>\nendobj\n3 0 obj\n<</Type/Page/MediaBox[0 0 595 842]/Resources<<>>/Contents 4 0 R>>\nendobj\n4 0 obj\n<</Length 44>>stream\nBT /F1 12 Tf 100 700 Td (PDF no disponible) Tj ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000015 00000 n \n0000000060 00000 n \n0000000111 00000 n \n0000000198 00000 n \ntrailer\n<</Size 5/Root 1 0 R>>\nstartxref\n292\n%%EOF\n"
-                        
                         # Crear un nombre de archivo limpio
-                        clean_name = f"{line.invoice_id.name or f'Factura-{line.invoice_id.id}'}"
-                        clean_name = clean_name.replace('/', '_').replace('\\', '_')
+                        clean_name = line.name.replace('/', '_').replace('\\', '_')
                         if not clean_name.lower().endswith('.pdf'):
                             clean_name += '.pdf'
                             
@@ -90,7 +114,6 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
                         zip_file.writestr(clean_name, pdf_content)
                     except Exception as e:
                         _logger.error(f"Error al procesar factura {line.invoice_id.id} para ZIP: {str(e)}")
-                        # Continuar con la siguiente factura
                         continue
             
             # Crear un nombre para el archivo ZIP
@@ -118,6 +141,7 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
             _logger.error(f"Error al crear archivo ZIP: {str(e)}")
             raise UserError(f"Error al crear archivo ZIP: {str(e)}")
 
+
 class AccountInvoiceDownloadLine(models.TransientModel):
     _name = 'account.invoice.download.line'
     _description = 'Línea de descarga de factura individual'
@@ -142,12 +166,7 @@ class AccountInvoiceDownloadLine(models.TransientModel):
         self.ensure_one()
         
         if not self.attachment_id:
-            # Si no tiene adjunto, intentar generarlo nuevamente
-            pdf_attachment = self.invoice_id.ensure_invoice_pdf()
-            if pdf_attachment:
-                self.attachment_id = pdf_attachment
-            else:
-                raise UserError('No se pudo generar el PDF para esta factura')
+            raise UserError('No se pudo generar el PDF para esta factura')
         
         # Devolvemos una acción para descargar el archivo
         return {
