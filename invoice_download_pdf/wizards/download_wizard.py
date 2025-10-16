@@ -64,21 +64,58 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         return records
     
     def _generate_invoice_pdf(self, invoice):
-        """Genera un PDF para una factura"""
-        # Método simplificado que usa el estándar de Odoo para generar PDFs
+        """Genera un PDF para una factura usando el mecanismo nativo de Odoo"""
         try:
-            # Usar PRINT para generar el PDF
-            pdf_content, _ = self.env.ref('account.action_account_invoice_report')._render_qweb_pdf(invoice.ids)
+            # En lugar de buscar un informe específico por XML ID, obtendremos
+            # el informe directamente desde la acción de impresión de la factura
+            action = invoice.action_invoice_print()
             
-            # Crear un adjunto
-            attachment_vals = {
-                'name': f"{invoice.name or 'Factura'}.pdf",
-                'datas': base64.b64encode(pdf_content),
-                'res_model': 'account.move',
-                'res_id': invoice.id,
-                'mimetype': 'application/pdf',
-            }
-            return self.env['ir.attachment'].create(attachment_vals)
+            # La acción devuelta contiene la información del informe a utilizar
+            if action and action.get('report_name'):
+                # Obtener el informe por su nombre
+                report = self.env['ir.actions.report']._get_report_from_name(action.get('report_name'))
+                if report:
+                    # Generar el PDF con todos los parámetros necesarios
+                    pdf_content, _ = report._render_qweb_pdf(invoice.ids)
+                    
+                    # Crear un adjunto
+                    attachment_vals = {
+                        'name': f"{invoice.name or 'Factura'}.pdf",
+                        'datas': base64.b64encode(pdf_content),
+                        'res_model': 'account.move',
+                        'res_id': invoice.id,
+                        'mimetype': 'application/pdf',
+                    }
+                    return self.env['ir.attachment'].create(attachment_vals)
+                
+            # Si no podemos obtener el informe por la acción, intentamos otra aproximación
+            # Buscar todos los informes disponibles relacionados con facturas
+            reports = self.env['ir.actions.report'].search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ], limit=1)
+            
+            if reports:
+                # Usar el primer informe encontrado
+                pdf_content, _ = reports[0]._render_qweb_pdf(invoice.ids)
+                
+                # Crear un adjunto
+                attachment_vals = {
+                    'name': f"{invoice.name or 'Factura'}.pdf",
+                    'datas': base64.b64encode(pdf_content),
+                    'res_model': 'account.move',
+                    'res_id': invoice.id,
+                    'mimetype': 'application/pdf',
+                }
+                return self.env['ir.attachment'].create(attachment_vals)
+            
+            # Si todo lo demás falla, intentamos una última aproximación
+            # Buscar si la factura ya tiene un PDF adjunto generado anteriormente
+            for attachment in invoice.attachment_ids:
+                if attachment.mimetype == 'application/pdf' and ('factura' in attachment.name.lower() or 'invoice' in attachment.name.lower()):
+                    return attachment
+                    
+            return False
         except Exception as e:
             _logger.error(f"Error en _generate_invoice_pdf: {str(e)}")
             return False
@@ -140,7 +177,6 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         except Exception as e:
             _logger.error(f"Error al crear archivo ZIP: {str(e)}")
             raise UserError(f"Error al crear archivo ZIP: {str(e)}")
-
 
 class AccountInvoiceDownloadLine(models.TransientModel):
     _name = 'account.invoice.download.line'
