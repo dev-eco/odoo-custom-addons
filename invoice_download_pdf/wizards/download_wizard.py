@@ -7,6 +7,7 @@ import base64
 import logging
 import io
 import zipfile
+import requests
 
 _logger = logging.getLogger(__name__)
 
@@ -65,64 +66,116 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
                     self.env['account.invoice.download.line'].create(line_vals)
         
         return records
-        
+
     def _generate_invoice_pdf(self, invoice):
-        """Genera un PDF para una factura usando métodos seguros y robustos"""
+        """Genera un PDF para una factura con el diseño personalizado correcto"""
         try:
-            # Enfoque 1: Buscar directamente informes disponibles para facturas
-            domain = [
-                ('model', '=', 'account.move'),
-                ('report_type', '=', 'qweb-pdf')
-            ]
-            
-            # Refinar la búsqueda según el tipo de factura
+            # 1. Método más directo: usar la acción nativa de impresión
             if invoice.move_type in ('out_invoice', 'out_refund'):
-                # Facturas de cliente
-                reports = self.env['ir.actions.report'].search(domain + [
-                    ('name', 'ilike', 'invoice')
-                ], limit=1)
+                # Para facturas de cliente, usamos el método específico
+                # que respeta la personalización de la empresa
+                report = self.env['ir.actions.report']._get_report_from_name('account.report_invoice')
+                
+                # Aplicar el contexto correcto para que respete el diseño personalizado
+                ctx = dict(self.env.context)
+                ctx.update({
+                    'active_model': 'account.move',
+                    'active_id': invoice.id,
+                    'active_ids': [invoice.id],
+                    'default_model': 'account.move',
+                    'default_res_id': invoice.id,
+                    'model': 'account.move',
+                    'res_id': invoice.id,
+                    'force_report_rendering': True,
+                    'report_type': 'qweb-pdf',
+                })
+                
+                pdf_content, _ = report.with_context(ctx)._render_qweb_pdf(invoice.id)
             else:
-                # Facturas de proveedor
-                reports = self.env['ir.actions.report'].search(domain + [
+                # Para facturas de proveedor, mantenemos el enfoque anterior
+                reports = self.env['ir.actions.report'].search([
+                    ('model', '=', 'account.move'),
+                    ('report_type', '=', 'qweb-pdf'),
                     ('name', 'ilike', 'vendor')
                 ], limit=1)
                 
                 if not reports:
-                    # Si no encontramos un informe específico para proveedores, usamos cualquier informe de factura
-                    reports = self.env['ir.actions.report'].search(domain, limit=1)
+                    reports = self.env['ir.actions.report'].search([
+                        ('model', '=', 'account.move'),
+                        ('report_type', '=', 'qweb-pdf')
+                    ], limit=1)
                     
-            if reports:
-                # Usar el primer informe encontrado para generar el PDF
-                pdf_content, _ = reports[0]._render_qweb_pdf(invoice.id)  # Nota: usamos invoice.id, no invoice.ids
-                
-                # Crear un adjunto
-                attachment_vals = {
-                    'name': f"{invoice.name or 'Factura'}.pdf",
-                    'datas': base64.b64encode(pdf_content),
-                    'res_model': 'account.move',
-                    'res_id': invoice.id,
-                    'mimetype': 'application/pdf',
-                }
-                return self.env['ir.attachment'].create(attachment_vals)
+                if reports:
+                    pdf_content, _ = reports[0]._render_qweb_pdf(invoice.id)
+                else:
+                    return self._create_basic_pdf(invoice)
             
-            # Si no encontramos ningún informe, verificar si ya hay un PDF adjunto
-            existing_pdf = invoice.attachment_ids.filtered(
-                lambda a: a.mimetype == 'application/pdf'
-            )
-            
-            if existing_pdf:
-                return existing_pdf[0]
-                
-            # Si todo lo demás falla, creamos un PDF básico con los datos de la factura
-            return self._create_basic_pdf(invoice)
-            
+            # Crear el adjunto con el PDF generado
+            attachment_vals = {
+                'name': f"{invoice.name or 'Factura'}.pdf",
+                'datas': base64.b64encode(pdf_content),
+                'res_model': 'account.move',
+                'res_id': invoice.id,
+                'mimetype': 'application/pdf',
+            }
+            return self.env['ir.attachment'].create(attachment_vals)
+        
         except Exception as e:
             _logger.error(f"Error en _generate_invoice_pdf: {str(e)}")
-            # Si hay un error, intentar crear un PDF básico
+            
+            # Si hay un error, intentamos una estrategia alternativa
             try:
+                # Buscar primero si ya existe un PDF adjunto generado previamente
+                existing_pdf = invoice.attachment_ids.filtered(
+                    lambda a: a.mimetype == 'application/pdf' and 
+                    ('factura' in a.name.lower() or 'invoice' in a.name.lower())
+                )
+                
+                if existing_pdf:
+                    return existing_pdf[0]
+                    
+                # Si no hay PDF existente, intentamos con la URL de impresión
+                if invoice.move_type in ('out_invoice', 'out_refund'):
+                    # Este enfoque utiliza el controlador web, que incluirá todas las personalizaciones
+                    url = f"/report/pdf/account.report_invoice/{invoice.id}"
+                    pdf_content = self._get_pdf_from_url(url)
+                    
+                    if pdf_content:
+                        attachment_vals = {
+                            'name': f"{invoice.name or 'Factura'}.pdf",
+                            'datas': base64.b64encode(pdf_content),
+                            'res_model': 'account.move',
+                            'res_id': invoice.id,
+                            'mimetype': 'application/pdf',
+                        }
+                        return self.env['ir.attachment'].create(attachment_vals)
+                
+                # Si todo lo anterior falla, creamos un PDF básico
                 return self._create_basic_pdf(invoice)
-            except:
-                return False
+            except Exception as e2:
+                _logger.error(f"Error en estrategia alternativa: {str(e2)}")
+                return self._create_basic_pdf(invoice)
+
+    def _get_pdf_from_url(self, url):
+        """Obtiene un PDF directamente desde una URL de Odoo (incluye sesión y personalización)"""
+        try:
+            # Construir la URL completa con la base URL y autenticación
+            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            session_id = self.env.cr.dbname
+            full_url = f"{base_url}{url}?session_id={session_id}"
+            
+            # Usar requests para obtener el PDF
+            import requests
+            response = requests.get(full_url, timeout=30)
+            
+            if response.status_code == 200 and response.headers.get('Content-Type') == 'application/pdf':
+                return response.content
+            else:
+                _logger.error(f"Error al obtener PDF desde URL: {response.status_code}")
+                return None
+        except Exception as e:
+            _logger.error(f"Error en _get_pdf_from_url: {str(e)}")
+            return None
 
     def _create_basic_pdf(self, invoice):
         """Crea un PDF básico con información de la factura cuando todo lo demás falla"""
