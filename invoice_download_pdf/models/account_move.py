@@ -1,4 +1,5 @@
 from odoo import models, api
+from odoo import SUPERUSER_ID
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -6,6 +7,41 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = 'account.move'
     
+    def preview_invoice(self):
+        """Método para obtener la acción de vista previa de una factura"""
+        self.ensure_one()
+        
+        # Intentar encontrar informes relacionados con facturas
+        if self.move_type in ('out_invoice', 'out_refund'):
+            report_ref = 'account.account_invoices'
+        else:
+            report_ref = 'account.account_invoices_without_payment'
+            
+        # Buscar el informe por referencia
+        try:
+            return {
+                'type': 'ir.actions.report',
+                'report_name': report_ref,
+                'report_type': 'qweb-pdf',
+                'context': {'active_id': self.id, 'active_model': 'account.move'},
+            }
+        except:
+            # Si falla, buscar cualquier informe válido para facturas
+            reports = self.env['ir.actions.report'].sudo().search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ], limit=1)
+            
+            if reports:
+                return {
+                    'type': 'ir.actions.report',
+                    'report_name': reports[0].report_name,
+                    'report_type': 'qweb-pdf',
+                    'context': {'active_id': self.id, 'active_model': 'account.move'},
+                }
+            
+            return False
+
     def action_prepare_individual_downloads(self):
         """Prepara los PDFs individuales para las facturas seleccionadas"""
         # Verificar que hay facturas seleccionadas

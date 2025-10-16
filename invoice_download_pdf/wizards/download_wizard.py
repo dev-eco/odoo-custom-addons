@@ -68,7 +68,7 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
         return records
 
     def _generate_invoice_pdf(self, invoice):
-        """Genera o recupera el PDF para una factura utilizando el sistema de impresión de Odoo"""
+        """Genera o recupera el PDF para una factura utilizando múltiples métodos compatibles"""
         try:
             # 1. BUSCAR PRIMERO SI YA EXISTE UN PDF ADJUNTO
             existing_pdf = invoice.attachment_ids.filtered(
@@ -79,77 +79,102 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
                 _logger.info(f"Usando PDF existente para factura {invoice.id}")
                 return existing_pdf[0]
             
-            # 2. IMPRIMIR LA FACTURA UTILIZANDO EL MÉTODO DIRECTO
+            # 2. INTENTAR GENERAR EL PDF USANDO EL MÉTODO MÁS COMPATIBLE
             try:
-                _logger.info(f"Intentando imprimir factura {invoice.id} usando el controlador directo")
+                _logger.info(f"Intentando generar PDF para factura {invoice.id} usando método compatible")
                 
-                # Obtener la URL base del sistema
-                base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-                
-                # Construir la URL de impresión directa (esta es la URL que usa el botón "Imprimir")
-                if invoice.move_type in ('out_invoice', 'out_refund'):
-                    print_url = f"/report/pdf/account.report_invoice/{invoice.id}"
-                else:
-                    print_url = f"/report/pdf/account.report_invoice_with_payments/{invoice.id}"
-                
-                # Añadir el token de acceso a la URL
-                user = self.env.user
-                access_token = self.env['ir.attachment']._generate_access_token()
-                url_params = f"?access_token={access_token}&db={self.env.cr.dbname}&uid={user.id}"
-                full_url = f"{base_url}{print_url}{url_params}"
-                
-                # Descargar el PDF usando requests
-                response = requests.get(full_url, timeout=30, 
-                                        headers={'Accept': 'application/pdf'})
-                
-                if response.status_code == 200 and response.headers.get('Content-Type') == 'application/pdf':
-                    pdf_content = response.content
-                    _logger.info(f"PDF generado correctamente para factura {invoice.id}")
-                    
-                    # Guardar el PDF como adjunto
-                    attachment_vals = {
-                        'name': f"{invoice.name or 'Factura'}.pdf",
-                        'datas': base64.b64encode(pdf_content),
-                        'res_model': 'account.move',
-                        'res_id': invoice.id,
-                        'mimetype': 'application/pdf',
-                    }
-                    return self.env['ir.attachment'].create(attachment_vals)
-                else:
-                    _logger.error(f"Error descargando PDF: Status {response.status_code}")
-            except Exception as e:
-                _logger.error(f"Error al imprimir factura directamente: {str(e)}")
-            
-            # 3. SI FALLAN LOS MÉTODOS ANTERIORES, INTENTAR UN ENFOQUE DIFERENTE
-            try:
-                # Usar la acción de impresión de Odoo, pero en modo servidor
-                _logger.info("Intentando usar action_print_invoice")
-                
-                # Buscar todos los informes disponibles
+                # Buscar informes disponibles
                 reports = self.env['ir.actions.report'].sudo().search([
                     ('model', '=', 'account.move'),
                     ('report_type', '=', 'qweb-pdf'),
                 ], limit=5)
                 
-                for report in reports:
-                    _logger.info(f"Informe disponible: {report.name} (ID: {report.id})")
-                
                 if reports:
-                    report = reports[0]
-                    # Importante: Pasar el ID como entero único, no como lista
-                    pdf_content, _ = report.sudo().with_context(active_model='account.move').render_qweb_pdf(invoice.id)
+                    # Registrar los informes disponibles para diagnóstico
+                    for report in reports:
+                        _logger.info(f"Informe disponible: {report.name} (ID: {report.id})")
                     
-                    # Guardar el PDF como adjunto
-                    attachment_vals = {
-                        'name': f"{invoice.name or 'Factura'}.pdf",
-                        'datas': base64.b64encode(pdf_content),
-                        'res_model': 'account.move',
-                        'res_id': invoice.id,
-                        'mimetype': 'application/pdf',
-                    }
-                    return self.env['ir.attachment'].create(attachment_vals)
+                    report = reports[0]  # Usamos el primer informe encontrado
+                    
+                    # Método 1: Intenta usar _render
+                    try:
+                        _logger.info(f"Intentando generar PDF con método _render")
+                        pdf_content, _ = report.sudo().with_context(active_id=invoice.id)._render(invoice.id)
+                        
+                        # Crear adjunto
+                        attachment_vals = {
+                            'name': f"{invoice.name or 'Factura'}.pdf",
+                            'datas': base64.b64encode(pdf_content),
+                            'res_model': 'account.move',
+                            'res_id': invoice.id,
+                            'mimetype': 'application/pdf',
+                        }
+                        return self.env['ir.attachment'].create(attachment_vals)
+                    except Exception as e1:
+                        _logger.warning(f"Error con método _render: {str(e1)}")
+                        
+                        # Método 2: Intenta usar _render_qweb_pdf o render_qweb_pdf si existe
+                        try:
+                            _logger.info(f"Intentando generar PDF con método alternativo de renderizado")
+                            # Probar diferentes métodos que pueden existir en distintas versiones de Odoo
+                            if hasattr(report, '_render_qweb_pdf'):
+                                pdf_content, _ = report.sudo().with_context(active_id=invoice.id)._render_qweb_pdf([invoice.id])
+                            elif hasattr(report, 'render_qweb_pdf'):
+                                pdf_content, _ = report.sudo().with_context(active_id=invoice.id).render_qweb_pdf([invoice.id])
+                            else:
+                                raise AttributeError("No se encontró un método de renderizado compatible")
+                            
+                            # Crear adjunto
+                            attachment_vals = {
+                                'name': f"{invoice.name or 'Factura'}.pdf",
+                                'datas': base64.b64encode(pdf_content),
+                                'res_model': 'account.move',
+                                'res_id': invoice.id,
+                                'mimetype': 'application/pdf',
+                            }
+                            return self.env['ir.attachment'].create(attachment_vals)
+                        except Exception as e2:
+                            _logger.warning(f"Error con método alternativo: {str(e2)}")
+                
+                # 3. GENERAR EL PDF MANUALMENTE USANDO EL CONTROLADOR WEB
+                try:
+                    _logger.info("Intentando generar PDF manualmente")
+                    # Obtener el informe a través del modelo
+                    env = api.Environment(self.env.cr, SUPERUSER_ID, {})
+                    report_action = invoice.sudo().with_context(force_report_rendering=True).preview_invoice()
+                    
+                    if report_action and report_action.get('report_name'):
+                        # Usar la clase IrActionsReport para generar el PDF
+                        report_srv = env['ir.actions.report']
+                        
+                        # Intentar diferentes métodos
+                        if hasattr(report_srv, '_get_report_from_name'):
+                            report_obj = report_srv._get_report_from_name(report_action['report_name'])
+                            
+                            # Intentar diferentes métodos de renderizado
+                            if hasattr(report_obj, '_render_qweb_pdf'):
+                                pdf_content, _ = report_obj._render_qweb_pdf(invoice.ids)
+                            elif hasattr(report_obj, 'render_qweb_pdf'):
+                                pdf_content, _ = report_obj.render_qweb_pdf(invoice.ids)
+                            elif hasattr(report_obj, '_render'):
+                                pdf_content, _ = report_obj._render(invoice.ids)
+                            else:
+                                raise AttributeError("No se encontró método de renderizado compatible")
+                                
+                            # Crear adjunto con el contenido generado
+                            attachment_vals = {
+                                'name': f"{invoice.name or 'Factura'}.pdf",
+                                'datas': base64.b64encode(pdf_content),
+                                'res_model': 'account.move',
+                                'res_id': invoice.id,
+                                'mimetype': 'application/pdf',
+                            }
+                            return self.env['ir.attachment'].create(attachment_vals)
+                except Exception as e3:
+                    _logger.warning(f"Error generando PDF manualmente: {str(e3)}")
+                    
             except Exception as e:
-                _logger.error(f"Error con el enfoque alternativo: {str(e)}")
+                _logger.error(f"Error intentando generar PDF: {str(e)}")
             
             # 4. COMO ÚLTIMO RECURSO, GENERAR UN PDF BÁSICO
             _logger.info(f"Generando PDF básico para factura {invoice.id}")
