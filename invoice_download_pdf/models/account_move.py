@@ -41,14 +41,3 @@ class AccountMove(models.Model):
             'res_id': wizard.id,
             'target': 'new',
         }
-
-    def action_invoice_print(self):
-        """ Método para imprimir facturas """
-        self.ensure_one()
-        
-        # Para facturas de cliente
-        if self.move_type in ('out_invoice', 'out_refund'):
-            return self.env.ref('account.account_invoices')._get_report_action(self)
-        # Para facturas de proveedor
-        else:
-            return self.env.ref('account.account_invoices_without_payment')._get_report_action(self)

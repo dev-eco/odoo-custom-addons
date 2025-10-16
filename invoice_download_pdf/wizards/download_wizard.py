@@ -1,5 +1,8 @@
 from odoo import models, api, fields
 from odoo.exceptions import UserError
+import subprocess
+import tempfile
+import os
 import base64
 import logging
 import io
@@ -62,42 +65,35 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
                     self.env['account.invoice.download.line'].create(line_vals)
         
         return records
-    
+        
     def _generate_invoice_pdf(self, invoice):
-        """Genera un PDF para una factura usando el mecanismo nativo de Odoo"""
+        """Genera un PDF para una factura usando métodos seguros y robustos"""
         try:
-            # En lugar de buscar un informe específico por XML ID, obtendremos
-            # el informe directamente desde la acción de impresión de la factura
-            action = invoice.action_invoice_print()
-            
-            # La acción devuelta contiene la información del informe a utilizar
-            if action and action.get('report_name'):
-                # Obtener el informe por su nombre
-                report = self.env['ir.actions.report']._get_report_from_name(action.get('report_name'))
-                if report:
-                    # Generar el PDF con todos los parámetros necesarios
-                    pdf_content, _ = report._render_qweb_pdf(invoice.ids)
-                    
-                    # Crear un adjunto
-                    attachment_vals = {
-                        'name': f"{invoice.name or 'Factura'}.pdf",
-                        'datas': base64.b64encode(pdf_content),
-                        'res_model': 'account.move',
-                        'res_id': invoice.id,
-                        'mimetype': 'application/pdf',
-                    }
-                    return self.env['ir.attachment'].create(attachment_vals)
-                
-            # Si no podemos obtener el informe por la acción, intentamos otra aproximación
-            # Buscar todos los informes disponibles relacionados con facturas
-            reports = self.env['ir.actions.report'].search([
+            # Enfoque 1: Buscar directamente informes disponibles para facturas
+            domain = [
                 ('model', '=', 'account.move'),
                 ('report_type', '=', 'qweb-pdf')
-            ], limit=1)
+            ]
             
+            # Refinar la búsqueda según el tipo de factura
+            if invoice.move_type in ('out_invoice', 'out_refund'):
+                # Facturas de cliente
+                reports = self.env['ir.actions.report'].search(domain + [
+                    ('name', 'ilike', 'invoice')
+                ], limit=1)
+            else:
+                # Facturas de proveedor
+                reports = self.env['ir.actions.report'].search(domain + [
+                    ('name', 'ilike', 'vendor')
+                ], limit=1)
+                
+                if not reports:
+                    # Si no encontramos un informe específico para proveedores, usamos cualquier informe de factura
+                    reports = self.env['ir.actions.report'].search(domain, limit=1)
+                    
             if reports:
-                # Usar el primer informe encontrado
-                pdf_content, _ = reports[0]._render_qweb_pdf(invoice.ids)
+                # Usar el primer informe encontrado para generar el PDF
+                pdf_content, _ = reports[0]._render_qweb_pdf(invoice.id)  # Nota: usamos invoice.id, no invoice.ids
                 
                 # Crear un adjunto
                 attachment_vals = {
@@ -109,16 +105,138 @@ class AccountInvoiceDownloadWizard(models.TransientModel):
                 }
                 return self.env['ir.attachment'].create(attachment_vals)
             
-            # Si todo lo demás falla, intentamos una última aproximación
-            # Buscar si la factura ya tiene un PDF adjunto generado anteriormente
-            for attachment in invoice.attachment_ids:
-                if attachment.mimetype == 'application/pdf' and ('factura' in attachment.name.lower() or 'invoice' in attachment.name.lower()):
-                    return attachment
-                    
-            return False
+            # Si no encontramos ningún informe, verificar si ya hay un PDF adjunto
+            existing_pdf = invoice.attachment_ids.filtered(
+                lambda a: a.mimetype == 'application/pdf'
+            )
+            
+            if existing_pdf:
+                return existing_pdf[0]
+                
+            # Si todo lo demás falla, creamos un PDF básico con los datos de la factura
+            return self._create_basic_pdf(invoice)
+            
         except Exception as e:
             _logger.error(f"Error en _generate_invoice_pdf: {str(e)}")
-            return False
+            # Si hay un error, intentar crear un PDF básico
+            try:
+                return self._create_basic_pdf(invoice)
+            except:
+                return False
+
+    def _create_basic_pdf(self, invoice):
+        """Crea un PDF básico con información de la factura cuando todo lo demás falla"""
+        # Crear un contenido HTML básico
+        html_content = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                h1 {{ color: #1a73e8; }}
+                table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                th {{ background-color: #f2f2f2; }}
+                .total {{ font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <h1>FACTURA {invoice.name or ''}</h1>
+            <p><strong>Cliente:</strong> {invoice.partner_id.name or 'N/A'}</p>
+            <p><strong>Fecha:</strong> {invoice.invoice_date or 'N/A'}</p>
+            <p><strong>Referencia:</strong> {invoice.ref or 'N/A'}</p>
+            
+            <table>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                </tr>
+        """
+        
+        # Añadir líneas de factura
+        for line in invoice.invoice_line_ids:
+            html_content += f"""
+                <tr>
+                    <td>{line.name or 'N/A'}</td>
+                    <td>{line.quantity or 0}</td>
+                    <td>{line.price_unit or 0} {invoice.currency_id.name or ''}</td>
+                    <td>{line.price_subtotal or 0} {invoice.currency_id.name or ''}</td>
+                </tr>
+            """
+        
+        # Añadir totales
+        html_content += f"""
+                <tr class="total">
+                    <td colspan="3">Total</td>
+                    <td>{invoice.amount_total or 0} {invoice.currency_id.name or ''}</td>
+                </tr>
+            </table>
+            
+            <p>Este documento es una representación básica de la factura. Para obtener la versión oficial, contacte con la empresa.</p>
+        </body>
+        </html>
+        """
+        
+        # Convertir HTML a PDF
+        try:
+            pdf_content = self.html_to_pdf(html_content)
+            
+            # Crear el adjunto
+            attachment_vals = {
+                'name': f"{invoice.name or 'Factura'}.pdf",
+                'datas': base64.b64encode(pdf_content),
+                'res_model': 'account.move',
+                'res_id': invoice.id,
+                'mimetype': 'application/pdf',
+            }
+            return self.env['ir.attachment'].create(attachment_vals)
+        except:
+            # Si no podemos generar el PDF, al menos creamos un adjunto con el HTML
+            attachment_vals = {
+                'name': f"{invoice.name or 'Factura'}.html",
+                'datas': base64.b64encode(html_content.encode('utf-8')),
+                'res_model': 'account.move',
+                'res_id': invoice.id,
+                'mimetype': 'text/html',
+            }
+            return self.env['ir.attachment'].create(attachment_vals)
+
+    def html_to_pdf(self, html_content):
+        """Convierte contenido HTML a PDF usando wkhtmltopdf"""
+        # Importaciones necesarias
+        import subprocess
+        import tempfile
+        import os
+        
+        # Crear archivos temporales
+        html_fd, html_path = tempfile.mkstemp(suffix='.html')
+        pdf_fd, pdf_path = tempfile.mkstemp(suffix='.pdf')
+        
+        try:
+            # Escribir el contenido HTML en el archivo temporal
+            with os.fdopen(html_fd, 'w') as f:
+                f.write(html_content)
+            
+            # Convertir HTML a PDF usando wkhtmltopdf
+            process = subprocess.Popen(
+                ['wkhtmltopdf', '--quiet', html_path, pdf_path],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            out, err = process.communicate()
+            
+            # Leer el contenido del PDF generado
+            with open(pdf_path, 'rb') as f:
+                pdf_content = f.read()
+                
+            return pdf_content
+        finally:
+            # Eliminar archivos temporales
+            try:
+                os.unlink(html_path)
+                os.unlink(pdf_path)
+            except:
+                pass
     
     def action_download_all(self):
         """Descarga todas las facturas en un archivo ZIP"""
