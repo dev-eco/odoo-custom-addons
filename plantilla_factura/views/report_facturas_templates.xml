@@ -1,284 +1,436 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Plantilla contenedora principal -->
+    <!--
+        ============================================================================
+        PLANTILLA QWEB PARA REPORTE DE FACTURAS PERSONALIZADO - ECOCAUCHO
+        ============================================================================
+        
+        Esta plantilla genera el PDF de facturas con diseño optimizado para EcoCaucho.
+        
+        Características del diseño:
+        - Uso eficiente del espacio en papel A4
+        - Agrupación de líneas por pedido de origen
+        - Visualización clara de campos personalizados
+        - Diseño profesional y limpio
+        - Paginación mejorada para facturas con múltiples pedidos
+        
+        Nota: Esta plantilla se usa cuando el usuario selecciona "Factura EcoCaucho"
+        desde el menú de impresión. No reemplaza la plantilla estándar.
+        ============================================================================
+    -->
+    
+    <!-- 
+        Plantilla contenedora principal
+        Esta es la plantilla raíz que Odoo llama cuando se genera el reporte
+    -->
     <template id="report_factura_personalizada">
         <t t-call="web.html_container">
+            <!-- 
+                Iterar sobre todos los documentos (facturas) a imprimir
+                Normalmente será uno solo, pero puede ser varios si se seleccionan múltiples
+            -->
             <t t-foreach="docs" t-as="o">
+                <!-- 
+                    Llamar a la plantilla del documento individual
+                    t-lang establece el idioma según la configuración del partner
+                -->
                 <t t-call="plantilla_factura.report_factura_documento" t-lang="o.partner_id.lang"/>
             </t>
         </t>
     </template>
     
-    <!-- Plantilla del documento de factura -->
+    <!-- 
+        Plantilla del documento individual de factura
+        Este es el contenido real del PDF que verá el usuario
+    -->
     <template id="report_factura_documento">
+        <!-- 
+            web.external_layout proporciona el header y footer configurados en la empresa
+            (logo, dirección, datos fiscales, etc.)
+        -->
         <t t-call="web.external_layout">
+            <!-- Establecer contexto con idioma del partner -->
             <t t-set="o" t-value="o.with_context(lang=lang)" />
+            <!-- Variable auxiliar para la moneda -->
             <t t-set="currency" t-value="o.currency_id" />
             
             <div class="page invoice-page">
-                <!-- Cabecera con información básica -->
+                
+                <!-- =========================================================== -->
+                <!-- SECCIÓN 1: CABECERA DE LA FACTURA -->
+                <!-- =========================================================== -->
                 <div class="row invoice-header mb-4">
                     <div class="col-7">
-                        <h2 class="invoice-title">Factura <span t-field="o.name"/></h2>
-                        <div class="invoice-date">Fecha: <span t-field="o.invoice_date"/></div>
+                        <!-- 
+                            Título principal: Tipo de documento + Número
+                            Ejemplos: "Factura INV/2024/0001", "Nota de Crédito RINV/2024/0001"
+                        -->
+                        <h2 class="invoice-title">
+                            <span t-if="o.move_type == 'out_invoice'">Factura</span>
+                            <span t-elif="o.move_type == 'out_refund'">Nota de Crédito</span>
+                            <span t-elif="o.move_type == 'in_invoice'">Factura de Proveedor</span>
+                            <span t-elif="o.move_type == 'in_refund'">Nota de Crédito de Proveedor</span>
+                            <span t-field="o.name"/>
+                        </h2>
+                        
+                        <!-- Fecha de la factura -->
+                        <div class="invoice-date">
+                            <strong>Fecha:</strong> <span t-field="o.invoice_date"/>
+                        </div>
                     </div>
+                    
+                    <!-- 
+                        Recuadro de referencia del cliente
+                        Solo visible si hay referencia (campo personalizado de v2.0)
+                    -->
                     <div class="col-5" t-if="o.referencia_cliente">
-                        <div class="client-ref-box">
-                            <div class="ref-label">Referencia Cliente</div>
-                            <div class="ref-value" t-field="o.referencia_cliente"/>
+                        <div class="client-ref-box border p-3 rounded bg-light">
+                            <div class="ref-label text-muted small">Referencia Cliente</div>
+                            <div class="ref-value h5" t-field="o.referencia_cliente"/>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Información del cliente -->
+                <!-- =========================================================== -->
+                <!-- SECCIÓN 2: INFORMACIÓN DE CLIENTE Y FACTURA -->
+                <!-- =========================================================== -->
                 <div class="row mb-4">
+                    
+                    <!-- Columna izquierda: Datos del cliente -->
                     <div class="col-6">
-                        <div class="info-box">
-                            <div class="box-title">CLIENTE</div>
-                            <div class="client-name" t-field="o.partner_id.name"/>
-                            <div t-if="o.partner_id.vat">NIF/CIF: <span t-field="o.partner_id.vat"/></div>
-                            <div t-if="o.partner_id.street" t-field="o.partner_id.street"/>
-                            <div t-if="o.partner_id.street2" t-field="o.partner_id.street2"/>
-                            <div>
-                                <span t-if="o.partner_id.zip" t-field="o.partner_id.zip"/> 
-                                <span t-if="o.partner_id.city" t-field="o.partner_id.city"/>
-                                <span t-if="o.partner_id.state_id">(<span t-field="o.partner_id.state_id.name"/>)</span>
+                        <div class="invoice-box border p-3 rounded">
+                            <strong class="d-block mb-2">Cliente:</strong>
+                            <!-- 
+                                Widget de dirección de Odoo
+                                Formatea automáticamente nombre, dirección, ciudad, etc.
+                            -->
+                            <address t-field="o.partner_id" 
+                                     t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+                            
+                            <!-- NIF del cliente si existe -->
+                            <div t-if="o.partner_id.vat" class="mt-1">
+                                <strong>NIF:</strong> <span t-field="o.partner_id.vat"/>
                             </div>
-                            <div t-if="o.partner_id.country_id" t-field="o.partner_id.country_id.name"/>
+                            
+                            <!-- Contacto de facturación específico (campo personalizado) -->
+                            <div t-if="o.contacto_facturacion" class="mt-2 border-top pt-2">
+                                <strong>Contacto:</strong> <span t-field="o.contacto_facturacion.name"/>
+                                <div t-if="o.contacto_facturacion.email" class="small text-muted">
+                                    <span t-field="o.contacto_facturacion.email"/>
+                                </div>
+                                <div t-if="o.contacto_facturacion.phone" class="small text-muted">
+                                    <span t-field="o.contacto_facturacion.phone"/>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    
+                    <!-- Columna derecha: Datos de la factura -->
                     <div class="col-6">
-                        <div class="info-box">
-                            <table class="table table-sm info-details-table">
-                                <tr t-if="o.pedidos_relacionados">
-                                    <td class="field-label">Albarán:</td>
-                                    <td class="field-value"><span t-field="o.pedidos_relacionados"/></td>
-                                </tr>
-                                <tr t-if="o.invoice_date_due">
-                                    <td class="field-label">Fecha Vencimiento:</td>
-                                    <td class="field-value"><span t-field="o.invoice_date_due"/></td>
-                                </tr>
-                                <tr t-if="o.invoice_payment_term_id">
-                                    <td class="field-label">Forma de pago:</td>
-                                    <td class="field-value"><span t-field="o.invoice_payment_term_id.name"/></td>
-                                </tr>
+                        <div class="invoice-box border p-3 rounded">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tbody>
+                                    <!-- Fecha de factura -->
+                                    <tr>
+                                        <td class="field-label"><strong>Fecha Factura:</strong></td>
+                                        <td class="field-value"><span t-field="o.invoice_date"/></td>
+                                    </tr>
+                                    
+                                    <!-- Fecha de vencimiento -->
+                                    <tr t-if="o.invoice_date_due">
+                                        <td class="field-label"><strong>Fecha Vencimiento:</strong></td>
+                                        <td class="field-value"><span t-field="o.invoice_date_due"/></td>
+                                    </tr>
+                                    
+                                    <!-- Términos de pago -->
+                                    <tr t-if="o.invoice_payment_term_id">
+                                        <td class="field-label"><strong>Forma de pago:</strong></td>
+                                        <td class="field-value"><span t-field="o.invoice_payment_term_id.name"/></td>
+                                    </tr>
+                                    
+                                    <!-- Pedidos relacionados (campo calculado) -->
+                                    <tr t-if="o.pedidos_relacionados">
+                                        <td class="field-label"><strong>Pedidos:</strong></td>
+                                        <td class="field-value"><span t-field="o.pedidos_relacionados"/></td>
+                                    </tr>
+                                    
+                                    <!-- Referencia de pago si existe -->
+                                    <tr t-if="o.payment_reference">
+                                        <td class="field-label"><strong>Ref. Pago:</strong></td>
+                                        <td class="field-value"><span t-field="o.payment_reference"/></td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-
-                <!-- Agrupamos pedidos -->
+                
+                <!-- =========================================================== -->
+                <!-- SECCIÓN 3: INSTRUCCIONES ESPECIALES -->
+                <!-- =========================================================== -->
+                <!-- 
+                    Este bloque solo aparece si hay instrucciones especiales
+                    (campo personalizado añadido en v2.0)
+                -->
+                <div t-if="o.instrucciones_especiales" class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <strong>Instrucciones Especiales:</strong><br/>
+                            <span t-field="o.instrucciones_especiales"/>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- =========================================================== -->
+                <!-- SECCIÓN 4: LÍNEAS DE FACTURA AGRUPADAS POR PEDIDO -->
+                <!-- =========================================================== -->
+                
+                <!-- Obtener lista de pedidos únicos relacionados con esta factura -->
                 <t t-set="sale_orders" t-value="o.invoice_line_ids.mapped('sale_line_ids.order_id')"/>
                 
-                <!-- Para cada pedido encontrado, mostramos sus líneas -->
-                <t t-foreach="sale_orders" t-as="order">
-                    <div class="order-container page-break-inside-avoid">
-                        <!-- Cabecera del pedido -->
-                        <div class="order-header">
-                            <div class="order-title">
-                                Pedido: <span t-field="order.name"/>
+                <!-- 
+                    Si hay pedidos relacionados, mostrar líneas agrupadas por pedido
+                    Esto mejora enormemente la legibilidad cuando una factura
+                    incluye productos de múltiples pedidos
+                -->
+                <t t-if="sale_orders">
+                    <t t-foreach="sale_orders" t-as="order">
+                        <div class="order-container page-break-inside-avoid mb-4">
+                            <!-- Cabecera del pedido -->
+                            <div class="order-header bg-secondary text-white p-2 rounded-top">
+                                <strong>Pedido: <span t-field="order.name"/></strong>
                                 <t t-if="order.client_order_ref">
-                                    <span class="order-ref-separator">-</span>
-                                    <span class="order-ref">Ref. Cliente: <t t-esc="order.client_order_ref"/></span>
+                                    <span class="ms-2">| Ref. Cliente: <span t-field="order.client_order_ref"/></span>
                                 </t>
                             </div>
-                        </div>
-                        
-                        <!-- Tabla de líneas para este pedido -->
-                        <table class="table table-sm invoice-lines-table">
-                            <thead>
-                                <tr>
-                                    <th>REF.</th>
-                                    <th>DESCRIPCIÓN</th>
-                                    <th class="text-end">CANTIDAD</th>
-                                    <th class="text-end">PRECIO</th>
-                                    <th class="text-end">IVA</th>
-                                    <th class="text-end">TOTAL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Filtrar líneas para este pedido -->
-                                <t t-foreach="o.invoice_line_ids.filtered(lambda l: l.sale_line_ids and l.sale_line_ids[0].order_id.id == order.id)" t-as="line">
-                                    <tr class="product-row">
-                                        <td>
-                                            <span t-field="line.product_id.default_code"/>
-                                        </td>
-                                        <td>
-                                            <div class="product-name">
-                                                <span t-field="line.product_id.name"/>
-                                            </div>
-                                            <t t-if="line.name != line.product_id.name">
-                                                <div class="product-description">
+                            
+                            <!-- Tabla de líneas de este pedido específico -->
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40%;">Descripción</th>
+                                        <th class="text-end" style="width: 10%;">Cantidad</th>
+                                        <th class="text-end" style="width: 15%;">Precio Unit.</th>
+                                        <th class="text-end" style="width: 15%;">Impuestos</th>
+                                        <th class="text-end" style="width: 20%;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 
+                                        Filtrar solo las líneas que pertenecen a este pedido
+                                        Esto usa el campo sale_line_ids que vincula líneas de factura
+                                        con líneas de pedido
+                                    -->
+                                    <t t-foreach="o.invoice_line_ids.filtered(lambda l: any(sl.order_id == order for sl in l.sale_line_ids))" 
+                                       t-as="line">
+                                        <!-- 
+                                            Omitir líneas de tipo sección o nota
+                                            (son solo títulos o comentarios, no productos)
+                                        -->
+                                        <t t-if="not line.display_type">
+                                            <tr>
+                                                <!-- Descripción del producto -->
+                                                <td>
+                                                    <strong><span t-field="line.product_id.name"/></strong>
+                                                    <!-- 
+                                                        Si la descripción de la línea es diferente al nombre del producto,
+                                                        mostrarla también (puede contener detalles adicionales)
+                                                    -->
+                                                    <div t-if="line.name != line.product_id.name" class="small text-muted">
+                                                        <span t-field="line.name"/>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- Cantidad -->
+                                                <td class="text-end">
+                                                    <span t-field="line.quantity"/>
+                                                    <!-- Mostrar unidad de medida si el usuario tiene permisos -->
+                                                    <span t-field="line.product_uom_id" groups="uom.group_uom"/>
+                                                </td>
+                                                
+                                                <!-- Precio unitario -->
+                                                <td class="text-end">
+                                                    <span t-field="line.price_unit" 
+                                                          t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                </td>
+                                                
+                                                <!-- Impuestos -->
+                                                <td class="text-end">
+                                                    <span t-if="line.tax_ids">
+                                                        <!-- 
+                                                            Mostrar nombres de impuestos separados por comas
+                                                            Ej: "IVA 21%, RE 5.2%"
+                                                        -->
+                                                        <t t-foreach="line.tax_ids" t-as="tax">
+                                                            <span t-field="tax.name"/><t t-if="not tax_last">, </t>
+                                                        </t>
+                                                    </span>
+                                                    <span t-else="">—</span>
+                                                </td>
+                                                
+                                                <!-- Subtotal de la línea -->
+                                                <td class="text-end">
+                                                    <span t-field="line.price_subtotal" 
+                                                          t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                        
+                                        <!-- 
+                                            Líneas de tipo sección o nota (si existen)
+                                            Se muestran ocupando toda la fila
+                                        -->
+                                        <t t-else="">
+                                            <tr>
+                                                <td colspan="5" 
+                                                    t-att-class="'font-weight-bold' if line.display_type == 'line_section' else 'font-italic'">
                                                     <span t-field="line.name"/>
-                                                </div>
-                                            </t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+                </t>
+                
+                <!-- 
+                    Si NO hay pedidos relacionados, mostrar todas las líneas sin agrupar
+                    (caso típico: factura creada manualmente o desde albarán)
+                -->
+                <t t-else="">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40%;">Descripción</th>
+                                <th class="text-end" style="width: 10%;">Cantidad</th>
+                                <th class="text-end" style="width: 15%;">Precio Unit.</th>
+                                <th class="text-end" style="width: 15%;">Impuestos</th>
+                                <th class="text-end" style="width: 20%;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="o.invoice_line_ids" t-as="line">
+                                <t t-if="not line.display_type">
+                                    <tr>
+                                        <td>
+                                            <strong><span t-field="line.product_id.name"/></strong>
+                                            <div t-if="line.name != line.product_id.name" class="small text-muted">
+                                                <span t-field="line.name"/>
+                                            </div>
                                         </td>
                                         <td class="text-end">
                                             <span t-field="line.quantity"/>
+                                            <span t-field="line.product_uom_id" groups="uom.group_uom"/>
                                         </td>
                                         <td class="text-end">
-                                            <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            <span t-field="line.price_unit" 
+                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
                                         </td>
                                         <td class="text-end">
-                                            <span t-esc="sum(tax.amount for tax in line.tax_ids)"/>%
+                                            <span t-if="line.tax_ids">
+                                                <t t-foreach="line.tax_ids" t-as="tax">
+                                                    <span t-field="tax.name"/><t t-if="not tax_last">, </t>
+                                                </t>
+                                            </span>
+                                            <span t-else="">—</span>
                                         </td>
                                         <td class="text-end">
-                                            <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            <span t-field="line.price_subtotal" 
+                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
                                         </td>
                                     </tr>
                                 </t>
-                                <!-- Dirección de envío si existe -->
-                                <t t-if="order.partner_shipping_id and order.partner_shipping_id != order.partner_id">
-                                    <tr class="shipping-address-row">
-                                        <td colspan="6">
-                                            <div class="shipping-address">
-                                                <t t-esc="order.partner_shipping_id.name"/>
-                                                <t t-if="order.partner_shipping_id.street">, <t t-esc="order.partner_shipping_id.street"/></t>
-                                                <t t-if="order.partner_shipping_id.city">, <t t-esc="order.partner_shipping_id.city"/></t>
-                                                <t t-if="order.partner_shipping_id.phone">, Tel: <t t-esc="order.partner_shipping_id.phone"/></t>
-                                            </div>
+                                <t t-else="">
+                                    <tr>
+                                        <td colspan="5" 
+                                            t-att-class="'font-weight-bold' if line.display_type == 'line_section' else 'font-italic'">
+                                            <span t-field="line.name"/>
                                         </td>
                                     </tr>
                                 </t>
-                            </tbody>
-                        </table>
-                    </div>
-                </t>
-                
-                <!-- Líneas sin pedido asociado -->
-                <t t-set="lines_without_order" t-value="o.invoice_line_ids.filtered(lambda l: not l.sale_line_ids and l.display_type not in ('line_section', 'line_note'))"/>
-                <t t-if="lines_without_order">
-                    <div class="order-container page-break-inside-avoid">
-                        <div class="order-header no-order">
-                            <div class="order-title">Otros artículos</div>
-                        </div>
-                        
-                        <table class="table table-sm invoice-lines-table">
-                            <thead>
-                                <tr>
-                                    <th>REF.</th>
-                                    <th>DESCRIPCIÓN</th>
-                                    <th class="text-end">CANTIDAD</th>
-                                    <th class="text-end">PRECIO</th>
-                                    <th class="text-end">IVA</th>
-                                    <th class="text-end">TOTAL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="lines_without_order" t-as="line">
-                                    <tr class="product-row">
-                                        <td>
-                                            <span t-field="line.product_id.default_code"/>
-                                        </td>
-                                        <td>
-                                            <div class="product-name">
-                                                <span t-field="line.product_id.name"/>
-                                            </div>
-                                            <t t-if="line.name != line.product_id.name">
-                                                <div class="product-description">
-                                                    <span t-field="line.name"/>
-                                                </div>
-                                            </t>
-                                        </td>
-                                        <td class="text-end">
-                                            <span t-field="line.quantity"/>
-                                        </td>
-                                        <td class="text-end">
-                                            <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                        </td>
-                                        <td class="text-end">
-                                            <span t-esc="sum(tax.amount for tax in line.tax_ids)"/>%
-                                        </td>
-                                        <td class="text-end">
-                                            <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                        </td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-                    </div>
-                </t>
-                
-                <!-- Instrucciones especiales -->
-                <div t-if="o.instrucciones_especiales" class="special-instructions mb-4">
-                    <strong>Instrucciones:</strong>
-                    <span t-field="o.instrucciones_especiales"/>
-                </div>
-                
-                <!-- Sección de totales -->
-                <div class="row totals-section page-break-inside-avoid">
-                    <div class="col-7">
-                        <div class="payment-info">
-                            <div class="payment-details">
-                              <strong>Comunicaciones de pago:</strong> 
-                              <span t-field="o.name"/> en esta cuenta:
-                              <t t-if="o.journal_id.bank_account_id">
-                                <t t-set="iban" t-value="o.journal_id.bank_account_id.acc_number"/>
-                                <t t-if="iban">
-                                  <t t-set="clean_iban" t-value="iban.replace(' ', '')"/>
-                                  <t t-if="len(clean_iban) >= 4 and clean_iban[:2].upper() == 'ES'">
-                                    <t t-esc="clean_iban[:4]"/> <t t-esc="clean_iban[4:8]"/> <t t-esc="clean_iban[8:12]"/> <t t-esc="clean_iban[12:14]"/> <t t-esc="clean_iban[14:]"/>
-                                  </t>
-                                  <t t-else="">
-                                    <t t-esc="iban"/>
-                                  </t>
-                                </t>
-                              </t>
-                              <t t-elif="o.company_id.partner_id.bank_ids">
-                                <t t-set="iban" t-value="o.company_id.partner_id.bank_ids[0].acc_number"/>
-                                <t t-if="iban">
-                                  <t t-set="clean_iban" t-value="iban.replace(' ', '')"/>
-                                  <t t-if="len(clean_iban) >= 4 and clean_iban[:2].upper() == 'ES'">
-                                    <t t-esc="clean_iban[:4]"/> <t t-esc="clean_iban[4:8]"/> <t t-esc="clean_iban[8:12]"/> <t t-esc="clean_iban[12:14]"/> <t t-esc="clean_iban[14:]"/>
-                                  </t>
-                                  <t t-else="">
-                                    <t t-esc="iban"/>
-                                  </t>
-                                </t>
-                              </t>
-                              <t t-else="">
-                                <span>No se ha configurado cuenta bancaria</span>
-                              </t>
-                            </div>
-                            <t t-if="o.company_id.website">
-                              <div class="terms-link">
-                                <strong>Términos y condiciones:</strong> 
-                                <span t-field="o.company_id.website"/>
-                              </div>
                             </t>
-                        </div>
+                        </tbody>
+                    </table>
+                </t>
+                
+                <!-- =========================================================== -->
+                <!-- SECCIÓN 5: TOTALES DE LA FACTURA -->
+                <!-- =========================================================== -->
+                <div class="row mt-4">
+                    <div class="col-7">
+                        <!-- 
+                            Espacio para notas fiscales o información adicional
+                            (puedes añadirlo si lo necesitas en el futuro)
+                        -->
                     </div>
+                    
+                    <!-- Columna derecha: Tabla de totales -->
                     <div class="col-5">
-                        <table class="table totals-table">
-                            <tr>
-                                <td class="totals-label">Base Imponible</td>
-                                <td class="totals-value">
-                                    <span t-field="o.amount_untaxed" t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="totals-label">IVA <t t-foreach="o.tax_totals['subtotals']" t-as="subtotal"><t t-esc="subtotal['name']"/></t></td>
-                                <td class="totals-value">
-                                    <t t-set="tax_amount" t-value="o.amount_total - o.amount_untaxed"/>
-                                    <span t-esc="tax_amount" t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                </td>
-                            </tr>
-                            <tr class="total-row">
-                                <td class="totals-label">Total</td>
-                                <td class="totals-value total-amount">
-                                    <span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                </td>
-                            </tr>
+                        <table class="table table-sm">
+                            <tbody>
+                                <!-- Base imponible -->
+                                <tr>
+                                    <td><strong>Base Imponible:</strong></td>
+                                    <td class="text-end">
+                                        <span t-field="o.amount_untaxed" 
+                                              t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                    </td>
+                                </tr>
+                                
+                                <!-- 
+                                    Desglose de impuestos
+                                    Muestra cada tipo de impuesto por separado
+                                    Ej: "IVA 21%: 100.00 €"
+                                -->
+                                <t t-foreach="o.amount_by_group" t-as="amount_by_group">
+                                    <tr>
+                                        <td>
+                                            <!-- Nombre del grupo de impuestos -->
+                                            <span t-esc="amount_by_group[0]"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <!-- Importe del impuesto -->
+                                            <span t-esc="amount_by_group[1]" 
+                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                
+                                <!-- Total con impuestos (línea destacada) -->
+                                <tr class="border-top border-dark">
+                                    <td class="text-uppercase"><strong>Total:</strong></td>
+                                    <td class="text-end">
+                                        <strong>
+                                            <span t-field="o.amount_total" 
+                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                        </strong>
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
                 
-                <!-- Aviso legal -->
-                <div class="legal-notice mt-5">
-                    Los datos de carácter personal serán tratados con la finalidad de gestionar la relación contractual derivada de la compra realizada.
-                    Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad enviando un correo electrónico.
+                <!-- =========================================================== -->
+                <!-- SECCIÓN 6: PIE DE PÁGINA CON NOTAS -->
+                <!-- =========================================================== -->
+                <!-- 
+                    Campo narration: notas al pie de la factura
+                    (diferente de instrucciones_especiales que aparece arriba)
+                -->
+                <div t-if="o.narration" class="row mt-4">
+                    <div class="col-12">
+                        <div class="border-top pt-3">
+                            <strong>Observaciones:</strong><br/>
+                            <span t-field="o.narration"/>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </t>
+                
+            </div><!-- Fin de page -->
+        </t><!-- Fin de external_layout -->
     </template>
+    
 </odoo>
