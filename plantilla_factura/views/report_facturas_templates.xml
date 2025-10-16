@@ -383,20 +383,21 @@
                                     Desglose de impuestos
                                     Muestra cada tipo de impuesto por separado
                                     Ej: "IVA 21%: 100.00 €"
+                                    
+                                    En Odoo 17, usamos amount_tax en lugar de amount_by_group
+                                    para mostrar el total de impuestos de forma simplificada
                                 -->
-                                <t t-foreach="o.amount_by_group" t-as="amount_by_group">
-                                    <tr>
-                                        <td>
-                                            <!-- Nombre del grupo de impuestos -->
-                                            <span t-esc="amount_by_group[0]"/>
-                                        </td>
-                                        <td class="text-end">
-                                            <!-- Importe del impuesto -->
-                                            <span t-esc="amount_by_group[1]" 
-                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                        </td>
-                                    </tr>
-                                </t>
+                                <tr t-if="o.amount_tax">
+                                    <td>
+                                        <!-- Mostrar el total de impuestos -->
+                                        <span>Impuestos</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <!-- Importe total de impuestos -->
+                                        <span t-field="o.amount_tax" 
+                                              t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                    </td>
+                                </tr>
                                 
                                 <!-- Total con impuestos (línea destacada) -->
                                 <tr class="border-top border-dark">
