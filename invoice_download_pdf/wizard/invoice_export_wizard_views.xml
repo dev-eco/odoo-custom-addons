@@ -6,10 +6,12 @@
         Esta vista se muestra cuando el usuario abre el wizard por primera vez.
         Permite configurar qué facturas exportar y con qué criterios.
         
-        ¿Por qué dividir en dos vistas (configuración y resultado)?
-        - Separa claramente el flujo: primero configuras, luego ves resultados
-        - Evita confusión mostrando solo campos relevantes en cada paso
-        - Mejora la experiencia de usuario con un flujo lógico y claro
+        ACTUALIZADO PARA ODOO 17.0
+        ==========================
+        - Eliminado el uso de attrs (deprecado en Odoo 17)
+        - Reemplazado por invisible, readonly, required directos
+        - Sintaxis más limpia y legible
+        - Mejor rendimiento en el navegador
     -->
     <record id="view_invoice_export_wizard_form" model="ir.ui.view">
         <field name="name">invoice.export.wizard.form</field>
@@ -17,33 +19,39 @@
         <field name="arch" type="xml">
             <form string="Exportar Facturas a ZIP">
                 <!-- 
-                    Estados del wizard usando attrs (attributes)
+                    Visibilidad condicional en Odoo 17
+                    ===================================
                     
-                    invisible: Controla la visibilidad de elementos basándose en campos
-                    Sintaxis: [('campo', 'operador', 'valor')]
+                    Sintaxis antigua (≤ Odoo 16):
+                    attrs="{'invisible': [('zip_file', '!=', False)]}"
                     
-                    ¿Por qué usar zip_file para controlar visibilidad?
-                    - zip_file solo tiene valor después de la exportación
-                    - Es un indicador perfecto de si ya se completó el proceso
-                    - Permite mostrar/ocultar secciones sin JavaScript complejo
+                    Sintaxis nueva (≥ Odoo 17):
+                    invisible="zip_file"
+                    
+                    Explicación de la lógica:
+                    - "zip_file" se evalúa como True cuando el campo tiene valor
+                    - "zip_file" se evalúa como False cuando el campo está vacío
+                    - "not zip_file" invierte la lógica
+                    
+                    Por lo tanto:
+                    - invisible="zip_file" = ocultar cuando zip_file tiene valor
+                    - invisible="not zip_file" = ocultar cuando zip_file está vacío
                 -->
                 
                 <!-- SECCIÓN 1: CONFIGURACIÓN (visible antes de exportar) -->
-                <group name="config_group" attrs="{'invisible': [('zip_file', '!=', False)]}">
+                <group name="config_group" invisible="zip_file">
                     <group string="Filtros de Exportación" colspan="4">
                         <!-- 
-                            Separadores (separator) ayudan a organizar visualmente
-                            Los grupos (group) dentro de grupos crean columnas automáticamente
+                            Separadores ayudan a organizar visualmente
+                            No necesitan atributos de visibilidad porque son estáticos
                         -->
                         <separator string="Tipos de Documento" colspan="2"/>
                         <group colspan="2">
                             <!-- 
-                                Checkboxes booleanos para seleccionar tipos
+                                Checkboxes booleanos para seleccionar tipos de facturas
                                 
-                                ¿Por qué separar en dos campos booleanos en vez de un selection?
-                                - Permite seleccionar ambos simultáneamente
-                                - Más intuitivo para usuarios no técnicos
-                                - Facilita validar que al menos uno esté marcado
+                                Estos campos no necesitan atributos condicionales porque
+                                siempre deben ser visibles y editables en la configuración
                             -->
                             <field name="include_customer_invoices"/>
                             <field name="include_vendor_bills"/>
@@ -52,12 +60,10 @@
                         <separator string="Rango de Fechas (Opcional)" colspan="2"/>
                         <group colspan="2">
                             <!-- 
-                                Campos de fecha con widget="date"
+                                Campos de fecha con widget especial
                                 
-                                ¿Por qué widget="date"?
-                                - Muestra un calendario visual para seleccionar fechas
-                                - Previene errores de formato manual
-                                - Mejora usabilidad en móviles y tablets
+                                widget="date" proporciona un selector de calendario visual
+                                Mejora la experiencia de usuario y previene errores de formato
                             -->
                             <field name="date_from" widget="date"/>
                             <field name="date_to" widget="date"/>
@@ -66,21 +72,30 @@
                         <separator string="Estado de las Facturas" colspan="2"/>
                         <group colspan="2">
                             <!-- 
-                                Selection field con opciones predefinidas
+                                Selection field con widget de radio buttons
                                 
-                                widget="radio" vs selector dropdown:
-                                - Radio buttons son más visibles (todas opciones a la vista)
-                                - Dropdown requiere click para ver opciones
-                                - Radio es mejor para 2-4 opciones, dropdown para más
+                                widget="radio" muestra todas las opciones visible
+                                Mejor UX para 2-4 opciones vs un dropdown
                             -->
                             <field name="state" widget="radio"/>
                         </group>
                         
+                        <!-- 
+                            Separador y grupo condicionales para facturas preseleccionadas
+                            
+                            Sintaxis Odoo 17 para listas vacías:
+                            - invoice_ids es un Many2many field
+                            - Se evalúa como False cuando la lista está vacía
+                            - Se evalúa como True cuando tiene elementos
+                            
+                            Por lo tanto:
+                            - invisible="not invoice_ids" = ocultar si lista vacía
+                        -->
                         <separator string="Facturas Preseleccionadas" colspan="2" 
-                                   attrs="{'invisible': [('invoice_ids', '=', [])]}"/>
-                        <group colspan="2" attrs="{'invisible': [('invoice_ids', '=', [])]}">
+                                   invisible="not invoice_ids"/>
+                        <group colspan="2" invisible="not invoice_ids">
                             <!-- 
-                                Campo Many2many con tree view
+                                Campo Many2many con tree view embebida
                                 
                                 Muestra las facturas que el usuario seleccionó previamente
                                 desde la vista de lista antes de abrir el wizard.
@@ -94,9 +109,8 @@
                                         create="false": Usuario no puede crear facturas desde aquí
                                         delete="true": Usuario puede quitar facturas de la selección
                                         
-                                        ¿Por qué permitir delete pero no create?
-                                        - Delete permite refinar la selección
-                                        - Create no tiene sentido (no estás creando facturas, solo seleccionando)
+                                        Esta configuración permite refinar la selección pero no
+                                        añadir nuevas facturas (lo cual no tendría sentido aquí)
                                     -->
                                     <field name="name" string="Número"/>
                                     <field name="partner_id" string="Cliente/Proveedor"/>
@@ -108,16 +122,17 @@
                         </group>
                     </group>
                     
-                    <!-- Nota informativa para el usuario -->
+                    <!-- Nota informativa para el usuario usando Bootstrap alerts -->
                     <group colspan="4">
                         <div class="alert alert-info" role="alert">
                             <!-- 
-                                Usar clases Bootstrap en Odoo
+                                Clases Bootstrap en Odoo
                                 
-                                Odoo incluye Bootstrap por defecto, por lo que puedes usar:
-                                - alert, alert-info, alert-warning, alert-danger
-                                - btn, btn-primary, btn-secondary
-                                - row, col-md-6, etc.
+                                Odoo incluye Bootstrap CSS por defecto, permitiendo usar:
+                                - alert, alert-info (info azul)
+                                - alert-warning (advertencia amarilla)
+                                - alert-danger (error rojo)
+                                - alert-success (éxito verde)
                                 
                                 Esto mantiene consistencia visual con el resto de Odoo
                             -->
@@ -131,26 +146,37 @@
                 </group>
 
                 <!-- SECCIÓN 2: RESULTADO (visible después de exportar) -->
-                <group name="result_group" attrs="{'invisible': [('zip_file', '=', False)]}">
+                <!-- 
+                    Lógica de visibilidad invertida:
+                    - config_group: invisible="zip_file" (ocultar cuando hay zip)
+                    - result_group: invisible="not zip_file" (ocultar cuando no hay zip)
+                    
+                    Esto crea un efecto de "swap": cuando termina la exportación,
+                    la sección de configuración desaparece y la de resultado aparece
+                -->
+                <group name="result_group" invisible="not zip_file">
                     <group string="Exportación Completada" colspan="4">
                         <!-- 
-                            Campo de información readonly
+                            Campo de información con contador de facturas
                             
-                            ¿Por qué mostrar export_count?
-                            - Da feedback inmediato al usuario
-                            - Permite verificar que se exportaron todas las facturas esperadas
-                            - Es información útil para auditoría/logs
+                            readonly="1" es la sintaxis correcta en Odoo 17
+                            Ya no se usa attrs="{'readonly': True}"
+                            
+                            El "1" es equivalente a True en XML (herencia de HTML)
                         -->
                         <field name="export_count" readonly="1" 
                                string="Facturas Exportadas"/>
                         
                         <!-- 
-                            Campo binario con nombre de archivo
+                            Campo binario para descarga del archivo ZIP
                             
-                            filename es especial en Odoo:
-                            - Define el nombre del archivo al descargar
-                            - Sin filename, el navegador usa un nombre genérico
-                            - El campo debe existir en el modelo (zip_filename)
+                            Atributos importantes:
+                            - filename="zip_filename": Define el nombre de descarga
+                            - readonly="1": No editable (es solo para descarga)
+                            - invisible="1" para zip_filename: Campo auxiliar oculto
+                            
+                            El campo zip_filename debe existir y contener el nombre
+                            del archivo, pero no necesita ser visible al usuario
                         -->
                         <field name="zip_filename" invisible="1"/>
                         <field name="zip_file" filename="zip_filename" 
@@ -160,6 +186,13 @@
                     <!-- Mensaje de éxito con estilo Bootstrap -->
                     <group colspan="4">
                         <div class="alert alert-success" role="alert">
+                            <!-- 
+                                Alert de éxito (verde) para indicar completitud
+                                
+                                Noticia: En este div podemos embeber fields inline
+                                usando class="oe_inline" para que aparezcan dentro
+                                del texto sin romper el flujo visual
+                            -->
                             <strong>¡Exportación exitosa!</strong><br/>
                             Se han exportado 
                             <field name="export_count" readonly="1" class="oe_inline"/> 
@@ -173,51 +206,59 @@
                     FOOTER CON BOTONES
                     
                     El footer contiene los botones de acción del wizard.
-                    Se muestra siempre (no tiene attrs de visibilidad).
-                    
-                    ¿Por qué usar footer en vez de poner botones en el header?
-                    - Convención de UX: botones de acción al final del formulario
-                    - El usuario completa campos de arriba hacia abajo
-                    - Botones abajo = flujo natural de lectura/completado
+                    La visibilidad de botones también usa la nueva sintaxis de Odoo 17.
                 -->
                 <footer>
                     <!-- 
-                        Botón de exportación (antes de exportar)
+                        Botón de exportación (visible antes de exportar)
+                        
+                        Cambio en Odoo 17:
+                        Antiguo: attrs="{'invisible': [('zip_file', '!=', False)]}"
+                        Nuevo: invisible="zip_file"
+                        
+                        Lógica:
+                        - Cuando zip_file está vacío (False), el botón es visible
+                        - Cuando zip_file tiene valor (True), el botón se oculta
                         
                         class="btn-primary": Botón azul destacado (acción principal)
                         type="object": Llama a un método Python del modelo
                         name: Nombre del método a ejecutar
-                        
-                        ¿Por qué invisible cuando zip_file tiene valor?
-                        - Una vez exportado, no necesitas el botón de exportar
-                        - En su lugar aparece el botón "Cerrar"
                     -->
                     <button name="action_export_invoices" 
                             string="Exportar Facturas" 
                             type="object" 
                             class="btn-primary"
-                            attrs="{'invisible': [('zip_file', '!=', False)]}"/>
+                            invisible="zip_file"/>
                     
                     <!-- 
-                        Botón de cerrar (después de exportar)
+                        Botón "Cerrar" (visible después de exportar)
                         
-                        special="cancel": Cierra el wizard sin ejecutar nada
+                        special="cancel": Cierra el wizard sin ejecutar nada más
                         class="btn-secondary": Botón gris (acción secundaria)
                         
-                        ¿Por qué cambiar el texto según el estado?
-                        - "Cancelar" antes de exportar (aún puedes cancelar la acción)
-                        - "Cerrar" después de exportar (ya completaste, solo cierras)
-                        - Mejora la comunicación del estado del wizard
+                        Lógica invertida del botón anterior:
+                        - Solo visible cuando zip_file tiene valor
+                        - Se oculta antes de la exportación
                     -->
                     <button string="Cerrar" 
                             special="cancel" 
                             class="btn-secondary"
-                            attrs="{'invisible': [('zip_file', '=', False)]}"/>
+                            invisible="not zip_file"/>
                     
+                    <!-- 
+                        Botón "Cancelar" (visible antes de exportar)
+                        
+                        Este botón aparece en la misma posición que "Cerrar"
+                        pero con texto diferente para reflejar el estado del wizard:
+                        - "Cancelar": Antes de exportar (cancelas la acción)
+                        - "Cerrar": Después de exportar (solo cierras el wizard)
+                        
+                        Este cambio de texto mejora la claridad comunicativa
+                    -->
                     <button string="Cancelar" 
                             special="cancel" 
                             class="btn-secondary"
-                            attrs="{'invisible': [('zip_file', '!=', False)]}"/>
+                            invisible="zip_file"/>
                 </footer>
             </form>
         </field>
@@ -227,14 +268,12 @@
         ACCIÓN DE VENTANA
         
         Define cómo se abre el wizard cuando el usuario lo invoca.
-        Las acciones de ventana son el pegamento entre botones/menús y vistas.
+        No requiere cambios para Odoo 17 porque no usa attrs.
         
-        ¿Qué hace cada atributo?
-        - res_model: El modelo que maneja esta ventana
-        - view_mode: Qué tipo de vista usar (form, tree, kanban, etc.)
-        - target: Dónde abrir (new=modal, current=misma ventana, main=nueva pestaña)
-        - binding_model: Modelo donde aparecerá la acción (en menú contextual)
-        - binding_views: Desde qué vistas está disponible (list=vista lista, form=formulario)
+        Atributos clave:
+        - target="new": Abre en modal (ventana overlay)
+        - binding_model_id: En qué modelo aparece esta acción
+        - binding_view_types: Desde qué vistas está disponible
     -->
     <record id="action_invoice_export_wizard" model="ir.actions.act_window">
         <field name="name">Exportar Facturas a ZIP</field>
@@ -242,48 +281,29 @@
         <field name="view_mode">form</field>
         <field name="target">new</field>
         <!-- 
-            target="new" vs "current" vs "main"
-            
-            new: Modal overlay (el fondo se oscurece, ventana encima)
-            - Mejor para wizards y acciones rápidas
+            target="new" crea un modal overlay:
+            - El fondo se oscurece
+            - Ventana aparece centrada encima
             - Usuario mantiene contexto de lo que estaba haciendo
-            - No se pierde el scroll/estado de la vista anterior
-            
-            current: Reemplaza vista actual
-            - Para navegación principal entre módulos
-            - Permite navegar con breadcrumbs
-            
-            main: Nueva pestaña del navegador
-            - Para abrir reportes o vistas independientes
-            - Usuario puede comparar con otras pestañas
+            - Ideal para wizards y acciones rápidas
         -->
         <field name="binding_model_id" ref="account.model_account_move"/>
         <field name="binding_view_types">list</field>
         <!-- 
-            binding_view_types="list"
-            
-            Significa que la acción aparece cuando estás en:
-            - Vista de lista de facturas (tree view)
-            - En el menú "Acción" cuando seleccionas facturas
-            
-            También podrías usar "form" para que aparezca en vista formulario,
-            pero para exportación múltiple, list es más apropiado.
+            binding_view_types="list" significa:
+            - La acción aparece en la vista de lista de facturas
+            - Se accede desde el menú "Acción" al seleccionar facturas
+            - No aparece en vista de formulario (no tendría sentido ahí)
         -->
     </record>
 
     <!-- 
-        ÍTEM DE MENÚ (OPCIONAL)
+        ÍTEM DE MENÚ
         
-        Esto añade un enlace en el menú principal de Odoo.
-        Es opcional porque ya tenemos binding en la vista de lista.
+        Añade un enlace en el menú principal de Odoo.
+        Complementa el binding en la vista de lista.
         
-        ¿Cuándo usar menú vs binding?
-        - Binding: Acción contextual (aparece cuando tiene sentido)
-        - Menú: Acceso directo permanente desde navegación principal
-        
-        En este caso, ambos son útiles:
-        - Binding: Usuario selecciona facturas y exporta directamente
-        - Menú: Usuario entra al wizard para usar filtros avanzados
+        Ubicación: Contabilidad > Informes > Exportar Facturas
     -->
     <menuitem id="menu_invoice_export_wizard"
               name="Exportar Facturas"
@@ -291,18 +311,10 @@
               action="action_invoice_export_wizard"
               sequence="100"/>
     <!-- 
-        parent="account.menu_finance_reports"
-        
-        Esto coloca el menú dentro de:
-        Contabilidad > Informes > Exportar Facturas
-        
-        sequence="100" lo coloca al final de la lista (números bajos van primero)
-        
-        Otras ubicaciones comunes:
-        - account.menu_finance: Directamente en menú Contabilidad
-        - account.menu_finance_entries: En sección de Asientos
-        - account.menu_finance_receivables: En Clientes
-        - account.menu_finance_payables: En Proveedores
+        sequence="100": Coloca al final de la lista
+        - Números bajos (1-10) van al inicio
+        - Números altos (90-100) van al final
+        - Permite controlar el orden sin modificar otros menús
     -->
 
 </odoo>

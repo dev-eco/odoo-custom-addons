@@ -6,6 +6,12 @@
         Este archivo hereda (inherit) de la vista existente de facturas en Odoo
         y le añade elementos adicionales sin modificar el core del sistema.
         
+        ACTUALIZADO PARA ODOO 17.0
+        ==========================
+        - Eliminado el uso de attrs (deprecado en Odoo 17)
+        - Reemplazado por sintaxis directa de atributos
+        - Compatible con la nueva arquitectura de vistas de Odoo 17
+        
         ¿Por qué usar herencia de vistas?
         - No modifica el módulo base de Odoo (mantiene actualizabilidad)
         - Compatible con otros módulos que también hereden la misma vista
@@ -55,6 +61,10 @@
                     - Son visibles sin necesidad de abrir el menú "Acción"
                     - Más descubribles e intuitivos para el usuario
                     - Especialmente útiles para acciones frecuentes
+                    
+                    NOTA IMPORTANTE: Los header buttons en tree views NO necesitan
+                    atributos de visibilidad condicional porque Odoo automáticamente
+                    los muestra/oculta según si hay registros seleccionados.
                 -->
                 <header>
                     <button name="%(action_invoice_export_wizard)s" 
@@ -66,66 +76,108 @@
                         Desglose del botón:
                         
                         name="%(action_invoice_export_wizard)s"
+                        ========================================
                         - Los %() son sintaxis especial de Odoo para referencias XML
                         - Permite referenciar un registro por su ID XML
                         - En runtime se resuelve al ID de base de datos real
                         - La 's' al final es parte de la sintaxis, no un typo
                         
                         type="action"
+                        =============
                         - Indica que el botón ejecuta una acción (ir.actions.act_window)
                         - Odoo buscará la acción especificada en 'name' y la ejecutará
                         - Diferente de type="object" que llama un método Python
+                        - Diferente de type="workflow" (deprecado en Odoo 11+)
                         
                         string con emoji 📦
+                        ==================
                         - Los emojis son totalmente compatibles en Odoo 17
                         - Hacen los botones más visuales y reconocibles
                         - Especialmente útil cuando hay muchos botones similares
-                        - Puedes usar cualquier emoji Unicode
+                        - Puedes usar cualquier emoji Unicode estándar
+                        - Alternativas: 🗜️ (compresión), 📁 (carpeta), 💾 (guardar)
                         
                         class="btn-primary"
+                        ===================
                         - Botón azul destacado (acción principal)
-                        - Otras opciones: btn-secondary, btn-success, btn-danger
-                        - Usa btn-primary para la acción más importante
+                        - Otras opciones disponibles:
+                          * btn-secondary: Botón gris (acción secundaria)
+                          * btn-success: Botón verde (éxito/confirmación)
+                          * btn-danger: Botón rojo (eliminación/acción destructiva)
+                          * btn-warning: Botón amarillo (advertencia)
+                          * btn-info: Botón azul claro (información)
+                        - Usa btn-primary para la acción más importante del contexto
                         
-                        help
-                        - Texto que aparece al pasar el mouse (tooltip)
-                        - Proporciona contexto adicional sin saturar la UI
+                        help (tooltip)
+                        ==============
+                        - Texto que aparece al pasar el mouse sobre el botón
+                        - Proporciona contexto adicional sin saturar la interfaz
                         - Importante para accesibilidad y usabilidad
+                        - Debe ser conciso pero descriptivo
+                        - En español, usar lenguaje claro y directo
                     -->
                 </header>
             </xpath>
             
             <!--
-                Alternativa: Botón en la vista de formulario individual
+                ALTERNATIVA: Botón en la vista de formulario individual
                 
                 Si descomentas este XPath, también aparecerá un botón cuando
-                abras una factura individual. Útil si quieres exportar una
-                factura específica sin ir a la vista de lista.
+                abras una factura individual en vista de formulario. 
+                
+                Útil si quieres exportar una factura específica directamente
+                desde su formulario sin ir a la vista de lista.
                 
                 Lo dejo comentado porque para exportación individual, Odoo
                 ya tiene el botón "Imprimir" que genera el PDF. Este módulo
-                está más enfocado en exportación masiva.
+                está más enfocado en exportación masiva (múltiples facturas).
+                
+                Sin embargo, si deseas añadirlo, simplemente descomenta el
+                bloque siguiente y ajusta según necesites.
             -->
             <!--
             <xpath expr="//form//header" position="inside">
+                <!- -
+                    Botón para exportar desde vista de formulario individual
+                    
+                    ACTUALIZADO PARA ODOO 17:
+                    - Sintaxis antigua: attrs="{'invisible': [('state', '!=', 'posted')]}"
+                    - Sintaxis nueva: invisible="state != 'posted'"
+                    
+                    Explicación de la lógica condicional:
+                    =====================================
+                    - state != 'posted' significa "estado diferente de publicado"
+                    - invisible="state != 'posted'" oculta el botón si NO está publicado
+                    - Es decir, solo muestra el botón en facturas publicadas
+                    
+                    ¿Por qué solo en facturas publicadas?
+                    ======================================
+                    - Las facturas en borrador pueden no tener PDF generado aún
+                    - Exportar borradores podría confundir (no son documentos oficiales)
+                    - Las empresas normalmente solo envían facturas confirmadas a asesorías
+                    - Los borradores están sujetos a cambios, no son documentos finales
+                    
+                    Si necesitas permitir exportar borradores también:
+                    ==================================================
+                    Opción 1: Quitar el atributo invisible completamente
+                    Opción 2: Cambiar a invisible="state not in ['draft', 'posted']"
+                    Opción 3: Añadir lógica en Python para manejar borradores especialmente
+                - ->
                 <button name="%(action_invoice_export_wizard)s"
                         type="action"
                         string="Exportar esta Factura"
-                        attrs="{'invisible': [('state', '!=', 'posted')]}"
+                        invisible="state != 'posted'"
                         class="btn-secondary"/>
+                <!- -
+                    Nota sobre class="btn-secondary":
+                    ==================================
+                    Aquí uso btn-secondary (gris) en vez de btn-primary (azul) porque:
+                    - En el formulario ya hay botones principales (Confirmar, Enviar, etc.)
+                    - Esta acción de exportar es secundaria en este contexto
+                    - Mantiene jerarquía visual: acciones principales destacan más
+                    - Evita que todos los botones sean azules (confusión visual)
+                - ->
             </xpath>
-            -->
-            <!--
-                ¿Por qué hacerlo invisible si state != 'posted'?
-                
-                - Las facturas en borrador pueden no tener PDF generado aún
-                - Exportar borradores podría confundir (no son documentos oficiales)
-                - Solo facturas confirmadas/publicadas deberían exportarse normalmente
-                
-                Si necesitas exportar borradores, puedes:
-                1. Quitar el atributo attrs completamente
-                2. Cambiar a ('state', 'in', ['draft', 'posted'])
-                3. Manejar la generación de PDF para borradores en el código Python
             -->
         </field>
     </record>
@@ -136,7 +188,15 @@
         Si tu empresa usa vistas pivot o graph para análisis de facturas,
         podrías querer añadir el botón de exportación también ahí.
         
-        Ejemplo de cómo hacerlo:
+        Las vistas pivot y graph son útiles para análisis y reportería:
+        - Pivot: Tabla dinámica con agrupaciones y totales
+        - Graph: Gráficos de barras, líneas, pastel, etc.
+        
+        Aunque no es común exportar desde estas vistas (se usan más para
+        visualización que para gestión de documentos), incluyo un ejemplo
+        por si tu caso de uso lo requiere.
+        
+        Para activarlo, simplemente descomenta el bloque siguiente.
     -->
     <!--
     <record id="view_account_move_pivot_inherit" model="ir.ui.view">
@@ -144,32 +204,105 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_invoice_pivot"/>
         <field name="arch" type="xml">
+            <!- -
+                Modificar atributos de la vista pivot
+                
+                position="attributes" permite cambiar atributos del elemento
+                sin modificar su contenido interno
+            - ->
             <xpath expr="//pivot" position="attributes">
+                <!- -
+                    Cambiar el título de la vista para indicar funcionalidad añadida
+                    
+                    attribute name="string" cambia el atributo "string"
+                    Es útil para indicar visualmente que esta vista tiene
+                    capacidades adicionales (exportación en este caso)
+                - ->
                 <attribute name="string">Facturas con Exportación</attribute>
             </xpath>
+            
+            <!- -
+                Opcional: Añadir botón de exportación en la vista pivot
+                
+                Nota: Los botones en vistas pivot funcionan diferente que en tree
+                Requieren configuración adicional y no es tan común su uso
+                
+                Si lo necesitas, consulta la documentación de Odoo sobre
+                botones en vistas analíticas (pivot/graph)
+            - ->
         </field>
     </record>
     -->
 
     <!--
-        MEJORA FUTURA: Smart Button en el formulario de cliente
+        MEJORA FUTURA: Smart Button en el formulario de cliente/proveedor
         
         Una mejora potencial sería añadir un smart button en la vista de
-        partners (clientes/proveedores) que permita exportar todas sus
-        facturas de golpe.
+        partners (res.partner) que permita exportar todas las facturas de
+        ese cliente o proveedor de golpe.
         
-        Ejemplo de cómo se vería:
+        Visualización del Smart Button:
+        ================================
+        En la parte superior del formulario de cliente aparecería:
         
-        [  📦  ]
-        [ ZIP  ]
+        ┌──────────┐
+        │    📦    │
+        │   Exportar│
+        │ Facturas │
+        │    15    │
+        └──────────┘
         
-        Este botón mostraría el número de facturas del cliente y al hacer
-        clic, abriría el wizard preconfigurado con ese cliente.
+        El número (15) mostraría cuántas facturas tiene ese partner
         
-        Para implementarlo necesitarías:
-        1. Computed field en res.partner contando sus facturas
-        2. Acción que abra el wizard con domain filtrado por ese partner
-        3. Widget="statinfo" en la vista del partner
+        ¿Cómo implementarlo?
+        ====================
+        
+        1. Añadir campo computed en res.partner:
+        
+        invoice_count = fields.Integer(
+            string='Número de Facturas',
+            compute='_compute_invoice_count'
+        )
+        
+        @api.depends('invoice_ids')
+        def _compute_invoice_count(self):
+            for partner in self:
+                partner.invoice_count = len(partner.invoice_ids)
+        
+        2. Añadir acción que abra el wizard preconfigurado:
+        
+        def action_export_partner_invoices(self):
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Exportar Facturas',
+                'res_model': 'invoice.export.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_invoice_ids': self.invoice_ids.ids
+                }
+            }
+        
+        3. Añadir el botón en la vista XML:
+        
+        <xpath expr="//div[@name='button_box']" position="inside">
+            <button class="oe_stat_button" 
+                    type="object" 
+                    name="action_export_partner_invoices"
+                    icon="fa-download">
+                <field name="invoice_count" widget="statinfo" 
+                       string="Facturas"/>
+            </button>
+        </xpath>
+        
+        Esta funcionalidad sería muy útil para:
+        ========================================
+        - Auditorías de cliente específico
+        - Enviar historial completo a un cliente
+        - Análisis de relación comercial con un proveedor
+        - Preparar documentación para reclamaciones o disputas
+        
+        Si deseas implementar esto, puedo ayudarte a desarrollarlo completamente.
     -->
 
 </odoo>
