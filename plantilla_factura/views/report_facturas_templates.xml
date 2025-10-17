@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Plantilla contenedora principal -->
+    <template id="report_factura_personalizada">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="plantilla_factura.report_factura_documento" t-lang="o.partner_id.lang"/>
+            </t>
+        </t>
+    </template>
+    
+    <!-- Plantilla del documento de factura -->
+    <template id="report_factura_documento">
+        <t t-call="web.external_layout">
+            <t t-set="o" t-value="o.with_context(lang=lang)" />
+            <t t-set="currency" t-value="o.currency_id" />
+            
+            <div class="page invoice-page">
+                <!-- Cabecera con información básica -->
+                <div class="row invoice-header mb-4">
+                    <div class="col-7">
+                        <h2 class="invoice-title">Factura <span t-field="o.name"/></h2>
+                        <div class="invoice-date">Fecha: <span t-field="o.invoice_date"/></div>
+                    </div>
+                    <div class="col-5" t-if="o.referencia_cliente">
+                        <div class="client-ref-box">
+                            <div class="ref-label">Referencia Cliente</div>
+                            <div class="ref-value" t-field="o.referencia_cliente"/>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información del cliente -->
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="info-box">
+                            <div class="box-title">CLIENTE</div>
+                            <div class="client-name" t-field="o.partner_id.name"/>
+                            <div t-if="o.partner_id.vat">NIF/CIF: <span t-field="o.partner_id.vat"/></div>
+                            <div t-if="o.partner_id.street" t-field="o.partner_id.street"/>
+                            <div t-if="o.partner_id.street2" t-field="o.partner_id.street2"/>
+                            <div>
+                                <span t-if="o.partner_id.zip" t-field="o.partner_id.zip"/> 
+                                <span t-if="o.partner_id.city" t-field="o.partner_id.city"/>
+                                <span t-if="o.partner_id.state_id">(<span t-field="o.partner_id.state_id.name"/>)</span>
+                            </div>
+                            <div t-if="o.partner_id.country_id" t-field="o.partner_id.country_id.name"/>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="info-box">
+                            <table class="table table-sm info-details-table">
+                                <tr t-if="o.pedidos_relacionados">
+                                    <td class="field-label">Albarán:</td>
+                                    <td class="field-value"><span t-field="o.pedidos_relacionados"/></td>
+                                </tr>
+                                <tr t-if="o.invoice_date_due">
+                                    <td class="field-label">Fecha Vencimiento:</td>
+                                    <td class="field-value"><span t-field="o.invoice_date_due"/></td>
+                                </tr>
+                                <tr t-if="o.invoice_payment_term_id">
+                                    <td class="field-label">Forma de pago:</td>
+                                    <td class="field-value"><span t-field="o.invoice_payment_term_id.name"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agrupamos pedidos -->
+                <t t-set="sale_orders" t-value="o.invoice_line_ids.mapped('sale_line_ids.order_id')"/>
+                
+                <!-- Para cada pedido encontrado, mostramos sus líneas -->
+                <t t-foreach="sale_orders" t-as="order">
+                    <div class="order-container page-break-inside-avoid">
+                        <!-- Cabecera del pedido -->
+                        <div class="order-header">
+                            <div class="order-title">
+                                Pedido: <span t-field="order.name"/>
+                                <t t-if="order.client_order_ref">
+                                    <span class="order-ref-separator">-</span>
+                                    <span class="order-ref">Ref. Cliente: <t t-esc="order.client_order_ref"/></span>
+                                </t>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabla de líneas para este pedido -->
+                        <table class="table table-sm invoice-lines-table">
+                            <thead>
+                                <tr>
+                                    <th>REF.</th>
+                                    <th>DESCRIPCIÓN</th>
+                                    <th class="text-end">CANTIDAD</th>
+                                    <th class="text-end">PRECIO</th>
+                                    <th class="text-end">IVA</th>
+                                    <th class="text-end">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Filtrar líneas para este pedido -->
+                                <t t-foreach="o.invoice_line_ids.filtered(lambda l: l.sale_line_ids and l.sale_line_ids[0].order_id.id == order.id)" t-as="line">
+                                    <tr class="product-row">
+                                        <td>
+                                            <span t-field="line.product_id.default_code"/>
+                                        </td>
+                                        <td>
+                                            <div class="product-name">
+                                                <span t-field="line.product_id.name"/>
+                                            </div>
+                                            <t t-if="line.name != line.product_id.name">
+                                                <div class="product-description">
+                                                    <span t-field="line.name"/>
+                                                </div>
+                                            </t>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.quantity"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-esc="sum(tax.amount for tax in line.tax_ids)"/>%
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <!-- Dirección de envío si existe -->
+                                <t t-if="order.partner_shipping_id and order.partner_shipping_id != order.partner_id">
+                                    <tr class="shipping-address-row">
+                                        <td colspan="6">
+                                            <div class="shipping-address">
+                                                <t t-esc="order.partner_shipping_id.name"/>
+                                                <t t-if="order.partner_shipping_id.street">, <t t-esc="order.partner_shipping_id.street"/></t>
+                                                <t t-if="order.partner_shipping_id.city">, <t t-esc="order.partner_shipping_id.city"/></t>
+                                                <t t-if="order.partner_shipping_id.phone">, Tel: <t t-esc="order.partner_shipping_id.phone"/></t>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+                
+                <!-- Líneas sin pedido asociado -->
+                <t t-set="lines_without_order" t-value="o.invoice_line_ids.filtered(lambda l: not l.sale_line_ids and l.display_type not in ('line_section', 'line_note'))"/>
+                <t t-if="lines_without_order">
+                    <div class="order-container page-break-inside-avoid">
+                        <div class="order-header no-order">
+                            <div class="order-title">Otros artículos</div>
+                        </div>
+                        
+                        <table class="table table-sm invoice-lines-table">
+                            <thead>
+                                <tr>
+                                    <th>REF.</th>
+                                    <th>DESCRIPCIÓN</th>
+                                    <th class="text-end">CANTIDAD</th>
+                                    <th class="text-end">PRECIO</th>
+                                    <th class="text-end">IVA</th>
+                                    <th class="text-end">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="lines_without_order" t-as="line">
+                                    <tr class="product-row">
+                                        <td>
+                                            <span t-field="line.product_id.default_code"/>
+                                        </td>
+                                        <td>
+                                            <div class="product-name">
+                                                <span t-field="line.product_id.name"/>
+                                            </div>
+                                            <t t-if="line.name != line.product_id.name">
+                                                <div class="product-description">
+                                                    <span t-field="line.name"/>
+                                                </div>
+                                            </t>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.quantity"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-esc="sum(tax.amount for tax in line.tax_ids)"/>%
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+                
+                <!-- Instrucciones especiales -->
+                <div t-if="o.instrucciones_especiales" class="special-instructions mb-4">
+                    <strong>Instrucciones:</strong>
+                    <span t-field="o.instrucciones_especiales"/>
+                </div>
+                
+                <!-- Sección de totales -->
+                <div class="row totals-section page-break-inside-avoid">
+                    <div class="col-7">
+                        <div class="payment-info">
+                            <div class="payment-details">
+                                <strong>Comunicaciones de pago:</strong> 
+                                <span t-field="o.name"/> en esta cuenta: ES34 0049 0357 1923 1175 4728
+                            </div>
+                            <div class="terms-link">
+                                <strong>Términos y condiciones:</strong> 
+                                <span>https://ecocaucho.org</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-5">
+                        <table class="table totals-table">
+                            <tr>
+                                <td class="totals-label">Base Imponible</td>
+                                <td class="totals-value">
+                                    <span t-field="o.amount_untaxed" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="totals-label">IVA <t t-foreach="o.tax_totals['subtotals']" t-as="subtotal"><t t-esc="subtotal['name']"/></t></td>
+                                <td class="totals-value">
+                                    <t t-set="tax_amount" t-value="o.amount_total - o.amount_untaxed"/>
+                                    <span t-esc="tax_amount" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                </td>
+                            </tr>
+                            <tr class="total-row">
+                                <td class="totals-label">Total</td>
+                                <td class="totals-value total-amount">
+                                    <span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Aviso legal -->
+                <div class="legal-notice mt-5">
+                    Los datos de carácter personal serán tratados con la finalidad de gestionar la relación contractual derivada de la compra realizada.
+                    Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad enviando un correo electrónico.
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
