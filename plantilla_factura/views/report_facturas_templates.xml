@@ -2,17 +2,16 @@
 <odoo>
     <!--
         ============================================================================
-        PLANTILLA QWEB PARA REPORTE DE FACTURAS PERSONALIZADO - ECOCAUCHO v2.3
+        PLANTILLA DE FACTURA ECOCAUCHO v3.0 - VERSIÓN SIMPLIFICADA Y ROBUSTA
         ============================================================================
         
-        VERSIÓN DEFINITIVA: Solución al problema de líneas vacías
+        Esta versión elimina la agrupación compleja por pedidos que causaba
+        problemas de renderizado. Ahora muestra todas las líneas directamente
+        en una sola tabla, lo cual es más simple, más confiable, y más rápido.
         
-        Cambios críticos en esta versión:
-        - Método alternativo de agrupación por pedido más robusto
-        - Uso estratégico de t-field vs t-esc
-        - Validaciones exhaustivas en cada paso
-        - Fallbacks para asegurar que siempre se muestren datos
-        
+        La información de pedidos relacionados sigue visible en:
+        - El campo "Pedidos Relacionados" en la cabecera de la factura
+        - El campo calculado de cada línea (si lo necesitas en el futuro)
         ============================================================================
     -->
     
@@ -32,7 +31,7 @@
             <div class="page invoice-page">
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 1: CABECERA DE LA FACTURA -->
+                <!-- CABECERA DE LA FACTURA -->
                 <!-- =========================================================== -->
                 <div class="row invoice-header mb-4">
                     <div class="col-7">
@@ -58,7 +57,7 @@
                 </div>
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 2: INFORMACIÓN DE CLIENTE Y FACTURA -->
+                <!-- INFORMACIÓN DE CLIENTE Y FACTURA -->
                 <!-- =========================================================== -->
                 <div class="row mb-4">
                     <div class="col-6">
@@ -118,7 +117,7 @@
                 </div>
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 3: INSTRUCCIONES ESPECIALES -->
+                <!-- INSTRUCCIONES ESPECIALES -->
                 <!-- =========================================================== -->
                 <div t-if="o.instrucciones_especiales" class="row mb-3">
                     <div class="col-12">
@@ -130,209 +129,110 @@
                 </div>
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 4: LÍNEAS DE FACTURA - VERSIÓN DEFINITIVA -->
+                <!-- TABLA DE LÍNEAS - VERSIÓN SIMPLIFICADA SIN AGRUPACIÓN -->
                 <!-- =========================================================== -->
-                <!--
-                    ESTRATEGIA REVISADA PARA SOLUCIONAR EL PROBLEMA:
-                    
-                    En lugar de usar lambda complejas y filtered, vamos a:
-                    1. Usar el método Python _get_invoice_lines_by_order() si existe
-                    2. Iterar de forma más simple y directa
-                    3. Asegurar que cada campo se renderiza correctamente
-                    4. Añadir validaciones en cada paso
-                -->
-                
-                <!-- Primero, intentar obtener líneas agrupadas por pedido -->
-                <t t-set="sale_orders" t-value="o.invoice_line_ids.mapped('sale_line_ids.order_id')"/>
-                
-                <!-- CASO 1: Hay pedidos relacionados - Mostrar agrupado -->
-                <t t-if="sale_orders">
-                    <t t-foreach="sale_orders" t-as="order">
-                        <!-- Cabecera del pedido -->
-                        <div class="order-container mb-4" style="page-break-inside: avoid;">
-                            <div class="order-header bg-secondary text-white p-2 rounded-top">
-                                <strong>Pedido: <span t-field="order.name"/></strong>
-                                <t t-if="order.client_order_ref">
-                                    <span class="ms-2">| Ref. Cliente: <span t-field="order.client_order_ref"/></span>
-                                </t>
-                            </div>
+                <table class="table table-sm table-bordered mb-4">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 10%;">Referencia</th>
+                            <th style="width: 35%;">Descripción</th>
+                            <th class="text-end" style="width: 10%;">Cantidad</th>
+                            <th class="text-end" style="width: 13%;">Precio Unit.</th>
+                            <th class="text-end" style="width: 12%;">Impuestos</th>
+                            <th class="text-end" style="width: 20%;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Iterar todas las líneas sin filtros complejos -->
+                        <t t-foreach="o.invoice_line_ids" t-as="line">
                             
-                            <!-- Tabla de líneas -->
-                            <table class="table table-sm table-bordered mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 40%;">Descripción</th>
-                                        <th class="text-end" style="width: 12%;">Cantidad</th>
-                                        <th class="text-end" style="width: 13%;">Precio Unit.</th>
-                                        <th class="text-end" style="width: 15%;">Impuestos</th>
-                                        <th class="text-end" style="width: 20%;">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!--
-                                        CAMBIO CRÍTICO: Iteramos sobre TODAS las líneas
-                                        y luego filtramos dentro del bucle con un t-if
-                                        
-                                        Esto es más robusto porque:
-                                        1. QWeb maneja mejor la iteración simple
-                                        2. El filtrado es más explícito y debuggeable
-                                        3. Podemos añadir validaciones intermedias
-                                    -->
-                                    <t t-foreach="o.invoice_line_ids" t-as="line">
-                                        <!--
-                                            Verificar si esta línea pertenece a este pedido
-                                            Usamos un enfoque defensivo con verificaciones múltiples
-                                        -->
-                                        <t t-set="line_orders" t-value="line.sale_line_ids.mapped('order_id')"/>
-                                        <t t-set="belongs_to_order" t-value="order.id in line_orders.ids"/>
-                                        
-                                        <!-- Solo procesar si pertenece a este pedido -->
-                                        <t t-if="belongs_to_order">
-                                            <!-- Líneas normales (productos) -->
-                                            <t t-if="not line.display_type">
-                                                <tr>
-                                                    <!-- Columna 1: Descripción -->
-                                                    <td>
-                                                        <strong><span t-field="line.product_id.name"/></strong>
-                                                        <div t-if="line.name and line.name != line.product_id.name" 
-                                                             class="small text-muted">
-                                                            <span t-field="line.name"/>
-                                                        </div>
-                                                    </td>
-                                                    
-                                                    <!-- Columna 2: Cantidad -->
-                                                    <td class="text-end">
-                                                        <!--
-                                                            CAMBIO IMPORTANTE: Usamos t-field con widget float
-                                                            en lugar de t-esc con formato Python
-                                                            
-                                                            t-field es más robusto porque:
-                                                            - Odoo maneja el formato automáticamente
-                                                            - Respeta la configuración regional
-                                                            - Maneja correctamente valores None o vacíos
-                                                        -->
-                                                        <span t-field="line.quantity" 
-                                                              t-options='{"widget": "float", "precision": 2}'/>
-                                                        <!-- Unidad de medida -->
-                                                        <t t-if="line.product_uom_id">
-                                                            <span class="ms-1" t-field="line.product_uom_id.name"/>
-                                                        </t>
-                                                    </td>
-                                                    
-                                                    <!-- Columna 3: Precio unitario -->
-                                                    <td class="text-end">
-                                                        <!--
-                                                            Usar t-field con widget monetary
-                                                            Esto asegura formato correcto con símbolo de moneda
-                                                        -->
-                                                        <span t-field="line.price_unit" 
-                                                              t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                                    </td>
-                                                    
-                                                    <!-- Columna 4: Impuestos -->
-                                                    <td class="text-end">
-                                                        <t t-if="line.tax_ids">
-                                                            <t t-foreach="line.tax_ids" t-as="tax">
-                                                                <span t-field="tax.name"/>
-                                                                <t t-if="not tax_last">, </t>
-                                                            </t>
-                                                        </t>
-                                                        <span t-else="">—</span>
-                                                    </td>
-                                                    
-                                                    <!-- Columna 5: Subtotal -->
-                                                    <td class="text-end">
-                                                        <strong>
-                                                            <span t-field="line.price_subtotal" 
-                                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                                        </strong>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                            
-                                            <!-- Líneas de sección o nota -->
-                                            <t t-if="line.display_type">
-                                                <tr>
-                                                    <td colspan="5" 
-                                                        t-att-class="'fw-bold' if line.display_type == 'line_section' else 'fst-italic'">
-                                                        <span t-field="line.name"/>
-                                                    </td>
-                                                </tr>
+                            <!-- Líneas normales de producto -->
+                            <t t-if="not line.display_type">
+                                <tr>
+                                    <!-- Referencia del producto -->
+                                    <td>
+                                        <span t-if="line.product_id.default_code" t-field="line.product_id.default_code"/>
+                                        <span t-else="">—</span>
+                                    </td>
+                                    
+                                    <!-- Descripción del producto -->
+                                    <td>
+                                        <strong><span t-field="line.product_id.name"/></strong>
+                                        <div t-if="line.name and line.name != line.product_id.name" 
+                                             class="small text-muted mt-1">
+                                            <span t-field="line.name"/>
+                                        </div>
+                                        <!-- Mostrar pedido relacionado si existe -->
+                                        <div t-if="line.sale_line_ids" class="small text-muted mt-1">
+                                            <em>Pedido: 
+                                                <t t-foreach="line.sale_line_ids.mapped('order_id')" t-as="order">
+                                                    <span t-field="order.name"/>
+                                                    <t t-if="not order_last">, </t>
+                                                </t>
+                                            </em>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Cantidad -->
+                                    <td class="text-end">
+                                        <span t-field="line.quantity" 
+                                              t-options='{"widget": "float", "precision": 2}'/>
+                                        <t t-if="line.product_uom_id">
+                                            <br/><span class="small text-muted" t-field="line.product_uom_id.name"/>
+                                        </t>
+                                    </td>
+                                    
+                                    <!-- Precio unitario -->
+                                    <td class="text-end">
+                                        <span t-field="line.price_unit" 
+                                              t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                    </td>
+                                    
+                                    <!-- Impuestos -->
+                                    <td class="text-end">
+                                        <t t-if="line.tax_ids">
+                                            <t t-foreach="line.tax_ids" t-as="tax">
+                                                <span t-field="tax.name"/>
+                                                <t t-if="not tax_last">, </t>
                                             </t>
                                         </t>
-                                    </t>
-                                </tbody>
-                            </table>
-                        </div>
-                    </t>
-                </t>
-                
-                <!-- CASO 2: No hay pedidos - Mostrar todas las líneas directamente -->
-                <t t-else="">
-                    <table class="table table-sm table-bordered mb-4">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 40%;">Descripción</th>
-                                <th class="text-end" style="width: 12%;">Cantidad</th>
-                                <th class="text-end" style="width: 13%;">Precio Unit.</th>
-                                <th class="text-end" style="width: 15%;">Impuestos</th>
-                                <th class="text-end" style="width: 20%;">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <t t-foreach="o.invoice_line_ids" t-as="line">
-                                <t t-if="not line.display_type">
-                                    <tr>
-                                        <td>
-                                            <strong><span t-field="line.product_id.name"/></strong>
-                                            <div t-if="line.name and line.name != line.product_id.name" 
-                                                 class="small text-muted">
-                                                <span t-field="line.name"/>
-                                            </div>
-                                        </td>
-                                        <td class="text-end">
-                                            <span t-field="line.quantity" 
-                                                  t-options='{"widget": "float", "precision": 2}'/>
-                                            <t t-if="line.product_uom_id">
-                                                <span class="ms-1" t-field="line.product_uom_id.name"/>
-                                            </t>
-                                        </td>
-                                        <td class="text-end">
-                                            <span t-field="line.price_unit" 
+                                        <span t-else="">—</span>
+                                    </td>
+                                    
+                                    <!-- Subtotal -->
+                                    <td class="text-end">
+                                        <strong>
+                                            <span t-field="line.price_subtotal" 
                                                   t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                        </td>
-                                        <td class="text-end">
-                                            <t t-if="line.tax_ids">
-                                                <t t-foreach="line.tax_ids" t-as="tax">
-                                                    <span t-field="tax.name"/>
-                                                    <t t-if="not tax_last">, </t>
-                                                </t>
-                                            </t>
-                                            <span t-else="">—</span>
-                                        </td>
-                                        <td class="text-end">
-                                            <strong>
-                                                <span t-field="line.price_subtotal" 
-                                                      t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                            </strong>
-                                        </td>
-                                    </tr>
-                                </t>
-                                <t t-if="line.display_type">
-                                    <tr>
-                                        <td colspan="5" 
-                                            t-att-class="'fw-bold' if line.display_type == 'line_section' else 'fst-italic'">
-                                            <span t-field="line.name"/>
-                                        </td>
-                                    </tr>
-                                </t>
+                                        </strong>
+                                    </td>
+                                </tr>
                             </t>
-                        </tbody>
-                    </table>
-                </t>
+                            
+                            <!-- Líneas de sección -->
+                            <t t-if="line.display_type == 'line_section'">
+                                <tr class="table-secondary">
+                                    <td colspan="6" class="fw-bold">
+                                        <span t-field="line.name"/>
+                                    </td>
+                                </tr>
+                            </t>
+                            
+                            <!-- Líneas de nota -->
+                            <t t-if="line.display_type == 'line_note'">
+                                <tr>
+                                    <td colspan="6" class="fst-italic text-muted">
+                                        <span t-field="line.name"/>
+                                    </td>
+                                </tr>
+                            </t>
+                            
+                        </t>
+                    </tbody>
+                </table>
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 5: TOTALES FISCALES COMPLETOS -->
+                <!-- TOTALES FISCALES -->
                 <!-- =========================================================== -->
                 <div class="row mt-4">
                     <div class="col-7">
@@ -357,7 +257,7 @@
                                     </td>
                                 </tr>
                                 
-                                <!-- Desglose de impuestos -->
+                                <!-- Desglose de impuestos usando tax_totals -->
                                 <t t-if="o.tax_totals and o.tax_totals.get('groups_by_subtotal')">
                                     <t t-foreach="o.tax_totals['groups_by_subtotal'].values()" t-as="group_list">
                                         <t t-foreach="group_list" t-as="tax_group">
@@ -376,6 +276,7 @@
                                     </t>
                                 </t>
                                 
+                                <!-- Fallback si tax_totals no está disponible -->
                                 <t t-elif="o.amount_tax">
                                     <tr class="border-top">
                                         <td><strong>Impuestos:</strong></td>
@@ -386,6 +287,7 @@
                                     </tr>
                                 </t>
                                 
+                                <!-- Total final -->
                                 <tr class="border-top border-dark" style="background-color: #f8f9fa;">
                                     <td class="text-uppercase"><strong>TOTAL:</strong></td>
                                     <td class="text-end">
@@ -396,6 +298,7 @@
                                     </td>
                                 </tr>
                                 
+                                <!-- Monto pendiente si aplica -->
                                 <t t-if="o.payment_state in ['partial', 'not_paid'] and o.amount_residual > 0">
                                     <tr class="border-top" style="background-color: #fff3cd;">
                                         <td><strong>Pendiente de Pago:</strong></td>
@@ -413,7 +316,7 @@
                 </div>
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 6: PIE DE PÁGINA -->
+                <!-- PIE DE PÁGINA -->
                 <!-- =========================================================== -->
                 <div t-if="o.narration" class="row mt-4">
                     <div class="col-12">
