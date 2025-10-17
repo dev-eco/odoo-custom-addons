@@ -19,7 +19,6 @@ En Python, __init__.py tiene dos propósitos fundamentales:
 2. **Controla qué se importa cuando se carga el módulo**
    - Los imports aquí se ejecutan cuando Odoo carga el módulo
    - Permite controlar el orden de carga de componentes
-   - Esencial para módulos con dependencias internas
 
 ¿Por qué importar subdirectorios?
 ---------------------------------
