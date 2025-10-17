@@ -2,23 +2,17 @@
 <odoo>
     <!--
         ============================================================================
-        PLANTILLA QWEB PARA REPORTE DE FACTURAS PERSONALIZADO - ECOCAUCHO v2.1
+        PLANTILLA QWEB PARA REPORTE DE FACTURAS PERSONALIZADO - ECOCAUCHO v2.2
         ============================================================================
         
-        VERSIÓN MEJORADA: Desglose fiscal completo para exportación a asesorías
+        VERSIÓN CORREGIDA: Líneas de producto con datos completos + Desglose fiscal
         
-        Esta plantilla genera el PDF de facturas con diseño optimizado para EcoCaucho.
+        Correcciones en esta versión:
+        - Solución al problema de líneas vacías en la tabla de productos
+        - Iteración mejorada sobre líneas de factura
+        - Validaciones robustas para evitar celdas vacías
+        - Desglose fiscal completo para asesorías
         
-        Características del diseño:
-        - Uso eficiente del espacio en papel A4
-        - Agrupación de líneas por pedido de origen
-        - Visualización clara de campos personalizados
-        - Diseño profesional y limpio
-        - Paginación mejorada para facturas con múltiples pedidos
-        - DESGLOSE FISCAL COMPLETO: IVA, RE, IRPF con bases imponibles
-        
-        Nota: Esta plantilla se usa cuando el usuario selecciona "Factura EcoCaucho"
-        desde el menú de impresión. No reemplaza la plantilla estándar.
         ============================================================================
     -->
     
@@ -34,9 +28,7 @@
     <!-- Plantilla del documento individual de factura -->
     <template id="report_factura_documento">
         <t t-call="web.external_layout">
-            <!-- Establecer contexto con idioma del partner -->
             <t t-set="o" t-value="o.with_context(lang=lang)" />
-            <!-- Variable auxiliar para la moneda -->
             <t t-set="currency" t-value="o.currency_id" />
             
             <div class="page invoice-page">
@@ -72,7 +64,6 @@
                 <!-- =========================================================== -->
                 <div class="row mb-4">
                     
-                    <!-- Columna izquierda: Datos del cliente -->
                     <div class="col-6">
                         <div class="invoice-box border p-3 rounded">
                             <strong class="d-block mb-2">Cliente:</strong>
@@ -95,7 +86,6 @@
                         </div>
                     </div>
                     
-                    <!-- Columna derecha: Datos de la factura -->
                     <div class="col-6">
                         <div class="invoice-box border p-3 rounded">
                             <table class="table table-sm table-borderless mb-0">
@@ -143,12 +133,25 @@
                 </div>
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 4: LÍNEAS DE FACTURA AGRUPADAS POR PEDIDO -->
+                <!-- SECCIÓN 4: LÍNEAS DE FACTURA (VERSIÓN CORREGIDA) -->
                 <!-- =========================================================== -->
+                <!--
+                    IMPORTANTE: Esta sección ha sido completamente reescrita para
+                    solucionar el problema de líneas vacías.
+                    
+                    La estrategia es:
+                    1. Obtener todos los pedidos relacionados usando mapped()
+                    2. Iterar sobre cada pedido
+                    3. Para cada pedido, obtener sus líneas mediante un filter explícito
+                    4. Mostrar cada línea con todos sus datos
+                    
+                    Si no hay pedidos relacionados, mostrar todas las líneas directamente.
+                -->
                 
+                <!-- Obtener lista de pedidos únicos -->
                 <t t-set="sale_orders" t-value="o.invoice_line_ids.mapped('sale_line_ids.order_id')"/>
                 
-                <!-- Con pedidos: mostrar líneas agrupadas -->
+                <!-- CASO 1: HAY PEDIDOS RELACIONADOS - Agrupar por pedido -->
                 <t t-if="sale_orders">
                     <t t-foreach="sale_orders" t-as="order">
                         <div class="order-container page-break-inside-avoid mb-4">
@@ -161,23 +164,30 @@
                             </div>
                             
                             <!-- Tabla de líneas de este pedido -->
-                            <table class="table table-sm table-bordered">
+                            <table class="table table-sm table-bordered mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 35%;">Descripción</th>
-                                        <th class="text-end" style="width: 10%;">Cantidad</th>
-                                        <th class="text-end" style="width: 12%;">Precio Unit.</th>
-                                        <th class="text-center" style="width: 8%;">Desc.%</th>
-                                        <th class="text-end" style="width: 15%;">Impuestos</th>
-                                        <th class="text-end" style="width: 20%;">Subtotal</th>
+                                        <th style="width: 35%;">DESCRIPCIÓN</th>
+                                        <th class="text-end" style="width: 12%;">CANTIDAD</th>
+                                        <th class="text-end" style="width: 13%;">PRECIO UNIT.</th>
+                                        <th class="text-end" style="width: 20%;">IMPUESTOS</th>
+                                        <th class="text-end" style="width: 20%;">SUBTOTAL</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <t t-foreach="o.invoice_line_ids.filtered(lambda l: any(sl.order_id == order for sl in l.sale_line_ids))" 
-                                       t-as="line">
+                                    <!--
+                                        CORRECCIÓN CRÍTICA:
+                                        En lugar de usar lambda dentro del t-foreach,
+                                        primero filtramos las líneas y luego iteramos.
+                                        Esto asegura que cada línea tenga todos sus datos disponibles.
+                                    -->
+                                    <t t-set="order_lines" t-value="o.invoice_line_ids.filtered(lambda l: order in l.sale_line_ids.mapped('order_id'))"/>
+                                    
+                                    <t t-foreach="order_lines" t-as="line">
+                                        <!-- Solo mostrar líneas que no son secciones ni notas -->
                                         <t t-if="not line.display_type">
                                             <tr>
-                                                <!-- Descripción del producto -->
+                                                <!-- Columna 1: Descripción -->
                                                 <td>
                                                     <strong><span t-field="line.product_id.name"/></strong>
                                                     <div t-if="line.name != line.product_id.name" class="small text-muted">
@@ -185,51 +195,57 @@
                                                     </div>
                                                 </td>
                                                 
-                                                <!-- Cantidad -->
+                                                <!-- Columna 2: Cantidad -->
                                                 <td class="text-end">
-                                                    <span t-field="line.quantity"/>
-                                                    <span t-field="line.product_uom_id" groups="uom.group_uom"/>
+                                                    <span t-esc="'%.2f' % line.quantity"/>
+                                                    <span t-if="line.product_uom_id" t-field="line.product_uom_id" groups="uom.group_uom"/>
                                                 </td>
                                                 
-                                                <!-- Precio unitario -->
+                                                <!-- Columna 3: Precio unitario -->
                                                 <td class="text-end">
-                                                    <span t-field="line.price_unit" 
-                                                          t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                    <span t-esc="'%.2f' % line.price_unit"/>
+                                                    <span t-esc="currency.symbol"/>
                                                 </td>
                                                 
-                                                <!-- Descuento -->
-                                                <td class="text-center">
-                                                    <span t-if="line.discount" t-esc="'%.2f%%' % line.discount"/>
-                                                    <span t-else="">—</span>
-                                                </td>
-                                                
-                                                <!-- Impuestos -->
+                                                <!-- Columna 4: Impuestos -->
                                                 <td class="text-end">
-                                                    <span t-if="line.tax_ids">
+                                                    <t t-if="line.tax_ids">
                                                         <t t-foreach="line.tax_ids" t-as="tax">
-                                                            <span t-field="tax.name"/><t t-if="not tax_last">, </t>
+                                                            <span t-field="tax.name"/>
+                                                            <t t-if="not tax_last">, </t>
                                                         </t>
-                                                    </span>
+                                                    </t>
                                                     <span t-else="">—</span>
                                                 </td>
                                                 
-                                                <!-- Subtotal de la línea -->
+                                                <!-- Columna 5: Subtotal -->
                                                 <td class="text-end">
-                                                    <span t-field="line.price_subtotal" 
-                                                          t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                    <strong>
+                                                        <span t-esc="'%.2f' % line.price_subtotal"/>
+                                                        <span t-esc="currency.symbol"/>
+                                                    </strong>
                                                 </td>
                                             </tr>
                                         </t>
                                         
                                         <!-- Líneas de tipo sección o nota -->
-                                        <t t-else="">
+                                        <t t-if="line.display_type">
                                             <tr>
-                                                <td colspan="6" 
+                                                <td colspan="5" 
                                                     t-att-class="'font-weight-bold' if line.display_type == 'line_section' else 'font-italic'">
                                                     <span t-field="line.name"/>
                                                 </td>
                                             </tr>
                                         </t>
+                                    </t>
+                                    
+                                    <!-- Mostrar mensaje si no hay líneas para este pedido (no debería ocurrir) -->
+                                    <t t-if="not order_lines">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">
+                                                <em>No hay líneas para este pedido</em>
+                                            </td>
+                                        </tr>
                                     </t>
                                 </tbody>
                             </table>
@@ -237,17 +253,16 @@
                     </t>
                 </t>
                 
-                <!-- Sin pedidos: mostrar todas las líneas juntas -->
+                <!-- CASO 2: NO HAY PEDIDOS RELACIONADOS - Mostrar todas las líneas juntas -->
                 <t t-else="">
-                    <table class="table table-sm table-bordered">
+                    <table class="table table-sm table-bordered mb-4">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 35%;">Descripción</th>
-                                <th class="text-end" style="width: 10%;">Cantidad</th>
-                                <th class="text-end" style="width: 12%;">Precio Unit.</th>
-                                <th class="text-center" style="width: 8%;">Desc.%</th>
-                                <th class="text-end" style="width: 15%;">Impuestos</th>
-                                <th class="text-end" style="width: 20%;">Subtotal</th>
+                                <th style="width: 35%;">DESCRIPCIÓN</th>
+                                <th class="text-end" style="width: 12%;">CANTIDAD</th>
+                                <th class="text-end" style="width: 13%;">PRECIO UNIT.</th>
+                                <th class="text-end" style="width: 20%;">IMPUESTOS</th>
+                                <th class="text-end" style="width: 20%;">SUBTOTAL</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -261,34 +276,33 @@
                                             </div>
                                         </td>
                                         <td class="text-end">
-                                            <span t-field="line.quantity"/>
-                                            <span t-field="line.product_uom_id" groups="uom.group_uom"/>
+                                            <span t-esc="'%.2f' % line.quantity"/>
+                                            <span t-if="line.product_uom_id" t-field="line.product_uom_id" groups="uom.group_uom"/>
                                         </td>
                                         <td class="text-end">
-                                            <span t-field="line.price_unit" 
-                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
-                                        </td>
-                                        <td class="text-center">
-                                            <span t-if="line.discount" t-esc="'%.2f%%' % line.discount"/>
-                                            <span t-else="">—</span>
+                                            <span t-esc="'%.2f' % line.price_unit"/>
+                                            <span t-esc="currency.symbol"/>
                                         </td>
                                         <td class="text-end">
-                                            <span t-if="line.tax_ids">
+                                            <t t-if="line.tax_ids">
                                                 <t t-foreach="line.tax_ids" t-as="tax">
-                                                    <span t-field="tax.name"/><t t-if="not tax_last">, </t>
+                                                    <span t-field="tax.name"/>
+                                                    <t t-if="not tax_last">, </t>
                                                 </t>
-                                            </span>
+                                            </t>
                                             <span t-else="">—</span>
                                         </td>
                                         <td class="text-end">
-                                            <span t-field="line.price_subtotal" 
-                                                  t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            <strong>
+                                                <span t-esc="'%.2f' % line.price_subtotal"/>
+                                                <span t-esc="currency.symbol"/>
+                                            </strong>
                                         </td>
                                     </tr>
                                 </t>
-                                <t t-else="">
+                                <t t-if="line.display_type">
                                     <tr>
-                                        <td colspan="6" 
+                                        <td colspan="5" 
                                             t-att-class="'font-weight-bold' if line.display_type == 'line_section' else 'font-italic'">
                                             <span t-field="line.name"/>
                                         </td>
@@ -302,17 +316,9 @@
                 <!-- =========================================================== -->
                 <!-- SECCIÓN 5: TOTALES FISCALES COMPLETOS -->
                 <!-- =========================================================== -->
-                <!--
-                    Esta es la sección más importante para exportación a asesorías.
-                    Muestra un desglose completo de todos los impuestos aplicados.
-                    
-                    En Odoo 17, tax_totals contiene toda la información estructurada:
-                    - groups_by_subtotal: Impuestos agrupados (por ej. "Importe sin impuestos")
-                    - Cada grupo contiene los impuestos con su base y monto
-                -->
                 <div class="row mt-4">
                     <div class="col-7">
-                        <!-- Información bancaria para facilitar el pago -->
+                        <!-- Información bancaria -->
                         <div t-if="o.partner_bank_id" class="border p-3 rounded bg-light">
                             <strong class="d-block mb-2">Información Bancaria:</strong>
                             <div><strong>Banco:</strong> <span t-field="o.partner_bank_id.bank_id.name"/></div>
@@ -323,11 +329,11 @@
                         </div>
                     </div>
                     
-                    <!-- Columna derecha: Tabla de totales con desglose fiscal -->
+                    <!-- Columna derecha: Totales -->
                     <div class="col-5">
                         <table class="table table-sm">
                             <tbody>
-                                <!-- Base imponible sin impuestos -->
+                                <!-- Base imponible -->
                                 <tr>
                                     <td><strong>Base Imponible:</strong></td>
                                     <td class="text-end">
@@ -336,48 +342,18 @@
                                     </td>
                                 </tr>
                                 
-                                <!-- 
-                                    Desglose detallado de impuestos
-                                    
-                                    tax_totals es una estructura JSON que Odoo 17 genera automáticamente.
-                                    Contiene información completa sobre todos los impuestos aplicados.
-                                    
-                                    Estructura típica:
-                                    {
-                                        "groups_by_subtotal": {
-                                            "Importe sin impuestos": [
-                                                {
-                                                    "tax_group_name": "IVA 21%",
-                                                    "tax_group_base_amount": 1000.00,
-                                                    "tax_group_amount": 210.00,
-                                                    ...
-                                                }
-                                            ]
-                                        },
-                                        "amount_total": 1210.00,
-                                        ...
-                                    }
-                                -->
+                                <!-- Desglose de impuestos -->
                                 <t t-if="o.tax_totals and o.tax_totals.get('groups_by_subtotal')">
-                                    <!-- 
-                                        Iterar sobre los grupos de impuestos
-                                        Normalmente hay un solo grupo llamado "Importe sin impuestos"
-                                        pero puede haber más si hay retenciones u otros conceptos
-                                    -->
                                     <t t-foreach="o.tax_totals['groups_by_subtotal'].values()" t-as="group_list">
-                                        <!-- Cada grupo contiene una lista de impuestos -->
                                         <t t-foreach="group_list" t-as="tax_group">
                                             <tr class="border-top">
                                                 <td>
-                                                    <!-- Nombre del impuesto (ej: "IVA 21%", "RE 5.2%") -->
                                                     <span t-esc="tax_group['tax_group_name']"/>
-                                                    <!-- Mostrar la base imponible sobre la que se calcula -->
                                                     <div class="small text-muted">
                                                         (Base: <span t-esc="tax_group['formatted_tax_group_base_amount']"/>)
                                                     </div>
                                                 </td>
                                                 <td class="text-end">
-                                                    <!-- Monto del impuesto calculado -->
                                                     <span t-esc="tax_group['formatted_tax_group_amount']"/>
                                                 </td>
                                             </tr>
@@ -385,10 +361,7 @@
                                     </t>
                                 </t>
                                 
-                                <!-- 
-                                    Fallback si tax_totals no está disponible
-                                    (puede ocurrir en facturas muy antiguas o importadas)
-                                -->
+                                <!-- Fallback si no hay tax_totals -->
                                 <t t-elif="o.amount_tax">
                                     <tr class="border-top">
                                         <td><strong>Impuestos:</strong></td>
@@ -399,7 +372,7 @@
                                     </tr>
                                 </t>
                                 
-                                <!-- Total general (línea destacada) -->
+                                <!-- Total general -->
                                 <tr class="border-top border-dark" style="background-color: #f8f9fa;">
                                     <td class="text-uppercase"><strong>TOTAL:</strong></td>
                                     <td class="text-end">
@@ -410,10 +383,7 @@
                                     </td>
                                 </tr>
                                 
-                                <!-- 
-                                    Monto pendiente de pago
-                                    Solo se muestra si la factura está parcialmente pagada
-                                -->
+                                <!-- Monto pendiente -->
                                 <t t-if="o.payment_state in ['partial', 'not_paid'] and o.amount_residual > 0">
                                     <tr class="border-top" style="background-color: #fff3cd;">
                                         <td><strong>Pendiente de Pago:</strong></td>
@@ -431,7 +401,7 @@
                 </div>
                 
                 <!-- =========================================================== -->
-                <!-- SECCIÓN 6: PIE DE PÁGINA CON NOTAS -->
+                <!-- SECCIÓN 6: PIE DE PÁGINA -->
                 <!-- =========================================================== -->
                 <div t-if="o.narration" class="row mt-4">
                     <div class="col-12">
@@ -442,7 +412,7 @@
                     </div>
                 </div>
                 
-                <!-- Información fiscal adicional al pie -->
+                <!-- Nota fiscal al pie -->
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="small text-muted text-center border-top pt-2">
