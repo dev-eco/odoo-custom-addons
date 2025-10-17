@@ -229,13 +229,15 @@
                                         Esto usa el campo sale_line_ids que vincula líneas de factura
                                         con líneas de pedido
                                     -->
-                                    <t t-foreach="o.invoice_line_ids.filtered(lambda l: any(sl.order_id == order for sl in l.sale_line_ids))" 
-                                       t-as="line">
-                                        <!-- 
-                                            Omitir líneas de tipo sección o nota
-                                            (son solo títulos o comentarios, no productos)
-                                        -->
-                                        <t t-if="not line.display_type">
+                                    <!-- 
+                                        Filtrar líneas que pertenecen a este pedido
+                                        Incluimos tanto líneas con sale_line_ids como sin ellos
+                                    -->
+                                    <t t-foreach="o.invoice_line_ids" t-as="line">
+                                        <!-- Verificar si esta línea pertenece al pedido actual -->
+                                        <t t-if="line.sale_line_ids.mapped('order_id') and order in line.sale_line_ids.mapped('order_id')">
+                                            <!-- Solo mostrar si NO es línea de sección/nota -->
+                                            <t t-if="not line.display_type">
                                             <tr>
                                                 <!-- Descripción del producto -->
                                                 <td>
@@ -340,6 +342,7 @@
                         </thead>
                         <tbody>
                             <t t-foreach="o.invoice_line_ids" t-as="line">
+                                <!-- Líneas normales de producto -->
                                 <t t-if="not line.display_type">
                                     <tr>
                                         <td>
@@ -376,6 +379,8 @@
                                         </td>
                                     </tr>
                                 </t>
+                                
+                                <!-- Líneas de sección -->
                                 <t t-elif="line.display_type == 'line_section'">
                                     <tr class="line-section">
                                         <td colspan="6" class="font-weight-bold bg-light">
@@ -383,6 +388,8 @@
                                         </td>
                                     </tr>
                                 </t>
+                                
+                                <!-- Líneas de nota -->
                                 <t t-elif="line.display_type == 'line_note'">
                                     <tr class="line-note">
                                         <td colspan="6" class="font-italic text-muted">
