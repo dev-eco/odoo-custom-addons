@@ -55,6 +55,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/report_facturas_templates.xml',
+        'views/report_facturas_DEBUG.xml',
         'reports/invoice_reports.xml',
         'views/account_move_views.xml',  # Nuevo archivo para añadir campos en formulario
     ],

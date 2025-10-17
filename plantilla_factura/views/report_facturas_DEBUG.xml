@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="report_factura_DEBUG">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="plantilla_factura.report_factura_documento_DEBUG"/>
+            </t>
+        </t>
+    </template>
+    
+    <template id="report_factura_documento_DEBUG">
+        <t t-call="web.external_layout">
+            <div class="page" style="font-family: monospace;">
+                <h1>REPORTE DE DIAGNÓSTICO</h1>
+                
+                <h2>Información Básica de la Factura</h2>
+                <p><strong>ID:</strong> <span t-esc="o.id"/></p>
+                <p><strong>Nombre:</strong> <span t-esc="o.name"/></p>
+                <p><strong>Partner:</strong> <span t-esc="o.partner_id.name"/></p>
+                
+                <h2>Diagnóstico de Líneas de Factura</h2>
+                <p><strong>Objeto invoice_line_ids existe:</strong> <span t-esc="bool(o.invoice_line_ids)"/></p>
+                <p><strong>Tipo de invoice_line_ids:</strong> <span t-esc="type(o.invoice_line_ids).__name__"/></p>
+                <p><strong>Número total de líneas:</strong> <span t-esc="len(o.invoice_line_ids)"/></p>
+                <p><strong>IDs de líneas:</strong> <span t-esc="o.invoice_line_ids.ids"/></p>
+                
+                <h2>Iteración Manual de Líneas</h2>
+                <table border="1" style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <th>Índice</th>
+                        <th>ID Línea</th>
+                        <th>Display Type</th>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                    </tr>
+                    <t t-foreach="o.invoice_line_ids" t-as="line">
+                        <tr>
+                            <td><span t-esc="line_index"/></td>
+                            <td><span t-esc="line.id"/></td>
+                            <td><span t-esc="line.display_type or 'NORMAL'"/></td>
+                            <td><span t-esc="line.product_id.name or 'SIN PRODUCTO'"/></td>
+                            <td><span t-esc="line.quantity"/></td>
+                            <td><span t-esc="line.price_unit"/></td>
+                        </tr>
+                    </t>
+                </table>
+                
+                <h2>Filtrado con display_type</h2>
+                <p>Líneas donde display_type es False o vacío:</p>
+                <table border="1" style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <th>ID</th>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                    </tr>
+                    <t t-foreach="o.invoice_line_ids" t-as="line">
+                        <t t-if="not line.display_type">
+                            <tr>
+                                <td><span t-esc="line.id"/></td>
+                                <td><span t-esc="line.product_id.name"/></td>
+                                <td><span t-esc="line.quantity"/></td>
+                            </tr>
+                        </t>
+                    </t>
+                </table>
+                
+                <h2>Información de Pedidos Relacionados</h2>
+                <t t-foreach="o.invoice_line_ids" t-as="line">
+                    <p>Línea <span t-esc="line.id"/>:</p>
+                    <ul>
+                        <li>Tiene sale_line_ids: <span t-esc="bool(line.sale_line_ids)"/></li>
+                        <li>Cantidad de sale_line_ids: <span t-esc="len(line.sale_line_ids)"/></li>
+                        <t t-if="line.sale_line_ids">
+                            <li>IDs de sale_line_ids: <span t-esc="line.sale_line_ids.ids"/></li>
+                        </t>
+                    </ul>
+                </t>
+                
+            </div>
+        </t>
+    </template>
+    
+    <record id="action_report_factura_DEBUG" model="ir.actions.report">
+        <field name="name">Factura DEBUG</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">plantilla_factura.report_factura_DEBUG</field>
+        <field name="report_file">plantilla_factura.report_factura_DEBUG</field>
+        <field name="print_report_name">'DEBUG - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
