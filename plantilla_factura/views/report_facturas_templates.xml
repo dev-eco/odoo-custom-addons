@@ -132,8 +132,8 @@
                         <t t-set="order_key" t-value="order_item[0]"/>
                         <t t-set="order_lines" t-value="order_item[1]"/>
                         
-                        <!-- Solo procesar si la clave tiene el atributo _name (es un recordset de Odoo) -->
-                        <t t-if="hasattr(order_key, '_name') and order_key._name == 'sale.order'">
+                        <!-- Solo procesar si es un recordset de sale.order válido y no vacío -->
+                        <t t-if="hasattr(order_key, '_name') and order_key._name == 'sale.order' and order_key">
                             <div class="order-container page-break-inside-avoid mb-4">
                                 <div class="order-header bg-secondary text-white p-2 rounded-top">
                                     <strong>Pedido: <span t-esc="order_key.name"/></strong>
