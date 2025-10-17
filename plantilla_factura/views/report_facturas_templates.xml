@@ -153,9 +153,10 @@
                         
                         <!-- 
                             Verificar si es un pedido real o líneas sin pedido
-                            'no_order' es la clave especial para líneas sin pedido
+                            Los recordsets de Odoo tienen el atributo _name
+                            La cadena 'no_order' no lo tiene
                         -->
-                        <t t-if="order != 'no_order'">
+                        <t t-if="hasattr(order, '_name')">
                             <!-- CASO 1: Líneas que vienen de un pedido específico -->
                             <div class="order-container page-break-inside-avoid mb-4">
                                 <div class="order-header bg-secondary text-white p-2 rounded-top">
