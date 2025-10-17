@@ -1,115 +1,141 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Vista de formulario mejorada para facturas -->
-    <record id="view_move_form_inherit_custom" model="ir.ui.view">
-        <field name="name">account.move.form.inherit.custom</field>
+    <!--
+        ============================================================================
+        VISTAS PERSONALIZADAS PARA FACTURAS - ECOCAUCHO v2.0 (CORREGIDA)
+        ============================================================================
+        
+        Este archivo añade los campos personalizados del módulo al formulario de
+        facturas de Odoo, para que los usuarios puedan ver y editar estos campos
+        desde la interfaz.
+        
+        CAMBIOS EN ESTA VERSIÓN:
+        - Uso de xpaths más robustos que no dependen de estructuras específicas
+        - Búsqueda de campos estándar que siempre existen (ref, narration, partner_id)
+        - Estrategia defensiva para compatibilidad con diferentes configuraciones
+        
+        Los campos añadidos son:
+        - Referencia Cliente: Campo de texto para el número de referencia del cliente
+        - Contacto de Facturación: Selector de contacto específico dentro de la empresa
+        - Instrucciones Especiales: Campo de texto largo para notas adicionales
+        - Pedidos Relacionados: Campo calculado que muestra automáticamente los pedidos
+        ============================================================================
+    -->
+    
+    <!-- 
+        Herencia de la vista de formulario de facturas
+        Usamos inherit_id para extender la vista estándar sin reemplazarla
+    -->
+    <record id="view_move_form_inherit_plantilla_factura" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.plantilla.factura</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <!-- Añadir campos en el grupo header_left_group -->
-            <xpath expr="//group[@id='header_left_group']" position="inside">
-                <field name="referencia_cliente" 
-                       invisible="move_type not in ('out_invoice', 'out_refund')"
-                       readonly="state != 'draft'"
-                       placeholder="Referencia asignada por el cliente"/>
-                <field name="pedidos_relacionados" 
-                       invisible="move_type not in ('out_invoice', 'out_refund')"
-                       readonly="1"/>
-                <field name="tiene_campos_personalizados" invisible="1"/>
+            
+            <!-- 
+                ====================================================================
+                SECCIÓN 1: CAMPOS EN LA CABECERA DE LA FACTURA
+                ====================================================================
+                
+                Insertamos nuestros campos después del campo "ref" (referencia)
+                que sabemos que existe en todas las instalaciones de Odoo
+            -->
+            <xpath expr="//field[@name='ref']" position="after">
+                
+                <!-- 
+                    Referencia del Cliente
+                    Campo de texto libre para que el usuario ingrese la referencia
+                    del cliente (su número de orden de compra, por ejemplo)
+                    
+                    Visible solo en facturas de cliente (out_invoice, out_refund)
+                    Invisible en facturas de proveedor y otros tipos de asiento
+                -->
+                <field name="referencia_cliente"
+                       placeholder="Ej: OC-2024-001, PO-12345"
+                       invisible="move_type not in ('out_invoice', 'out_refund')"/>
+                
+                <!-- 
+                    Contacto de Facturación
+                    Selector Many2one que permite elegir un contacto específico
+                    del cliente para la facturación
+                    
+                    El dominio limita las opciones a contactos que:
+                    1. Son hijos del partner principal (parent_id = partner_id)
+                    2. Tienen tipo 'invoice' (contacto de facturación)
+                    
+                    Las opciones no_create y no_open evitan que el usuario
+                    cree o edite contactos desde aquí (mantiene la interfaz limpia)
+                -->
+                <field name="contacto_facturacion"
+                       placeholder="Selecciona contacto de facturación"
+                       options="{'no_create': True, 'no_open': True}"
+                       invisible="move_type not in ('out_invoice', 'out_refund')"/>
             </xpath>
             
-            <!-- Añadir tab para información adicional después de "Otra Información" -->
-            <xpath expr="//page[@id='other_tab']" position="after">
-                <page string="Información Adicional" name="info_adicional"
-                      invisible="move_type not in ('out_invoice', 'out_refund')">
-                    <group>
-                        <group>
-                            <field name="contacto_facturacion"
-                                   options="{'no_create': True, 'no_create_edit': True}"
-                                   domain="[('parent_id', '=', partner_id), ('type', '=', 'invoice')]"
-                                   context="{'show_address': 1}"/>
-                        </group>
-                        <group>
-                            <field name="instrucciones_especiales" placeholder="Instrucciones especiales que aparecerán en la factura impresa"/>
-                        </group>
-                    </group>
-                </page>
+            <!-- 
+                ====================================================================
+                SECCIÓN 2: CAMPO DE PEDIDOS RELACIONADOS
+                ====================================================================
+                
+                Insertamos el campo después del campo 'narration' que existe
+                en todas las vistas de facturas de Odoo
+                
+                Este campo es calculado automáticamente por el método
+                _compute_pedidos_relacionados() en account_move.py
+            -->
+            <xpath expr="//field[@name='narration']" position="after">
+                <group name="pedidos_group" 
+                       string="Pedidos de Venta Relacionados"
+                       invisible="move_type not in ('out_invoice', 'out_refund')">
+                    <!-- 
+                        Pedidos Relacionados
+                        Campo calculado y de solo lectura (readonly="1")
+                        Muestra automáticamente los números de pedido de donde
+                        provienen las líneas de esta factura
+                        
+                        Ejemplo de valor: "SO001, SO002, SO003"
+                    -->
+                    <field name="pedidos_relacionados" 
+                           readonly="1"
+                           placeholder="Se calculará automáticamente desde las líneas"
+                           nolabel="1"/>
+                </group>
             </xpath>
             
-            <!-- Mejorar la vista de líneas para mostrar pedidos relacionados -->
-            <xpath expr="//field[@name='invoice_line_ids']/tree/field[@name='product_id']" position="after">
-                <field name="sale_order_reference" optional="show" string="Pedido"/>
+            <!-- 
+                ====================================================================
+                SECCIÓN 3: INSTRUCCIONES ESPECIALES
+                ====================================================================
+                
+                Este campo se muestra en una sección destacada antes del notebook
+                (pestañas) para que sea visible y fácil de encontrar
+                
+                Lo insertamos antes del elemento 'notebook' que contiene las pestañas
+                de la factura (líneas de factura, otra información, etc.)
+            -->
+            <xpath expr="//notebook" position="before">
+                <group string="Instrucciones Especiales" 
+                       name="special_instructions_group"
+                       invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')">
+                    <!-- 
+                        Campo de texto largo para notas e instrucciones
+                        
+                        Este campo es útil para:
+                        - Instrucciones de entrega
+                        - Requisitos especiales del cliente
+                        - Notas que deben aparecer en el PDF impreso
+                        - Información adicional para el equipo de logística
+                        
+                        nolabel="1" evita mostrar una etiqueta redundante ya que
+                        el grupo ya tiene un título descriptivo
+                    -->
+                    <field name="instrucciones_especiales" 
+                           placeholder="Añade cualquier instrucción especial que deba aparecer en la factura impresa (ej: 'Entregar en almacén B', 'Requiere firma del responsable')"
+                           nolabel="1"/>
+                </group>
             </xpath>
             
-            <!-- Mejorar diseño general -->
-            <xpath expr="//field[@name='narration']" position="attributes">
-                <attribute name="placeholder">Añada términos y condiciones para esta factura. No se confunda con el campo de instrucciones especiales, que aparece directamente en la factura impresa.</attribute>
-            </xpath>
         </field>
     </record>
     
-    <!-- Vista de árbol (lista) mejorada para facturas a clientes -->
-    <record id="view_invoice_tree_inherit_custom" model="ir.ui.view">
-        <field name="name">account.move.tree.inherit.custom</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_out_invoice_tree"/>
-        <field name="arch" type="xml">
-            <!-- Añadir campos personalizados a la vista de lista -->
-            <field name="invoice_date" position="after">
-                <field name="referencia_cliente" optional="show"/>
-                <field name="pedidos_relacionados" optional="show"/>
-            </field>
-            
-            <!-- Destacar facturas con campos personalizados -->
-            <xpath expr="//tree" position="attributes">
-                <attribute name="decoration-info">tiene_campos_personalizados</attribute>
-            </xpath>
-            
-            <!-- Añadir campo de control (oculto) -->
-            <field name="name" position="after">
-                <field name="tiene_campos_personalizados" invisible="1"/>
-            </field>
-        </field>
-    </record>
-    
-    <!-- Vista de árbol (lista) mejorada para facturas de proveedor -->
-    <record id="view_invoice_supplier_tree_inherit_custom" model="ir.ui.view">
-        <field name="name">account.move.supplier.tree.inherit.custom</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_in_invoice_tree"/>
-        <field name="arch" type="xml">
-            <field name="invoice_date" position="after">
-                <field name="referencia_cliente" string="Referencia Proveedor" optional="show"/>
-            </field>
-        </field>
-    </record>
-    
-    <!-- Filtros de búsqueda mejorados -->
-    <record id="view_account_invoice_filter_inherit_custom" model="ir.ui.view">
-        <field name="name">account.move.search.inherit.custom</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
-        <field name="arch" type="xml">
-            <!-- Añadir campos a las búsquedas -->
-            <field name="name" position="after">
-                <field name="referencia_cliente"/>
-                <field name="pedidos_relacionados"/>
-                <field name="instrucciones_especiales"/>
-            </field>
-            
-            <!-- Añadir filtros específicos -->
-            <filter name="status" position="before">
-                <filter string="Con Campos Personalizados" name="campos_personalizados"
-                        domain="[('tiene_campos_personalizados', '=', True)]"/>
-                <separator/>
-            </filter>
-            
-            <!-- Añadir agrupaciones útiles -->
-            <filter name="status" position="after">
-                <filter string="Ref. Cliente" name="group_by_cliente_ref" context="{'group_by': 'referencia_cliente'}"/>
-                <filter string="Pedidos" name="group_by_pedidos" context="{'group_by': 'pedidos_relacionados'}"/>
-                <filter string="Contacto Fact." name="group_by_contacto" context="{'group_by': 'contacto_facturacion'}"/>
-            </filter>
-        </field>
-    </record>
 </odoo>
