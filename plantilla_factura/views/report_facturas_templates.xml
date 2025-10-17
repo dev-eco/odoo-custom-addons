@@ -2,18 +2,18 @@
 <odoo>
     <!--
         ============================================================================
-        PLANTILLA QWEB PARA REPORTE DE FACTURAS PERSONALIZADO - ECOCAUCHO v2.0.2
+        PLANTILLA QWEB PARA REPORTE DE FACTURAS PERSONALIZADO - ECOCAUCHO v2.1.0
         ============================================================================
         
-        VERSIÓN CORREGIDA: Sintaxis XML validada + Líneas de producto visibles
+        VERSIÓN DEFINITIVA: Usa método Python para agrupar líneas
         
-        Esta plantilla genera el PDF de facturas con diseño optimizado para EcoCaucho.
+        Esta versión corrige el problema de las líneas invisibles usando el método
+        _get_invoice_lines_by_order() que ya existe en account_move.py.
         
-        Correcciones en v2.0.2:
-        - Sintaxis XML completamente validada
-        - Todas las etiquetas <t> correctamente cerradas
-        - Líneas de producto ahora se muestran correctamente
-        - Datos fiscales completos y correctos
+        Cambios críticos en v2.1.0:
+        - USA el método _get_invoice_lines_by_order() en lugar de filtrado en QWeb
+        - Lógica compleja movida a Python donde funciona correctamente
+        - Mucho más robusto y fácil de mantener
         ============================================================================
     -->
     
@@ -115,35 +115,159 @@
                     </div>
                 </div>
                 
-                <!-- LÍNEAS DE FACTURA -->
-                <t t-set="sale_orders" t-value="o.invoice_line_ids.mapped('sale_line_ids.order_id')"/>
+                <!-- 
+                    ================================================================
+                    LÍNEAS DE FACTURA - NUEVA IMPLEMENTACIÓN v2.1.0
+                    ================================================================
+                    
+                    CAMBIO CRÍTICO: Ahora usamos el método _get_invoice_lines_by_order()
+                    que ya existe en account_move.py y hace todo el trabajo pesado.
+                    
+                    Este método retorna un diccionario donde:
+                    - Las claves son objetos sale.order (los pedidos)
+                    - Los valores son recordsets de account.move.line (las líneas)
+                    - Si hay líneas sin pedido, aparecen con clave 'no_order'
+                    
+                    Esto es MUCHO más robusto que intentar filtrar en QWeb.
+                -->
+                <t t-set="lines_by_order" t-value="o._get_invoice_lines_by_order()"/>
                 
-                <!-- CASO 1: Hay pedidos relacionados - Agrupar por pedido -->
-                <t t-if="sale_orders">
-                    <t t-foreach="sale_orders" t-as="order">
-                        <div class="order-container page-break-inside-avoid mb-4">
-                            <div class="order-header bg-secondary text-white p-2 rounded-top">
-                                <strong>Pedido: <span t-field="order.name"/></strong>
-                                <t t-if="order.client_order_ref">
-                                    <span class="ms-2">| Ref. Cliente: <span t-field="order.client_order_ref"/></span>
-                                </t>
+                <!-- 
+                    Verificar si hay pedidos relacionados
+                    Si el diccionario tiene más de 0 elementos, tenemos pedidos o líneas
+                -->
+                <t t-if="lines_by_order">
+                    
+                    <!-- 
+                        Iterar sobre cada par (pedido, líneas) del diccionario
+                        En Python: for order, lines in lines_by_order.items()
+                        En QWeb: necesitamos iterar sobre las claves y luego obtener los valores
+                    -->
+                    <t t-foreach="lines_by_order.keys()" t-as="order">
+                        
+                        <!-- 
+                            Obtener las líneas correspondientes a este pedido
+                            lines_by_order[order] nos da el recordset de líneas
+                        -->
+                        <t t-set="order_lines" t-value="lines_by_order[order]"/>
+                        
+                        <!-- 
+                            Verificar si es un pedido real o líneas sin pedido
+                            'no_order' es la clave especial para líneas sin pedido
+                        -->
+                        <t t-if="order != 'no_order'">
+                            <!-- CASO 1: Líneas que vienen de un pedido específico -->
+                            <div class="order-container page-break-inside-avoid mb-4">
+                                <div class="order-header bg-secondary text-white p-2 rounded-top">
+                                    <strong>Pedido: <span t-field="order.name"/></strong>
+                                    <t t-if="order.client_order_ref">
+                                        <span class="ms-2">| Ref. Cliente: <span t-field="order.client_order_ref"/></span>
+                                    </t>
+                                </div>
+                                
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 40%;">Descripción</th>
+                                            <th class="text-end" style="width: 10%;">Cantidad</th>
+                                            <th class="text-end" style="width: 15%;">Precio Unit.</th>
+                                            <th class="text-end" style="width: 10%;">Desc.%</th>
+                                            <th class="text-end" style="width: 10%;">Impuestos</th>
+                                            <th class="text-end" style="width: 15%;">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 
+                                            Ahora simplemente iteramos sobre order_lines
+                                            Ya están filtradas por el método Python
+                                        -->
+                                        <t t-foreach="order_lines" t-as="line">
+                                            
+                                            <!-- Líneas normales de producto -->
+                                            <t t-if="not line.display_type">
+                                                <tr>
+                                                    <td>
+                                                        <strong><span t-field="line.product_id.name"/></strong>
+                                                        <div t-if="line.name != line.product_id.name" class="small text-muted">
+                                                            <span t-field="line.name"/>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-field="line.quantity"/>
+                                                        <span t-field="line.product_uom_id" groups="uom.group_uom"/>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-field="line.price_unit" 
+                                                              t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-if="line.discount">
+                                                            <t t-esc="line.discount"/>%
+                                                        </span>
+                                                        <span t-else="">—</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-if="line.tax_ids">
+                                                            <t t-foreach="line.tax_ids" t-as="tax">
+                                                                <span t-field="tax.name"/><t t-if="not tax_last">, </t>
+                                                            </t>
+                                                        </span>
+                                                        <span t-else="">—</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-field="line.price_subtotal" 
+                                                              t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                            
+                                            <!-- Líneas de sección (encabezados) -->
+                                            <t t-elif="line.display_type == 'line_section'">
+                                                <tr class="line-section">
+                                                    <td colspan="6" class="font-weight-bold bg-light">
+                                                        <span t-field="line.name"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                            
+                                            <!-- Líneas de nota (comentarios) -->
+                                            <t t-elif="line.display_type == 'line_note'">
+                                                <tr class="line-note">
+                                                    <td colspan="6" class="font-italic text-muted">
+                                                        <span t-field="line.name"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                            
+                                        </t>
+                                    </tbody>
+                                </table>
                             </div>
-                            
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 40%;">Descripción</th>
-                                        <th class="text-end" style="width: 10%;">Cantidad</th>
-                                        <th class="text-end" style="width: 15%;">Precio Unit.</th>
-                                        <th class="text-end" style="width: 10%;">Desc.%</th>
-                                        <th class="text-end" style="width: 10%;">Impuestos</th>
-                                        <th class="text-end" style="width: 15%;">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-foreach="o.invoice_line_ids" t-as="line">
-                                        <t t-set="line_orders" t-value="line.sale_line_ids.mapped('order_id')"/>
-                                        <t t-if="order in line_orders">
+                        </t>
+                        
+                        <t t-else="">
+                            <!-- 
+                                CASO 2: Líneas sin pedido relacionado (añadidas manualmente)
+                                Estas se muestran sin cabecera de pedido
+                            -->
+                            <div class="order-container page-break-inside-avoid mb-4">
+                                <div class="order-header bg-warning text-dark p-2 rounded-top">
+                                    <strong>Líneas Adicionales (sin pedido)</strong>
+                                </div>
+                                
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 40%;">Descripción</th>
+                                            <th class="text-end" style="width: 10%;">Cantidad</th>
+                                            <th class="text-end" style="width: 15%;">Precio Unit.</th>
+                                            <th class="text-end" style="width: 10%;">Desc.%</th>
+                                            <th class="text-end" style="width: 10%;">Impuestos</th>
+                                            <th class="text-end" style="width: 15%;">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="order_lines" t-as="line">
                                             <t t-if="not line.display_type">
                                                 <tr>
                                                     <td>
@@ -195,15 +319,23 @@
                                                 </tr>
                                             </t>
                                         </t>
-                                    </t>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+                        
                     </t>
+                    
                 </t>
                 
-                <!-- CASO 2: NO hay pedidos relacionados - Mostrar todas las líneas sin agrupar -->
                 <t t-else="">
+                    <!--
+                        FALLBACK: Si por alguna razón lines_by_order está vacío o None,
+                        mostrar todas las líneas sin agrupar
+                        
+                        Esto NO debería ocurrir normalmente, pero es buena práctica
+                        tener un fallback
+                    -->
                     <table class="table table-sm table-bordered">
                         <thead class="table-light">
                             <tr>
