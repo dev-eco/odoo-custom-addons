@@ -10,72 +10,120 @@
     
     <template id="report_factura_documento_DEBUG">
         <t t-call="web.external_layout">
-            <div class="page" style="font-family: monospace;">
-                <h1>REPORTE DE DIAGNÓSTICO</h1>
+            <div class="page" style="font-family: monospace; font-size: 10pt;">
+                <h1>REPORTE DE DIAGNÓSTICO DE FACTURA</h1>
                 
-                <h2>Información Básica de la Factura</h2>
-                <p><strong>ID:</strong> <span t-esc="o.id"/></p>
-                <p><strong>Nombre:</strong> <span t-esc="o.name"/></p>
-                <p><strong>Partner:</strong> <span t-esc="o.partner_id.name"/></p>
+                <h2>Información Básica</h2>
+                <p><strong>ID de Factura:</strong> <span t-esc="o.id"/></p>
+                <p><strong>Número de Factura:</strong> <span t-esc="o.name"/></p>
+                <p><strong>Cliente:</strong> <span t-esc="o.partner_id.name"/></p>
+                <p><strong>Fecha:</strong> <span t-esc="o.invoice_date"/></p>
                 
-                <h2>Diagnóstico de Líneas de Factura</h2>
-                <p><strong>Objeto invoice_line_ids existe:</strong> <span t-esc="bool(o.invoice_line_ids)"/></p>
-                <p><strong>Tipo de invoice_line_ids:</strong> <span t-esc="type(o.invoice_line_ids).__name__"/></p>
-                <p><strong>Número total de líneas:</strong> <span t-esc="len(o.invoice_line_ids)"/></p>
-                <p><strong>IDs de líneas:</strong> <span t-esc="o.invoice_line_ids.ids"/></p>
+                <h2>Análisis de Líneas de Factura</h2>
+                <p><strong>¿Existe el campo invoice_line_ids?</strong> <span t-esc="bool(o.invoice_line_ids)"/></p>
+                <p><strong>Número total de líneas en invoice_line_ids:</strong> <span t-esc="len(o.invoice_line_ids)"/></p>
+                <p><strong>IDs numéricos de las líneas:</strong> <span t-esc="o.invoice_line_ids.ids"/></p>
                 
-                <h2>Iteración Manual de Líneas</h2>
-                <table border="1" style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <th>Índice</th>
-                        <th>ID Línea</th>
-                        <th>Display Type</th>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio</th>
-                    </tr>
-                    <t t-foreach="o.invoice_line_ids" t-as="line">
+                <h2>Iteración Completa Sin Filtros</h2>
+                <p><em>Esta tabla itera TODAS las líneas sin ninguna condición de filtrado</em></p>
+                <table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <thead style="background-color: #e0e0e0;">
                         <tr>
-                            <td><span t-esc="line_index"/></td>
-                            <td><span t-esc="line.id"/></td>
-                            <td><span t-esc="line.display_type or 'NORMAL'"/></td>
-                            <td><span t-esc="line.product_id.name or 'SIN PRODUCTO'"/></td>
-                            <td><span t-esc="line.quantity"/></td>
-                            <td><span t-esc="line.price_unit"/></td>
+                            <th style="padding: 8px;">Índice</th>
+                            <th style="padding: 8px;">ID</th>
+                            <th style="padding: 8px;">Producto</th>
+                            <th style="padding: 8px;">Descripción</th>
+                            <th style="padding: 8px;">Display Type</th>
+                            <th style="padding: 8px;">Cantidad</th>
+                            <th style="padding: 8px;">Precio</th>
                         </tr>
-                    </t>
-                </table>
-                
-                <h2>Filtrado con display_type</h2>
-                <p>Líneas donde display_type es False o vacío:</p>
-                <table border="1" style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <th>ID</th>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                    </tr>
-                    <t t-foreach="o.invoice_line_ids" t-as="line">
-                        <t t-if="not line.display_type">
-                            <tr>
-                                <td><span t-esc="line.id"/></td>
-                                <td><span t-esc="line.product_id.name"/></td>
-                                <td><span t-esc="line.quantity"/></td>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="o.invoice_line_ids" t-as="line">
+                            <tr style="border-bottom: 1px solid #ccc;">
+                                <td style="padding: 5px;"><span t-esc="line_index"/></td>
+                                <td style="padding: 5px;"><span t-esc="line.id"/></td>
+                                <td style="padding: 5px;"><span t-esc="line.product_id.name if line.product_id else 'SIN PRODUCTO'"/></td>
+                                <td style="padding: 5px;"><span t-esc="line.name[:50] if line.name else 'SIN DESCRIPCIÓN'"/></td>
+                                <td style="padding: 5px;"><span t-esc="line.display_type if line.display_type else 'False'"/></td>
+                                <td style="padding: 5px;"><span t-esc="line.quantity"/></td>
+                                <td style="padding: 5px;"><span t-esc="line.price_unit"/></td>
                             </tr>
                         </t>
-                    </t>
+                    </tbody>
                 </table>
                 
-                <h2>Información de Pedidos Relacionados</h2>
-                <t t-foreach="o.invoice_line_ids" t-as="line">
-                    <p>Línea <span t-esc="line.id"/>:</p>
-                    <ul>
-                        <li>Tiene sale_line_ids: <span t-esc="bool(line.sale_line_ids)"/></li>
-                        <li>Cantidad de sale_line_ids: <span t-esc="len(line.sale_line_ids)"/></li>
-                        <t t-if="line.sale_line_ids">
-                            <li>IDs de sale_line_ids: <span t-esc="line.sale_line_ids.ids"/></li>
+                <h2>Prueba de Filtrado con "not line.display_type"</h2>
+                <p><em>Esta tabla solo muestra líneas donde display_type es False (líneas normales de producto)</em></p>
+                <table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <thead style="background-color: #ffffe0;">
+                        <tr>
+                            <th style="padding: 8px;">ID</th>
+                            <th style="padding: 8px;">Producto</th>
+                            <th style="padding: 8px;">Cantidad</th>
+                            <th style="padding: 8px;">Precio Unit.</th>
+                            <th style="padding: 8px;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="o.invoice_line_ids" t-as="line">
+                            <t t-if="not line.display_type">
+                                <tr>
+                                    <td style="padding: 5px;"><span t-esc="line.id"/></td>
+                                    <td style="padding: 5px;"><span t-esc="line.product_id.name"/></td>
+                                    <td style="padding: 5px;"><span t-esc="line.quantity"/></td>
+                                    <td style="padding: 5px;"><span t-esc="line.price_unit"/></td>
+                                    <td style="padding: 5px;"><span t-esc="line.price_subtotal"/></td>
+                                </tr>
+                            </t>
                         </t>
-                    </ul>
-                </t>
+                    </tbody>
+                </table>
+                
+                <h2>Información sobre Pedidos Relacionados</h2>
+                <p><strong>Campo pedidos_relacionados (calculado):</strong> <span t-esc="o.pedidos_relacionados or 'VACÍO'"/></p>
+                
+                <h3>Análisis detallado de sale_line_ids por línea:</h3>
+                <table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <thead style="background-color: #e0ffe0;">
+                        <tr>
+                            <th style="padding: 8px;">ID Línea</th>
+                            <th style="padding: 8px;">Producto</th>
+                            <th style="padding: 8px;">Tiene sale_line_ids?</th>
+                            <th style="padding: 8px;">Cantidad de sale_line_ids</th>
+                            <th style="padding: 8px;">IDs de pedidos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="o.invoice_line_ids" t-as="line">
+                            <t t-if="not line.display_type">
+                                <tr>
+                                    <td style="padding: 5px;"><span t-esc="line.id"/></td>
+                                    <td style="padding: 5px;"><span t-esc="line.product_id.name[:30]"/></td>
+                                    <td style="padding: 5px;"><span t-esc="'SÍ' if line.sale_line_ids else 'NO'"/></td>
+                                    <td style="padding: 5px;"><span t-esc="len(line.sale_line_ids)"/></td>
+                                    <td style="padding: 5px;">
+                                        <t t-if="line.sale_line_ids">
+                                            <t t-foreach="line.sale_line_ids.mapped('order_id')" t-as="order">
+                                                <span t-esc="order.name"/>
+                                                <t t-if="not order_last">, </t>
+                                            </t>
+                                        </t>
+                                        <span t-else="">N/A</span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </t>
+                    </tbody>
+                </table>
+                
+                <h2>Resumen del Diagnóstico</h2>
+                <div style="border: 2px solid #000; padding: 15px; margin: 20px 0; background-color: #f0f0f0;">
+                    <p><strong>Total de líneas encontradas:</strong> <span t-esc="len(o.invoice_line_ids)"/></p>
+                    <p><strong>Líneas con productos:</strong> <span t-esc="len([l for l in o.invoice_line_ids if l.product_id])"/></p>
+                    <p><strong>Líneas con display_type vacío (normales):</strong> <span t-esc="len([l for l in o.invoice_line_ids if not l.display_type])"/></p>
+                    <p><strong>Líneas con pedido relacionado:</strong> <span t-esc="len([l for l in o.invoice_line_ids if l.sale_line_ids])"/></p>
+                </div>
                 
             </div>
         </t>
