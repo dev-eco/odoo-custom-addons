@@ -1,0 +1,752 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Vistas para Plantillas de Exportación
+
+    Este archivo define las interfaces para que los usuarios gestionen plantillas
+    personalizadas de nomenclatura de archivos. Las plantillas son una característica
+    avanzada pero accesible que permite a las empresas definir exactamente cómo
+    quieren que se nombren sus archivos exportados.
+
+    ¿Por qué son importantes las plantillas de nomenclatura?
+    =======================================================
+    En el mundo real, diferentes empresas y sus clientes tienen requisitos muy
+    específicos para los nombres de archivo. Por ejemplo:
+
+    - Una asesoría fiscal podría necesitar: "CLIENTE_FACT2024001_EMPRESA_20240115.pdf"
+    - Un banco podría requerir: "2024-01-15_FACTURA_001_CLIENTE-SA.pdf"
+    - Una auditoría podría preferir: "EMPRESA_2024_01_CLIENTE_FACTURA001.pdf"
+
+    Sin plantillas, tendríamos que programar cada formato manualmente, lo cual
+    no es escalable. Con plantillas, damos a los usuarios la flexibilidad de
+    definir sus propios patrones usando variables predefinidas.
+
+    Filosofía de Diseño: Potencia con Simplicidad
+    =============================================
+    Estas vistas están diseñadas siguiendo el principio de "potencia con simplicidad":
+    - La interfaz básica es simple e intuitiva para usuarios casuales
+    - Las características avanzadas están disponibles pero no abruman
+    - El feedback inmediato ayuda a entender cómo funcionan las plantillas
+    - Los ejemplos y ayudas contextuales reducen la curva de aprendizaje
+
+    Esta aproximación permite que tanto usuarios novatos como expertos sean
+    productivos con el sistema.
+-->
+
+<odoo>
+    <!--
+        VISTA DE LISTA (TREE) - RESUMEN DE PLANTILLAS
+        =============================================
+        
+        La vista de lista proporciona una visión general rápida de todas
+        las plantillas disponibles, permitiendo operaciones masivas y
+        navegación eficiente.
+    -->
+    <record id="view_export_template_tree" model="ir.ui.view">
+        <field name="name">export.template.tree</field>
+        <field name="model">export.template</field>
+        <field name="arch" type="xml">
+            <tree string="Plantillas de Exportación" 
+                  create="true" 
+                  edit="true" 
+                  delete="true"
+                  multi_edit="1">
+                <!--
+                    multi_edit="1": Permite editar múltiples registros
+                    simultáneamente. Útil para cambiar configuraciones
+                    comunes en varias plantillas a la vez.
+                -->
+                
+                <!--
+                    COLUMNAS PRINCIPALES DE INFORMACIÓN
+                    ==================================
+                    
+                    Organizamos las columnas en orden de importancia:
+                    1. Información de identificación (nombre, empresa)
+                    2. Configuración técnica (patrón, estado)
+                    3. Metadata (descripción, ejemplo)
+                -->
+                
+                <!-- Información de Identificación -->
+                <field name="name" string="Nombre"/>
+                <field name="company_id" 
+                       string="Empresa"
+                       groups="base.group_multi_company"/>
+                
+                <!-- Estado y Configuración -->
+                <field name="is_default" 
+                       string="Predeterminada"
+                       widget="boolean_toggle"/>
+                <!--
+                    widget="boolean_toggle": Renderiza como switch toggle
+                    en lugar de checkbox. Más moderno y mejor para acciones
+                    que tienen efecto inmediato.
+                -->
+                
+                <field name="active" 
+                       string="Activa"
+                       widget="boolean_toggle"/>
+                
+                <!-- Configuración Técnica -->
+                <field name="filename_pattern" 
+                       string="Patrón"
+                       class="o_text_overflow"/>
+                <!--
+                    class="o_text_overflow": Trunca texto largo con "..."
+                    pero muestra el texto completo en tooltip al pasar
+                    el mouse. Perfecto para patrones largos.
+                -->
+                
+                <!-- Vista Previa y Ayuda -->
+                <field name="example_filename" 
+                       string="Ejemplo"
+                       class="o_text_overflow"/>
+                
+                <field name="description" 
+                       string="Descripción"
+                       optional="hide"/>
+                <!--
+                    optional="hide": Esta columna está disponible pero
+                    oculta por defecto. Los usuarios pueden mostrarla
+                    usando el botón de configuración de columnas.
+                -->
+            </tree>
+        </field>
+    </record>
+    
+    <!--
+        VISTA DE FORMULARIO - EDICIÓN DETALLADA DE PLANTILLAS
+        ====================================================
+        
+        El formulario permite edición detallada de plantillas individuales,
+        con validación en tiempo real y feedback inmediato sobre los cambios.
+    -->
+    <record id="view_export_template_form" model="ir.ui.view">
+        <field name="name">export.template.form</field>
+        <field name="model">export.template</field>
+        <field name="arch" type="xml">
+            <form string="Plantilla de Exportación">
+                <!--
+                    HEADER CON BOTONES DE ACCIÓN
+                    ===========================
+                    
+                    El header contiene acciones especiales que aplican
+                    a toda la plantilla, no a campos específicos.
+                -->
+                <header>
+                    <!--
+                        Botón para Probar Plantilla
+                        ==========================
+                        
+                        Permite al usuario verificar que su plantilla funciona
+                        correctamente antes de usarla en exportaciones reales.
+                    -->
+                    <button name="test_template"
+                            string="🧪 Probar Plantilla"
+                            type="object"
+                            class="btn-secondary"
+                            help="Generar un ejemplo usando datos de prueba"/>
+                    
+                    <!--
+                        Botón para Establecer como Predeterminada
+                        =======================================
+                        
+                        Solo visible cuando la plantilla NO es predeterminada.
+                        Proporciona una forma rápida de cambiar la plantilla
+                        predeterminada sin editar campos manualmente.
+                    -->
+                    <button name="set_as_default"
+                            string="⭐ Establecer como Predeterminada"
+                            type="object"
+                            class="btn-primary"
+                            invisible="is_default"
+                            help="Hacer esta plantilla la predeterminada para la empresa"/>
+                </header>
+                
+                <!--
+                    HOJA PRINCIPAL DEL FORMULARIO
+                    ============================
+                    
+                    Organizamos los campos en grupos lógicos para facilitar
+                    la comprensión y edición.
+                -->
+                <sheet>
+                    <!--
+                        TÍTULO CON INFORMACIÓN DE ESTADO
+                        ===============================
+                        
+                        El título incluye indicadores visuales del estado
+                        de la plantilla para feedback inmediato.
+                    -->
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1>
+                            <field name="name" placeholder="Ej: Facturas Cliente Estándar"/>
+                        </h1>
+                        
+                        <!--
+                            Badges de Estado Condicionales
+                            =============================
+                            
+                            Solo muestran información relevante cuando aplica,
+                            evitando saturación visual innecesaria.
+                        -->
+                        <div class="o_row">
+                            <span class="badge badge-success" invisible="not is_default">
+                                ⭐ Predeterminada
+                            </span>
+                            <span class="badge badge-secondary" invisible="active">
+                                💤 Inactiva
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!--
+                        CONFIGURACIÓN PRINCIPAL
+                        ======================
+                        
+                        Los campos más importantes para el funcionamiento
+                        básico de la plantilla.
+                    -->
+                    <group string="Configuración Principal">
+                        <group>
+                            <field name="company_id" 
+                                   widget="selection"
+                                   options="{'no_create': True}"/>
+                            
+                            <!--
+                                Campo Activo con Ayuda Contextual
+                                ================================
+                                
+                                Explicamos las implicaciones de desactivar
+                                una plantilla para evitar confusión.
+                            -->
+                            <field name="active" 
+                                   help="Las plantillas inactivas no aparecen en las opciones de selección"/>
+                        </group>
+                        
+                        <group>
+                            <!--
+                                Checkbox Predeterminada con Validación
+                                =====================================
+                                
+                                El sistema validará automáticamente que solo
+                                una plantilla por empresa sea predeterminada.
+                            -->
+                            <field name="is_default" 
+                                   help="La plantilla predeterminada se selecciona automáticamente en nuevas exportaciones"/>
+                        </group>
+                    </group>
+                    
+                    <!--
+                        CONFIGURACIÓN DEL PATRÓN
+                        =======================
+                        
+                        Esta es la sección más técnica pero crítica del formulario.
+                        Aquí el usuario define exactamente cómo se generarán los nombres.
+                    -->
+                    <group string="Patrón de Nomenclatura">
+                        <!--
+                            Campo de Patrón con Ayuda Detallada
+                            ==================================
+                            
+                            widget="text": Campo de texto más grande para
+                            facilitar la edición de patrones largos.
+                        -->
+                        <field name="filename_pattern" 
+                               widget="text"
+                               help="Use variables entre llaves para crear patrones dinámicos. "
+                                    "Ejemplo: {doc_type}_{number}_{partner}_{date}"
+                               placeholder="{doc_type}_{number}_{partner}_{date}"/>
+                        
+                        <!--
+                            Vista Previa en Tiempo Real
+                            ==========================
+                            
+                            Este campo computed se actualiza automáticamente
+                            cada vez que el usuario modifica el patrón,
+                            proporcionando feedback inmediato.
+                        -->
+                        <field name="example_filename" 
+                               readonly="1"
+                               string="Vista Previa"
+                               class="o_field_highlight"/>
+                        <!--
+                            class="o_field_highlight": Destaca visualmente
+                            este campo para atraer la atención hacia la
+                            vista previa en tiempo real.
+                        -->
+                    </group>
+                    
+                    <!--
+                        AYUDA Y DOCUMENTACIÓN
+                        ====================
+                        
+                        Información que ayuda al usuario a crear patrones
+                        efectivos sin necesidad de documentación externa.
+                    -->
+                    <group string="Variables Disponibles" colspan="4">
+                        <div class="alert alert-info" role="alert" colspan="4">
+                            <strong>📝 Variables que puede usar en el patrón:</strong>
+                            <br/><br/>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Información del Documento:</strong>
+                                    <ul class="list-unstyled">
+                                        <li><code>{doc_type}</code> - Tipo (CLIENTE, PROVEEDOR, NC_CLIENTE)</li>
+                                        <li><code>{number}</code> - Número de factura</li>
+                                        <li><code>{currency}</code> - Moneda (EUR, USD, etc.)</li>
+                                        <li><code>{amount}</code> - Importe total</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Información Temporal y Empresarial:</strong>
+                                    <ul class="list-unstyled">
+                                        <li><code>{date}</code> - Fecha completa (YYYYMMDD)</li>
+                                        <li><code>{year}</code> - Año (YYYY)</li>
+                                        <li><code>{month}</code> - Mes (MM)</li>
+                                        <li><code>{company_code}</code> - Código de empresa</li>
+                                        <li><code>{partner}</code> - Nombre del cliente/proveedor</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <br/>
+                            <strong>💡 Ejemplos de patrones comunes:</strong>
+                            <ul class="list-unstyled">
+                                <li><code>{company_code}_{doc_type}_{number}_{date}</code> → EMPRESA_CLIENTE_FACT001_20240115</li>
+                                <li><code>{year}-{month}_{partner}_{number}</code> → 2024-01_CLIENTE-SA_FACT001</li>
+                                <li><code>{doc_type}_{partner}_{year}_{amount}EUR</code> → CLIENTE_EMPRESA_2024_1500EUR</li>
+                            </ul>
+                        </div>
+                    </group>
+                    
+                    <!--
+                        DESCRIPCIÓN OPCIONAL
+                        ===================
+                        
+                        Campo para documentar el propósito y uso de la plantilla.
+                    -->
+                    <group string="Descripción" colspan="4">
+                        <field name="description" 
+                               nolabel="1"
+                               placeholder="Describa el propósito de esta plantilla y cuándo usarla..."
+                               colspan="4"/>
+                    </group>
+                </sheet>
+                
+                <!--
+                    CHATTER PARA SEGUIMIENTO
+                    =======================
+                    
+                    El chatter permite hacer seguimiento de cambios y
+                    comunicación sobre la plantilla.
+                -->
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" groups="base.group_user"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+    
+    <!--
+        VISTA DE BÚSQUEDA - FILTROS Y AGRUPACIONES
+        ==========================================
+        
+        Permite a los usuarios encontrar rápidamente las plantillas
+        que necesitan usando filtros inteligentes.
+    -->
+    <record id="view_export_template_search" model="ir.ui.view">
+        <field name="name">export.template.search</field>
+        <field name="model">export.template</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Plantillas">
+                <!--
+                    CAMPOS DE BÚSQUEDA RÁPIDA
+                    ========================
+                    
+                    Estos campos se buscan automáticamente cuando el
+                    usuario escribe en la barra de búsqueda principal.
+                -->
+                <field name="name" 
+                       string="Nombre"
+                       filter_domain="[('name', 'ilike', self)]"/>
+                <field name="filename_pattern" 
+                       string="Patrón"
+                       filter_domain="[('filename_pattern', 'ilike', self)]"/>
+                <field name="company_id" 
+                       string="Empresa"
+                       groups="base.group_multi_company"/>
+                
+                <!--
+                    FILTROS PREDEFINIDOS
+                    ===================
+                    
+                    Filtros comunes que los usuarios pueden activar
+                    con un solo clic para encontrar plantillas específicas.
+                -->
+                <filter string="🌟 Predeterminadas" 
+                        name="default_templates"
+                        domain="[('is_default', '=', True)]"
+                        help="Mostrar solo plantillas predeterminadas"/>
+                
+                <filter string="✅ Activas" 
+                        name="active_templates"
+                        domain="[('active', '=', True)]"
+                        help="Mostrar solo plantillas activas"/>
+                
+                <filter string="💤 Inactivas" 
+                        name="inactive_templates"
+                        domain="[('active', '=', False)]"
+                        help="Mostrar solo plantillas inactivas"/>
+                
+                <!--
+                    SEPARADOR VISUAL
+                    ===============
+                    
+                    Separa filtros de estado de filtros de contenido
+                    para mejor organización visual.
+                -->
+                <separator/>
+                
+                <filter string="🏢 Mi Empresa" 
+                        name="my_company"
+                        domain="[('company_id', '=', uid)]"
+                        help="Mostrar solo plantillas de mi empresa"
+                        groups="base.group_multi_company"/>
+                
+                <!--
+                    AGRUPACIONES
+                    ===========
+                    
+                    Permiten organizar la vista de lista agrupando
+                    plantillas por diferentes criterios.
+                -->
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Empresa" 
+                            name="group_by_company"
+                            context="{'group_by': 'company_id'}"
+                            groups="base.group_multi_company"/>
+                    <filter string="Estado" 
+                            name="group_by_active"
+                            context="{'group_by': 'active'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!--
+        ACCIÓN PRINCIPAL PARA PLANTILLAS
+        ===============================
+        
+        Define cómo se abre la gestión de plantillas desde menús
+        y otros puntos de entrada del sistema.
+    -->
+    <record id="action_export_template" model="ir.actions.act_window">
+        <field name="name">Plantillas de Exportación</field>
+        <field name="res_model">export.template</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_export_template_search"/>
+        
+        <!--
+            CONFIGURACIÓN POR DEFECTO DE LA VISTA
+            ====================================
+            
+            Configuración inicial que se aplica cuando se abre la acción,
+            proporcionando una experiencia optimizada desde el primer momento.
+        -->
+        <field name="context">{
+            'search_default_active_templates': 1,
+            'search_default_my_company': 1
+        }</field>
+        <!--
+            search_default_active_templates: 1: Activa automáticamente
+            el filtro de plantillas activas.
+            
+            search_default_my_company: 1: En entornos multi-empresa,
+            muestra solo plantillas de la empresa del usuario.
+        -->
+        
+        <!--
+            MENSAJE DE AYUDA PARA VISTA VACÍA
+            ================================
+            
+            Guía al usuario cuando no hay plantillas configuradas,
+            explicando qué hacer y por qué es útil.
+        -->
+        <field name="help"><![CDATA[
+            <p class="o_view_nocontent_smiling_face">
+                Cree su primera plantilla de exportación
+            </p>
+            <p>
+                Las plantillas le permiten personalizar cómo se nombran los archivos
+                durante la exportación masiva de facturas.
+            </p>
+            <p>
+                Con plantillas puede crear nombres como:
+                <br/>• <code>CLIENTE_FACT001_EMPRESA_20240115.pdf</code>
+                <br/>• <code>2024-01_EMPRESA-SA_FACTURA001.pdf</code>
+                <br/>• <code>FACT_CLIENTE_2024_1500EUR.pdf</code>
+            </p>
+            <p>
+                <strong>Comience creando una plantilla para su empresa.</strong>
+            </p>
+        ]]></field>
+    </record>
+    
+    <!--
+        ÍTEM DE MENÚ PARA GESTIÓN DE PLANTILLAS
+        ======================================
+        
+        Añade acceso directo a la gestión de plantillas desde el
+        menú principal de contabilidad.
+    -->
+    <menuitem id="menu_export_template"
+              name="Plantillas de Exportación"
+              parent="account.menu_finance_configuration"
+              action="action_export_template"
+              sequence="50"
+              groups="account.group_account_manager"/>
+    <!--
+        parent="account.menu_finance_configuration": Ubicación en el
+        submenú de configuración contable, donde los usuarios esperan
+        encontrar este tipo de configuraciones.
+        
+        groups="account.group_account_manager": Solo visible para
+        gestores contables, ya que las plantillas afectan el comportamiento
+        del sistema y requieren conocimiento técnico.
+        
+        sequence="50": Posición media en el menú, después de configuraciones
+        más básicas pero antes de configuraciones muy avanzadas.
+    -->
+    
+    <!--
+        VISTA KANBAN (OPCIONAL) - VISTA DE TARJETAS
+        ==========================================
+        
+        Proporciona una vista alternativa más visual para gestionar
+        plantillas, especialmente útil cuando hay muchas plantillas.
+    -->
+    <record id="view_export_template_kanban" model="ir.ui.view">
+        <field name="name">export.template.kanban</field>
+        <field name="model">export.template</field>
+        <field name="arch" type="xml">
+            <kanban string="Plantillas de Exportación" 
+                    create="true" 
+                    edit="true" 
+                    delete="true"
+                    class="o_kanban_mobile">
+                <!--
+                    class="o_kanban_mobile": Optimización para dispositivos
+                    móviles, ajustando automáticamente el tamaño de las tarjetas.
+                -->
+                
+                <!--
+                    PLANTILLA DE TARJETA INDIVIDUAL
+                    ==============================
+                    
+                    Define cómo se ve cada plantilla en la vista de tarjetas.
+                -->
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <!--
+                                HEADER DE LA TARJETA
+                                ===================
+                                
+                                Información principal visible de inmediato.
+                            -->
+                            <div class="o_kanban_card_header">
+                                <div class="o_kanban_card_header_title">
+                                    <div class="o_primary">
+                                        <strong><t t-esc="record.name.value"/></strong>
+                                    </div>
+                                    <div class="o_secondary" 
+                                         t-if="record.company_id.value">
+                                        <i class="fa fa-building-o"/> 
+                                        <t t-esc="record.company_id.value"/>
+                                    </div>
+                                </div>
+                                
+                                <!--
+                                    BADGES DE ESTADO
+                                    ===============
+                                    
+                                    Indicadores visuales del estado de la plantilla.
+                                -->
+                                <div class="o_kanban_card_manage_pane dropdown">
+                                    <span t-if="record.is_default.raw_value" 
+                                          class="badge badge-success">
+                                        Predeterminada
+                                    </span>
+                                    <span t-if="!record.active.raw_value" 
+                                          class="badge badge-secondary">
+                                        Inactiva
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!--
+                                CONTENIDO PRINCIPAL DE LA TARJETA
+                                ================================
+                                
+                                Información detallada sobre el patrón y ejemplo.
+                            -->
+                            <div class="container o_kanban_card_content">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <strong>Patrón:</strong>
+                                        <br/>
+                                        <code class="text-muted">
+                                            <t t-esc="record.filename_pattern.value"/>
+                                        </code>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <strong>Ejemplo:</strong>
+                                        <br/>
+                                        <span class="text-info">
+                                            <t t-esc="record.example_filename.value"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <!--
+                                    DESCRIPCIÓN (SI EXISTE)
+                                    ======================
+                                    
+                                    Solo muestra descripción si está definida.
+                                -->
+                                <div class="row mt-2" 
+                                     t-if="record.description.value">
+                                    <div class="col-12">
+                                        <em class="text-muted">
+                                            <t t-esc="record.description.value"/>
+                                        </em>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!--
+                                FOOTER CON ACCIONES
+                                ==================
+                                
+                                Botones de acción rápida disponibles desde la tarjeta.
+                            -->
+                            <div class="o_kanban_card_manage_pane dropdown">
+                                <a role="button" 
+                                   class="dropdown-toggle o-no-caret btn" 
+                                   data-toggle="dropdown">
+                                    <i class="fa fa-ellipsis-v"/>
+                                </a>
+                                <div class="dropdown-menu" role="menu">
+                                    <a t-if="widget.editable" 
+                                       type="edit" 
+                                       class="dropdown-item">
+                                        ✏️ Editar
+                                    </a>
+                                    <a t-if="widget.deletable" 
+                                       type="delete" 
+                                       class="dropdown-item">
+                                        🗑️ Eliminar
+                                    </a>
+                                    <div class="dropdown-divider"/>
+                                    <a name="test_template" 
+                                       type="object" 
+                                       class="dropdown-item">
+                                        🧪 Probar Plantilla
+                                    </a>
+                                    <a name="set_as_default" 
+                                       type="object" 
+                                       class="dropdown-item"
+                                       t-if="!record.is_default.raw_value">
+                                        ⭐ Establecer como Predeterminada
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!--
+        ACTUALIZAR ACCIÓN PARA INCLUIR VISTA KANBAN
+        ==========================================
+        
+        Añadimos la vista kanban a los modos disponibles para que
+        los usuarios puedan elegir entre lista, formulario y tarjetas.
+    -->
+    <record id="action_export_template" model="ir.actions.act_window">
+        <field name="view_mode">tree,kanban,form</field>
+    </record>
+
+</odoo>
+
+<!--
+    CONCEPTOS AVANZADOS DE UX/UI EN ODOO
+    ===================================
+    
+    Progressive Enhancement (Mejora Progresiva)
+    ------------------------------------------
+    Estas vistas implementan mejora progresiva:
+    - Funcionalidad básica funciona sin JavaScript
+    - Características avanzadas mejoran la experiencia
+    - Degradación elegante en dispositivos limitados
+    - Accesibilidad garantizada en todos los niveles
+    
+    Information Architecture (Arquitectura de Información)
+    -----------------------------------------------------
+    La organización de información sigue principios UX:
+    - Información más importante primero (nombre, empresa)
+    - Agrupación lógica de campos relacionados
+    - Separación visual clara entre secciones
+    - Jerarquía visual clara con encabezados y espaciado
+    
+    Feedback Inmediato
+    -----------------
+    El campo example_filename proporciona feedback inmediato:
+    - Se actualiza automáticamente al cambiar el patrón
+    - Muestra errores inmediatamente si hay sintaxis inválida
+    - Permite experimentar sin consecuencias
+    - Reduce la necesidad de documentación externa
+    
+    Múltiples Interfaces para Diferentes Casos de Uso
+    ------------------------------------------------
+    - Tree View: Para operaciones masivas y visión general
+    - Form View: Para edición detallada de plantillas individuales
+    - Kanban View: Para exploración visual y comparación rápida
+    - Search View: Para encontrar plantillas específicas rápidamente
+    
+    Cada vista está optimizada para su caso de uso específico.
+    
+    Contextual Help (Ayuda Contextual)
+    ---------------------------------
+    La ayuda está integrada directamente en la interfaz:
+    - Help text en campos explica propósito y formato
+    - Ejemplos visuales muestran resultados esperados
+    - Placeholders sugieren formato correcto
+    - Alerts proporcionan información adicional cuando es relevante
+    
+    Esto reduce la curva de aprendizaje y minimiza errores.
+    
+    Responsive Design (Diseño Responsivo)
+    ------------------------------------
+    Las vistas están diseñadas para funcionar en múltiples dispositivos:
+    - Kanban view tiene optimización móvil automática
+    - Columnas optional se ocultan en pantallas pequeñas
+    - Bootstrap grid system para layouts flexibles
+    - Touch-friendly controls para interfaces táctiles
+    
+    Multi-Company Awareness (Conciencia Multi-Empresa)
+    ------------------------------------------------
+    Las vistas manejan inteligentemente entornos multi-empresa:
+    - Campos de empresa solo aparecen cuando es relevante
+    - Filtros automáticos limitan datos a empresas accesibles
+    - Groups attribute controla visibilidad según permisos
+    - Domain filters respetan boundaries empresariales
+    
+    Esto garantiza seguridad sin complejidad adicional para usuarios.
+-->

@@ -1,142 +1,170 @@
-# ==============================================
-# wizard/__init__.py (subdirectorio wizard)
-# ==============================================
 # -*- coding: utf-8 -*-
 """
-Paquete wizard del módulo Mass Invoice Export
+Inicialización del Paquete Wizard
 
-Este __init__.py está dentro del subdirectorio wizard/ y controla
-qué archivos Python se cargan cuando se importa el paquete wizard.
+Este archivo __init__.py del directorio wizard/ tiene la responsabilidad de
+importar todos los modelos transitorios (TransientModel) que forman parte
+de nuestro sistema de exportación masiva.
 
-Estructura de directorios esperada:
-mass_invoice_export/
-├── __init__.py (el archivo de arriba)
-├── __manifest__.py
-├── security/
-│   └── ir.model.access.csv
-├── wizard/
-│   ├── __init__.py (este archivo)
-│   ├── invoice_export_wizard.py (el modelo Python)
-│   └── invoice_export_wizard_views.xml (las vistas)
-└── views/
-    └── account_move_views.xml
+¿Qué son los Wizards en Odoo?
+============================
+Los wizards en Odoo son interfaces especiales diseñadas para guiar al usuario
+a través de un proceso paso a paso. Son como "asistentes" que recopilan
+información del usuario y ejecutan acciones complejas basadas en esa información.
 
-¿Por qué separar models de views?
----------------------------------
-- Los archivos .py (modelos) se importan aquí en __init__.py
-- Los archivos .xml (vistas) NO se importan aquí
-- Los XMLs se declaran en la lista 'data' del __manifest__.py
-- Esta separación es una convención de Odoo que mejora la claridad
+Imagina que estás comprando un producto en línea: el proceso de checkout es
+como un wizard. Te guía paso a paso (información personal, dirección de envío,
+método de pago, confirmación) hasta completar la compra.
 
-¿Qué pasa si olvido este archivo?
----------------------------------
-Si no existe wizard/__init__.py:
-1. Python no reconocerá wizard/ como paquete
-2. El import en el __init__.py principal fallará
-3. Odoo no podrá cargar el módulo
-4. Verás un error como: "ModuleNotFoundError: No module named 'wizard'"
+En nuestro caso, el wizard de exportación:
+1. Recopila criterios de filtrado (fechas, tipos de documento, etc.)
+2. Permite configurar opciones (formato de compresión, tamaño de lote)
+3. Ejecuta la exportación masiva
+4. Muestra resultados y proporciona descarga
+
+Características de los TransientModel
+====================================
+Los wizards en Odoo se implementan usando TransientModel, que tienen
+características especiales que los hacen perfectos para este propósito:
+
+**Temporalidad Automática:**
+- Los registros se eliminan automáticamente después de un tiempo
+- No acumulan datos innecesariamente en la base de datos
+- Ideales para procesos que no requieren persistencia
+
+**Rendimiento Optimizado:**
+- Tabla temporal que se limpia periódicamente
+- Menos overhead que modelos persistentes
+- Mejor rendimiento para operaciones frecuentes
+
+**Seguridad Natural:**
+- Los datos desaparecen automáticamente
+- No hay riesgo de acumulación de información sensible
+- Perfecto para procesos que manejan datos temporales
+
+¿Por qué Separar Wizards de Models?
+==================================
+Separar los wizards en su propio directorio es una práctica organizacional
+que mejora la claridad y mantenibilidad del código:
+
+**Claridad Conceptual:**
+- Models: Datos que persisten (plantillas, configuraciones)
+- Wizards: Procesos temporales (exportaciones, importaciones)
+
+**Facilidad de Mantenimiento:**
+- Los wizards suelen cambiar más frecuentemente que los modelos
+- Diferentes desarrolladores pueden trabajar en cada área
+- Más fácil localizar código relacionado con procesos específicos
+
+**Escalabilidad:**
+- A medida que el módulo crece, los wizards se multiplican
+- Cada proceso complejo puede tener su propio wizard
+- La organización en directorios mantiene todo ordenado
+
+Convención de Nombres en Wizards
+===============================
+Para wizards, seguimos estas convenciones específicas:
+
+**Archivos Python:**
+- Nombre descriptivo del proceso: batch_export_wizard.py
+- Sufijo "_wizard" para claridad: import_wizard.py, config_wizard.py
+
+**Clases Python:**
+- PascalCase del proceso: BatchExportWizard
+- Sufijo "Wizard" para consistencia: ImportWizard, ConfigWizard
+
+**Modelos Odoo:**
+- snake_case con puntos: batch.export.wizard
+- Namespace del módulo implícito: todas empiezan igual
+
+**Archivos XML:**
+- Mismo nombre que el Python + _views.xml
+- batch_export_wizard_views.xml, import_wizard_views.xml
+
+Esta consistencia hace que cualquier desarrollador pueda entender
+inmediatamente la estructura y localizar archivos específicos.
 """
 
-# Importar el archivo con los modelos Python
-# Nota: importamos invoice_export_wizard (el nombre del archivo)
-# NO importamos la clase InvoiceExportWizard
-# Odoo descubre automáticamente las clases que heredan de models.Model
-from . import invoice_export_wizard
+# Importar modelos transitorios (wizards) del módulo
+# Cada wizard se define en su propio archivo para mejor organización
 
+from . import batch_export_wizard    # Wizard principal de exportación masiva
 
-# ==============================================
-# NOTAS ADICIONALES PARA EL DESARROLLADOR
-# ==============================================
 """
-Mejores Prácticas para __init__.py en Odoo:
+EXPANSIÓN FUTURA DEL PAQUETE WIZARD
+===================================
 
-1. **Mantenerlos simples**
-   - Solo imports, sin lógica compleja
-   - Sin código ejecutable que no sean imports
-   - Sin configuraciones o constantes globales
+A medida que el módulo evolucione, podrías añadir wizards adicionales:
 
-2. **Orden de imports**
-   - Primero subdirectorios (models, wizard, controllers)
-   - Luego archivos individuales si los hay
-   - El orden puede importar si hay dependencias entre módulos
+from . import batch_export_wizard      # Exportación masiva (actual)
+from . import batch_import_wizard      # Importación masiva de facturas
+from . import export_config_wizard     # Configuración de exportación
+from . import template_wizard          # Asistente para crear plantillas
+from . import migration_wizard         # Migración de datos entre versiones
 
-3. **Comentarios claros**
-   - Documenta qué hace cada import si no es obvio
-   - Especialmente útil en módulos grandes con muchos subdirectorios
+Cada wizard tendría su propósito específico:
 
-4. **Convenciones de nombres**
-   - Subdirectorios comunes: models, wizard, controllers, reports
-   - Archivos Python: nombres descriptivos en snake_case
-   - Clases Odoo: nombres en PascalCase
+**batch_import_wizard:**
+Podría manejar la importación masiva de facturas desde archivos ZIP,
+permitiendo cargar múltiples PDFs y crear automáticamente las facturas
+correspondientes en Odoo.
 
-5. **Testing**
-   - Si el __init__.py tiene un error de sintaxis, el módulo no cargará
-   - Siempre verifica que los nombres de archivos coincidan con los imports
-   - Usa el log de Odoo para detectar problemas de importación
+**export_config_wizard:**
+Un asistente para configurar las opciones de exportación de una empresa,
+guiando paso a paso a través de todas las opciones disponibles.
 
-Errores Comunes y Soluciones:
------------------------------
+**template_wizard:**
+Un asistente inteligente que ayude a crear plantillas de nomenclatura
+preguntando al usuario qué información quiere incluir y en qué formato.
 
-❌ Error: "No module named 'invoice_export_wizard'"
-✅ Solución: Verifica que el archivo se llame exactamente 'invoice_export_wizard.py'
+**migration_wizard:**
+Para migrar configuraciones y plantillas cuando se actualice el módulo
+a versiones futuras con nuevas características.
 
-❌ Error: "cannot import name 'wizard'"
-✅ Solución: Asegúrate que existe wizard/__init__.py
+Patrón de Diseño: Un Wizard por Proceso
+=======================================
+La regla general es: un wizard por cada proceso complejo que requiera
+múltiples pasos o configuraciones del usuario.
 
-❌ Error: El módulo aparece en Odoo pero no funciona
-✅ Solución: Revisa el log de Odoo, probablemente hay un error en el código Python
+**Señales de que necesitas un wizard:**
+- El proceso requiere más de 2-3 campos de entrada
+- Hay validaciones complejas entre campos
+- El proceso tiene múltiples pasos o fases
+- Necesitas mostrar resultados o confirmaciones al usuario
+- El proceso es ocasional (no de uso diario)
 
-❌ Error: "SyntaxError" en __init__.py
-✅ Solución: Verifica que los imports estén bien escritos, especialmente los puntos
+**Cuándo NO usar un wizard:**
+- Para operaciones simples de un solo campo
+- Para acciones frecuentes que el usuario hace muchas veces al día
+- Cuando toda la información está disponible en el contexto actual
+- Para operaciones que no requieren configuración del usuario
 
-Debugging de problemas de importación:
---------------------------------------
+Mejores Prácticas para Wizards
+=============================
 
-1. Activa el modo debug de Odoo: ?debug=1 en la URL
-2. Revisa el log con: sudo journalctl -u odoo-dev -f
-3. Busca líneas con "ModuleNotFoundError" o "ImportError"
-4. Verifica la estructura de archivos con: tree mass_invoice_export/
-5. Confirma permisos: todos los .py deben ser legibles por el usuario odoo
+**Estructura Paso a Paso:**
+1. Recopilar información del usuario (campos de entrada)
+2. Validar datos y mostrar vista previa si es posible
+3. Ejecutar el proceso (con barra de progreso si es largo)
+4. Mostrar resultados y opciones de descarga/continuar
 
-Estructura completa del módulo final:
--------------------------------------
+**Experiencia de Usuario:**
+- Campos con valores por defecto inteligentes
+- Ayudas contextuales (help) en todos los campos
+- Validación en tiempo real cuando sea posible
+- Mensajes de error claros y accionables
+- Confirmaciones de éxito con información específica
 
-mass_invoice_export/
-├── __init__.py                          ← Imports: wizard
-├── __manifest__.py                      ← Metadata del módulo
-├── README.md                            ← Documentación (opcional pero recomendado)
-├── static/
-│   ├── description/
-│   │   ├── icon.png                    ← Icono del módulo (128x128)
-│   │   └── index.html                  ← Descripción HTML (opcional)
-├── security/
-│   └── ir.model.access.csv             ← Permisos de acceso a modelos
-├── wizard/
-│   ├── __init__.py                      ← Imports: invoice_export_wizard
-│   ├── invoice_export_wizard.py        ← Modelo TransientModel
-│   └── invoice_export_wizard_views.xml ← Vistas del wizard
-├── views/
-│   └── account_move_views.xml          ← Herencia vista facturas
-└── tests/                               ← Tests unitarios (opcional)
-    ├── __init__.py
-    └── test_invoice_export.py
+**Manejo de Errores:**
+- Try/catch en todas las operaciones críticas
+- Logging detallado para debugging
+- Mensajes de error informativos para el usuario
+- Opciones de recuperación cuando sea posible
+- Limpieza automática en caso de fallos
 
-¿Quieres añadir más subdirectorios?
-----------------------------------
-
-Si en el futuro quieres expandir el módulo con:
-- Controllers (para APIs web): crea controllers/ y añade import
-- Reports (reportes QWeb): crea reports/ y añade import  
-- Models regulares (no wizards): crea models/ y añade import
-
-Ejemplo de __init__.py expandido:
-
-    # -*- coding: utf-8 -*-
-    from . import models
-    from . import wizard
-    from . import controllers
-    from . import reports
-
-Cada subdirectorio necesitará su propio __init__.py importando
-los archivos .py correspondientes.
+**Rendimiento:**
+- Procesamiento por lotes para operaciones grandes
+- Indicadores de progreso para procesos largos
+- Timeouts apropiados para evitar bloqueos
+- Limpieza de recursos temporales automática
 """

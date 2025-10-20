@@ -1,36 +1,60 @@
-# ==============================================
-# __init__.py (raíz del módulo)
-# ==============================================
 # -*- coding: utf-8 -*-
 """
-Módulo Mass Invoice Export to ZIP
+Módulo Invoice Batch Export
 
-Este es el archivo __init__.py principal del módulo.
+Este es el archivo de inicialización principal del módulo invoice_batch_export.
+Su función es importar todos los subdirectorios que contienen código Python
+para que Odoo pueda cargar correctamente todos los componentes del módulo.
 
-¿Para qué sirve __init__.py?
------------------------------
-En Python, __init__.py tiene dos propósitos fundamentales:
+¿Por qué necesitamos __init__.py?
+================================
+En Python, un directorio se convierte en un "paquete" (package) solo cuando
+contiene un archivo __init__.py. Este archivo le dice a Python:
 
-1. **Marca el directorio como paquete Python**
-   - Sin __init__.py, Python no reconoce el directorio como importable
-   - Esto es un requisito histórico de Python < 3.3
-   - Odoo sigue requiriéndolo para mantener compatibilidad
-   
-2. **Controla qué se importa cuando se carga el módulo**
-   - Los imports aquí se ejecutan cuando Odoo carga el módulo
-   - Permite controlar el orden de carga de componentes
-   - Esencial para módulos con dependencias internas
+1. "Este directorio es importable como módulo"
+2. "Cuando alguien importe este directorio, ejecuta este código"
+3. "Estos son los submódulos que debes cargar"
 
-¿Por qué importar subdirectorios?
----------------------------------
-Cuando escribimos "from . import wizard", le decimos a Python:
-- El punto (.) significa "desde el directorio actual"
-- "wizard" es un subdirectorio que también debe importarse
-- Python entonces buscará y ejecutará wizard/__init__.py
+En Odoo, este patrón es fundamental porque:
+- Odoo busca automáticamente directorios con __init__.py en addons_path
+- Necesita importar los modelos Python para registrarlos en el ORM
+- Permite control granular sobre qué se carga y en qué orden
 
-Este patrón es estándar en Odoo para organizar código por funcionalidad.
+Orden de Importación
+===================
+El orden de los imports puede ser importante si hay dependencias entre
+los componentes. En nuestro caso:
+
+1. models: Se cargan primero porque pueden ser referenciados por wizards
+2. wizard: Se cargan después porque pueden usar modelos
+
+¿Qué sucede si omitimos un import?
+=================================
+Si olvidamos importar un subdirectorio aquí:
+- Los archivos .py de ese subdirectorio NO se cargarán
+- Los modelos Python definidos ahí NO se registrarán en Odoo
+- Aparecerán errores como "No existe el modelo xyz"
+- Las vistas XML que referencien esos modelos fallarán
+
+Convención de Nombres
+====================
+- Subdirectorios: snake_case (models, wizard)
+- Archivos Python: snake_case (export_template.py)
+- Clases Odoo: PascalCase (ExportTemplate)
 """
 
-# Importar el subdirectorio wizard
-# Esto cargará todos los modelos Python definidos en wizard/__init__.py
-from . import wizard
+# Importar subdirectorios que contienen modelos Python
+# Cada línea aquí le dice a Python que busque un directorio con ese nombre
+# y ejecute su archivo __init__.py correspondiente
+
+from . import models    # Importa models/__init__.py (modelos persistentes)
+from . import wizard    # Importa wizard/__init__.py (modelos transitorios)
+
+# Nota: NO importamos subdirectorios que solo contienen XML como:
+# - views: Solo contiene archivos .xml, no .py
+# - security: Solo contiene archivos .csv y .xml
+# - data: Solo contiene archivos .xml
+# - i18n: Solo contiene archivos .po
+# 
+# Los archivos XML/CSV se declaran en la sección 'data' del __manifest__.py
+# y Odoo los carga automáticamente durante la instalación del módulo
