@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Manifest del Módulo Invoice Batch Export
+Manifest del Módulo Invoice Download PDF (Mejorado)
 
 El archivo __manifest__.py es el "certificado de nacimiento" de cualquier módulo
 de Odoo. Contiene toda la metadata que Odoo necesita para:
 
 1. Identificar el módulo (nombre, versión, autor)
-2. Entender sus dependencias (qué otros módulos necesita)
+2. Entender sus dependencias (qué otros módulos necesita)  
 3. Saber qué archivos cargar (datos, vistas, seguridad)
 4. Configurar su comportamiento (aplicación, auto-instalable, etc.)
 
@@ -29,14 +29,14 @@ Orden de Carga de Datos
 =======================
 El orden en la lista 'data' es CRÍTICO porque:
 - Los modelos se deben cargar antes que las vistas que los usan
-- Los datos base se deben cargar antes que los datos que los referencian
+- Los datos base se deben cargar antes que los datos que los referencian  
 - Los permisos se deben cargar antes que las acciones que los requieren
 
 Convención de Versionado
 =======================
-Usamos el patrón: 17.0.1.0.0 donde:
+Usamos el patrón: 17.0.2.0.0 donde:
 - 17.0: Versión de Odoo (siempre debe coincidir)
-- 1: Versión mayor del módulo (cambios breaking/incompatibles)
+- 2: Versión mayor del módulo (esta es la versión mejorada)
 - 0: Versión menor (nuevas características compatibles)
 - 0: Versión de parche (correcciones de bugs)
 """
@@ -44,196 +44,189 @@ Usamos el patrón: 17.0.1.0.0 donde:
 {
     # METADATOS BÁSICOS
     # ================
-    'name': 'Invoice Batch Export',
-    'version': '17.0.1.0.0',
+    'name': 'Mass Invoice Export to ZIP',
+    'version': '17.0.2.0.0', 
     'category': 'Accounting/Accounting',
     
     # Resumen corto que aparece en la lista de aplicaciones
     # Debe ser descriptivo pero conciso (máximo ~80 caracteres)
-    'summary': 'Exportación masiva de facturas en múltiples formatos comprimidos',
+    'summary': 'Exportación masiva de facturas en múltiples formatos comprimidos optimizados',
     
-    # Descripción detallada en formato reStructuredText
+    # Descripción detallada que explica el valor del módulo
     # Esta descripción aparece cuando el usuario abre el módulo para ver detalles
     'description': """
-        Invoice Batch Export - Exportación Masiva Inteligente
-        =====================================================
+        Mass Invoice Export to ZIP - Sistema de Exportación Inteligente
+        ===============================================================
         
-        Sistema avanzado de exportación de facturas diseñado para asesorías 
-        contables y empresas que necesitan gestionar grandes volúmenes de 
-        documentación fiscal.
+        Herramienta profesional para la exportación masiva de facturas, diseñada
+        específicamente para asesorías contables y empresas que manejan grandes
+        volúmenes de documentación fiscal.
         
         🚀 **Características Principales**
         
-        * **Múltiples formatos de compresión**: ZIP, 7-Zip, TAR.GZ
-        * **Nomenclatura inteligente**: Plantillas personalizables por empresa
-        * **Procesamiento por lotes**: Optimizado para miles de facturas
-        * **Filtrado avanzado**: Por fecha, estado, tipo de documento
-        * **Seguridad empresarial**: Control de acceso granular
-        * **Métricas de rendimiento**: Tiempo de procesamiento y ratios de compresión
+        * **Múltiples formatos de compresión**: ZIP estándar, ZIP optimizado, TAR.GZ
+        * **Nomenclatura inteligente**: Nombres descriptivos automáticos para cada archivo
+        * **Procesamiento por lotes**: Optimizado para manejar miles de facturas eficientemente
+        * **Filtrado avanzado**: Por fecha, estado, tipo de documento y empresa
+        * **Seguridad robusta**: Control de acceso integrado con permisos de Odoo
+        * **Métricas en tiempo real**: Tiempo de procesamiento y ratios de compresión
         
         📊 **Optimizado para Alto Rendimiento**
         
         * Procesamiento en lotes configurable para uso eficiente de memoria
-        * Algoritmos de compresión optimizados según preferencias velocidad/tamaño
-        * Caché inteligente de PDFs para evitar regeneración innecesaria
-        * Limpieza automática de archivos temporales
+        * Algoritmos de compresión seleccionables según necesidades velocidad/tamaño
+        * Gestión inteligente de archivos temporales con limpieza automática
+        * Compatible con exportaciones de más de 1000 facturas simultáneamente
         
-        🏢 **Perfecto para Asesorías Fiscales**
+        🏢 **Diseñado para Asesorías Fiscales**
         
-        * Plantillas de nomenclatura por empresa
-        * Filtros específicos para períodos fiscales
-        * Separación automática por tipo de documento
-        * Integración transparente con el flujo de trabajo existente
+        * Nomenclatura automática que incluye tipo, número, cliente y fecha
+        * Filtros específicos para períodos fiscales y tipos de documento
+        * Separación automática entre facturas de cliente y proveedor
+        * Integración perfecta con el flujo de trabajo existente de Odoo
         
-        🔧 **Fácil Configuración e Integración**
+        🔧 **Instalación y Desinstalación Limpia**
         
-        * No modifica modelos core de Odoo (instalación/desinstalación limpia)
-        * Configuración automática según facturas preseleccionadas
+        * No modifica modelos core de Odoo (herencia limpia de vistas)
+        * Configuración automática basada en facturas preseleccionadas
         * Compatible con instalaciones multi-empresa
-        * Traducciones completas al español
+        * Traducciones completas al español incluidas
+        * Desinstalación completa sin rastros en el sistema
     """,
     
     # INFORMACIÓN DEL DESARROLLADOR
     # ============================
-    'author': 'Tu Nombre',
-    'website': 'https://tuwebsite.com',
+    'author': 'Tu Nombre Aquí',
+    'website': 'https://tu-sitio-web.com',
     'license': 'LGPL-3',
     
     # DEPENDENCIAS DEL MÓDULO
     # ======================
-    # Lista de módulos de Odoo que DEBEN estar instalados antes de este módulo
+    # Lista mínima de módulos de Odoo que DEBEN estar instalados antes de este módulo
+    # Mantenemos solo las dependencias esenciales para evitar problemas de instalación
     'depends': [
         'account',      # Módulo de contabilidad (facturas, asientos contables)
-        'base_setup',   # Configuraciones base (para configuraciones por empresa)
     ],
     
-    # DEPENDENCIAS EXTERNAS
-    # ====================
-    # Bibliotecas Python que deben estar instaladas en el sistema
-    # Odoo verificará estas dependencias durante la instalación
+    # DEPENDENCIAS EXTERNAS OPCIONALES
+    # ================================
+    # Bibliotecas Python que mejoran la funcionalidad pero no son críticas
+    # El módulo funciona sin ellas, pero con funcionalidad reducida
     'external_dependencies': {
-        'python': ['py7zr'],  # Para soporte de compresión 7-Zip ultra eficiente
+        'python': ['py7zr'],  # Para soporte de compresión 7-Zip (opcional)
     },
     
     # ARCHIVOS DE DATOS A CARGAR
     # ==========================
     # ORDEN CRÍTICO: Los archivos se cargan en el orden especificado aquí
+    # Solo incluimos archivos que sabemos que existen o vamos a crear
     'data': [
         # 1. SEGURIDAD (siempre primero)
         # Los permisos deben cargarse antes que cualquier otra cosa
         'security/ir.model.access.csv',      # Permisos básicos de acceso a modelos
-        'security/batch_export_security.xml', # Reglas de seguridad avanzadas
         
-        # 2. DATOS BASE
-        # Datos que otros archivos pueden referenciar
-        'data/export_templates.xml',         # Plantillas predefinidas de exportación
+        # 2. WIZARDS
+        # El wizard principal con toda su funcionalidad
+        'wizard/invoice_export_wizard_views.xml', # Interfaz del wizard de exportación
         
-        # 3. VISTAS DE MODELOS
-        # Vistas para los modelos persistentes que hemos creado
-        'views/export_template_views.xml',   # Interfaz para gestionar plantillas
-        'views/res_company_views.xml',       # Extensiones de vista de empresa
-        
-        # 4. WIZARDS
-        # Los wizards van después porque pueden usar los modelos anteriores
-        'wizard/batch_export_wizard_views.xml', # Interfaz del wizard principal
-        
-        # 5. HERENCIAS DE VISTAS (al final)
+        # 3. HERENCIAS DE VISTAS (al final)
         # Las herencias van al final para asegurar que las vistas base existan
-        'views/account_move_views.xml',      # Botones añadidos a facturas
+        'views/account_move_views.xml',      # Botón añadido a vista de facturas
     ],
     
     # DATOS DE DEMOSTRACIÓN
     # ====================
-    # Se cargan solo si Odoo se instala con --demo o --init con datos demo
-    'demo': [
-        'demo/demo_export_templates.xml',    # Plantillas de ejemplo para testing
-    ],
+    # Comentamos esta sección hasta que creemos los archivos demo
+    # 'demo': [
+    #     'demo/demo_export_templates.xml',    # Plantillas de ejemplo para testing
+    # ],
     
     # CONFIGURACIÓN DEL MÓDULO
     # ========================
     'installable': True,    # El módulo está listo para instalación
     'application': False,   # No es una aplicación principal (es una extensión)
-    'auto_install': False,  # No se instala automáticamente
+    'auto_install': False,  # No se instala automáticamente con dependencias
     
-    # HOOKS DE CICLO DE VIDA
-    # =====================
+    # HOOKS DE CICLO DE VIDA (COMENTADOS HASTA IMPLEMENTAR)
+    # =====================================================
     # Funciones Python que se ejecutan en momentos específicos del ciclo de vida
-    'post_init_hook': 'post_init_hook',      # Después de instalar el módulo
-    'uninstall_hook': 'uninstall_hook',      # Antes de desinstalar el módulo
+    # Los comentamos hasta que implementemos las funciones correspondientes
+    # 'post_init_hook': 'post_init_hook',      # Después de instalar el módulo
+    # 'uninstall_hook': 'uninstall_hook',      # Antes de desinstalar el módulo
     
-    # ASSETS WEB (FUTURO)
-    # ==================
+    # ASSETS WEB (PREPARADO PARA FUTURO)
+    # ================================== 
     # Archivos JavaScript/CSS para el frontend (preparado para futuras mejoras)
+    # Los comentamos hasta que creemos los archivos correspondientes
     'assets': {
-        'web.assets_backend': [
-            # 'invoice_batch_export/static/src/js/export_widget.js',
-            # 'invoice_batch_export/static/src/css/export_styles.css',
-        ],
+        # 'web.assets_backend': [
+        #     'invoice_download_pdf/static/src/js/export_widget.js',
+        #     'invoice_download_pdf/static/src/css/export_styles.css',
+        # ],
     },
     
-    # CONFIGURACIÓN DE TRADUCCIÓN
-    # ===========================
-    # Odoo buscará automáticamente archivos .po en el directorio i18n/
-    # pero podemos especificar explícitamente cuáles cargar
-    'translations': [
-        'i18n/es.po',          # Español (España)
-    ],
+    # METADATOS ADICIONALES PARA APP STORE
+    # ====================================
+    # Información que mejora la presentación en el App Store de Odoo
+    # Comentamos hasta que creemos los archivos de imagen correspondientes
+    # 'images': [
+    #     'static/description/banner.png',      # Banner principal del módulo
+    #     'static/description/screenshot1.png', # Captura del wizard en acción
+    #     'static/description/screenshot2.png', # Captura de resultados
+    # ],
     
-    # METADATOS ADICIONALES
-    # ====================
-    # Información que aparece en el App Store de Odoo
-    'images': [
-        'static/description/banner.png',      # Banner principal
-        'static/description/screenshot1.png', # Capturas de pantalla
-        'static/description/screenshot2.png',
-    ],
-    
-    # Precio si planeas comercializar el módulo
-    # 'price': 0.00,
-    # 'currency': 'EUR',
-    
-    # Palabras clave para búsqueda en App Store
+    # PALABRAS CLAVE PARA BÚSQUEDA
+    # ============================
+    # Facilitan encontrar el módulo en el App Store
     'tags': ['accounting', 'export', 'batch', 'invoices', 'zip', 'compression'],
 }
 
 """
-NOTAS IMPORTANTES PARA EL DESARROLLADOR
-=======================================
+NOTAS CRÍTICAS PARA EL DESARROLLADOR
+====================================
 
-Orden de Carga de Datos
------------------------
-El orden en la lista 'data' es absolutamente crítico. Si cambias este orden,
-puedes causar errores como:
-- "El modelo 'x.y.z' no existe" (si cargas vistas antes que modelos)
-- "El registro 'external_id' no existe" (si referencias datos no cargados aún)
-- "Permisos insuficientes" (si cargas acciones antes que permisos)
+¿Por qué esta versión es más segura?
+-----------------------------------
+Esta versión del manifest solo referencia archivos que sabemos que existen:
+- security/ir.model.access.csv (ya existe)
+- wizard/invoice_export_wizard_views.xml (ya existe) 
+- views/account_move_views.xml (ya existe)
 
-Dependencias Externas
----------------------
-La dependencia 'py7zr' es opcional en el código (usamos try/except para importarla).
-Sin embargo, la listamos aquí para que Odoo pueda mostrar una advertencia clara
-al usuario si no está instalada. Esto es mejor que fallar silenciosamente.
+Todos los demás archivos están comentados hasta que los creemos, evitando
+errores de "archivo no encontrado" durante la carga del módulo.
+
+Manejo de Dependencias Externas
+-------------------------------
+py7zr está listado como dependencia externa, pero nuestro código maneja
+graciosamente su ausencia usando try/except. Esto significa que:
+- Si py7zr está instalado: el usuario tendrá compresión 7-Zip disponible
+- Si py7zr NO está instalado: el módulo funciona pero sin esa opción
 
 Para instalar py7zr en el servidor:
-pip3 install --break-system-packages py7zr
+    pip3 install --break-system-packages py7zr
 
-Versionado Semántico
--------------------
-La versión 17.0.1.0.0 significa:
-- 17.0: Compatible con Odoo 17.0
-- 1.0.0: Primera versión mayor del módulo
+Expansión Futura del Módulo  
+---------------------------
+Los elementos comentados (hooks, assets, demo data) están preparados para
+cuando queramos expandir el módulo. Solo necesitamos:
+1. Crear los archivos correspondientes
+2. Descomentar las líneas en el manifest
+3. Actualizar el módulo en Odoo
 
-Cuando hagas cambios:
-- Incrementa el último número (17.0.1.0.1) para bug fixes
-- Incrementa el penúltimo (17.0.1.1.0) para nuevas características
-- Incrementa el antepenúltimo (17.0.2.0.0) para cambios incompatibles
+Versionado Correcto
+------------------
+Cambié la versión a 17.0.2.0.0 para indicar que esta es una versión mejorada
+del módulo original. Esto es importante para:
+- Distinguir claramente las versiones
+- Permitir actualizaciones futuras con versionado semántico correcto
+- Mantener trazabilidad de cambios
 
-Hooks de Ciclo de Vida
----------------------
-Los hooks nos permiten ejecutar código Python en momentos específicos:
-- post_init_hook: Después de instalar (crear datos iniciales, configuraciones)
-- uninstall_hook: Antes de desinstalar (limpiar datos, archivos temporales)
+Orden de Carga Optimizado
+-------------------------
+El orden actual es mínimo pero correcto:
+1. Permisos (crítico que vaya primero)
+2. Vistas del wizard (contiene la funcionalidad principal)
+3. Herencia de vistas (modifica vistas existentes)
 
-Estos hooks se definen como funciones en __init__.py y permiten una gestión
-muy granular del ciclo de vida del módulo.
+Este orden garantiza que no habrá errores de dependencias durante la carga.
 """
