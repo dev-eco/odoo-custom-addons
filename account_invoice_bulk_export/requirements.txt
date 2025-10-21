@@ -1,8 +1,0 @@
-py7zr==0.21.0
-pyminizip==0.2.6
-pytest-odoo==0.5.0
-black==23.12.1
-isort==5.13.2
-flake8==7.0.0
-bandit==1.7.5
-Sphinx==7.2.6
