@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+=============================================================================
+PLANTILLAS DE EXPORTACIÓN POR DEFECTO
+=============================================================================
+
+Este archivo define las plantillas de nomenclatura que se instalan automáticamente
+cuando se instala el módulo. Estas plantillas proporcionan ejemplos útiles y
+configuraciones comunes que los usuarios pueden usar inmediatamente.
+
+PROPÓSITO PEDAGÓGICO:
+====================
+Al incluir plantillas por defecto, facilitamos la adopción del módulo porque:
+- Los usuarios ven ejemplos prácticos inmediatamente
+- No necesitan crear una plantilla desde cero para empezar
+- Pueden modificar las plantillas existentes según sus necesidades
+- Aprenden los patrones más comunes viendo los ejemplos
+
+ESTRATEGIA DE DATOS MAESTROS:
+============================
+- Plantillas genéricas que funcionan para cualquier empresa
+- Patrones comunes de la industria
+- Ejemplos que demuestran diferentes casos de uso
+- ID externos que permiten actualizaciones futuras sin duplicados
+-->
+
+<odoo>
+    <data noupdate="1">
+        <!--
+        noupdate="1" significa que estos datos solo se instalan una vez.
+        Si el usuario modifica las plantillas después, no se sobrescribirán
+        en futuras actualizaciones del módulo.
+        -->
+
+        <!-- PLANTILLA ESTÁNDAR PARA USO GENERAL -->
+        <record id="export_template_standard" model="export.template">
+            <field name="name">Estándar - Uso General</field>
+            <field name="pattern">{type}_{number}_{partner}_{date}.pdf</field>
+            <field name="is_default" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="sequence">10</field>
+            <field name="description">Plantilla estándar que incluye tipo de documento, número, cliente y fecha. Ideal para uso general y envío a terceros.</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <!-- PLANTILLA PARA ASESORÍAS FISCALES -->
+        <record id="export_template_accounting_firm" model="export.template">
+            <field name="name">Para Asesoría Fiscal</field>
+            <field name="pattern">Contabilidad_{year}_{month}/{type}_{number}_{partner}.pdf</field>
+            <field name="is_default" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="sequence">20</field>
+            <field name="description">Organizada por año y mes, ideal para envío mensual a asesorías fiscales. Los archivos se organizan automáticamente en carpetas por periodo.</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <!-- PLANTILLA SIMPLE POR CLIENTE -->
+        <record id="export_template_by_partner" model="export.template">
+            <field name="name">Simple por Cliente</field>
+            <field name="pattern">{partner}_{number}_{date}.pdf</field>
+            <field name="is_default" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="sequence">30</field>
+            <field name="description">Nomenclatura simple que prioriza el nombre del cliente. Útil cuando se envían facturas agrupadas por cliente.</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <!-- PLANTILLA PARA ARCHIVO INTERNO -->
+        <record id="export_template_internal_archive" model="export.template">
+            <field name="name">Archivo Interno Empresarial</field>
+            <field name="pattern">Archivo_{year}/{type}_{date}_{number}_{partner}_{reference}.pdf</field>
+            <field name="is_default" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="sequence">40</field>
+            <field name="description">Para archivo interno de la empresa. Incluye referencia del partner y está organizado por año para facilitar la búsqueda histórica.</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <!-- PLANTILLA PARA BANCOS Y FINANCIERAS -->
+        <record id="export_template_banking" model="export.template">
+            <field name="name">Para Entidades Bancarias</field>
+            <field name="pattern">DOCS_BANCARIOS_{company}_{year}_{month}_{type}_{number}.pdf</field>
+            <field name="is_default" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="sequence">50</field>
+            <field name="description">Formato específico para envío a bancos y entidades financieras. Incluye prefijo identificativo y nombre de empresa.</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <!-- PLANTILLA CRONOLÓGICA DETALLADA -->
+        <record id="export_template_chronological" model="export.template">
+            <field name="name">Cronológica Detallada</field>
+            <field name="pattern">{date}_{type}_{number}_{partner}_{reference}.pdf</field>
+            <field name="is_default" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="sequence">60</field>
+            <field name="description">Ordena archivos cronológicamente por fecha. Ideal para auditorías o cuando se necesita revisar documentos en orden temporal.</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+    </data>
+</odoo>

@@ -1,93 +1,28 @@
 # -*- coding: utf-8 -*-
-# © 2025 [TU_NOMBRE] - [TU_EMAIL]
-# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html)
-
 {
-    'name': 'Invoice Batch Export',
+    'name': 'Mass Invoice Export to ZIP',
     'version': '17.0.1.0.0',
-    'summary': 'Export multiple invoices in compressed archives with multi-format support',
+    'summary': 'Export multiple invoices to compressed archives with smart naming',
     'description': """
-Invoice Batch Export - Enhanced Multi-Format Compression
-========================================================
+Mass Invoice Export to ZIP
+=========================
 
-Advanced invoice export module supporting multiple compression formats and
-intelligent batch processing for optimal performance and storage efficiency.
+Export multiple customer and vendor invoices to compressed archives with
+intelligent file naming and multiple compression format support.
 
-Key Features
-============
-
-**Multi-Format Compression Support:**
-
-* ZIP (Standard, fast processing)
-* 7-Zip (Maximum compression ratio)
-* TAR.GZ (Unix/Linux standard)
-* Password-protected ZIP archives
-
-**Smart Batch Processing:**
-
-* Configurable batch sizes for memory optimization
-* Progress tracking for large exports
-* Robust error handling with detailed logging
-* Resume functionality for interrupted exports
-
-**Advanced Filtering Options:**
-
-* Date ranges with flexible criteria
-* Document types (invoices, bills, credit notes)
-* Partner-specific filtering
-* Multi-company support with isolation
-
-**Intelligent Filename Generation:**
-
-* Customizable naming templates
-* Company-specific patterns
-* Automatic conflict resolution
-* Special character sanitization
-
-**Enterprise Features:**
-
-* Multi-company compliance
-* Role-based access control
-* Audit trail integration
-* Performance monitoring
-
-Performance Optimizations
-==========================
-
-* Memory-efficient streaming for large datasets
-* Concurrent PDF generation where possible
-* Intelligent caching of report data
-* Database query optimization
-
-Security & Compliance
-======================
-
-* Encrypted archive support
-* Access logging and auditing
-* Data isolation per company
-* GDPR-compliant data handling
-
-Use Cases
-=========
-
-* Monthly submissions to accounting firms
-* Quarterly regulatory reporting
-* Bulk document archival
-* Client document delivery
-* Backup and migration scenarios
-
-Technical Specifications
-========================
-
-* Compatible with Odoo 17.0 Community & Enterprise
-* Supports 1-10,000+ invoice exports
-* Memory usage: 50-200MB (depending on batch size)
-* Processing speed: 10-100 invoices/minute
-* Storage efficiency: 60-90% compression ratio
+Key Features:
+- Batch export of customer/vendor invoices and credit notes
+- Smart filename patterns with variables (type, number, partner, date)
+- Multiple compression formats (ZIP, 7-Zip, TAR.GZ) 
+- Password protection for sensitive documents
+- Multi-company support with per-company templates
+- Advanced filters (date range, document type, status)
+- Optimized batch processing for large volumes
+- Comprehensive error handling and progress tracking
     """,
     'category': 'Accounting/Accounting',
     'author': '[TU_NOMBRE]',
-    'maintainer': '[TU_NOMBRE]',
+    'maintainer': '[TU_NOMBRE]', 
     'website': 'https://tu-sitio-web.com',
     'email': 'tu.email@dominio.com',
     'license': 'LGPL-3',
@@ -100,64 +35,40 @@ Technical Specifications
         'web',          # Web interface components
     ],
     
-    # External Python dependencies
+    # External Python dependencies  
     'external_dependencies': {
         'python': [
             'py7zr',        # 7-Zip compression support
         ],
     },
     
-    # Data files (loaded in this order)
+    # Data files (ORDEN CRÍTICO - modelos antes que vistas)
     'data': [
         # Security files (loaded first)
         'security/ir.model.access.csv',
         
-        # Master data
-        'data/compression_formats_data.xml',
+        # Master data (after security, before views)
         'data/export_templates_data.xml',
         
-        # Views
+        # Views (after models are loaded)
         'views/export_template_views.xml',
         'wizard/batch_export_wizard_views.xml',
+        'views/res_company_views.xml',
         
-        # Menu items
+        # Menu items (last)
         'views/menu_items.xml',
     ],
-    
-    # Static assets
-    'assets': {
-        'web.assets_backend': [
-            'invoice_batch_export/static/src/css/batch_export.css',
-        ],
-    },
     
     # Module metadata
     'images': ['static/description/icon.png'],
     'application': False,
     'installable': True,
     'auto_install': False,
-    'application': False,
     
-    # Marketplace information
-    'price': 0.00,
-    'currency': 'EUR',
-    'development_status': 'Beta',
-    'maintainers': ['tu_usuario_github'],
-    
-    # Version and migration info
+    # Hooks
+    'post_init_hook': 'post_init_hook',
     'uninstall_hook': 'uninstall_hook',
     
-    # Technical information
+    # Version info
     'python_requires': '>=3.8',
-    'odoo_version': '17.0',
-    
-    # QA and testing
-    'test': [
-        'tests/test_batch_export.py',
-        'tests/test_compression_formats.py',
-    ],
-    
-    # Documentation links
-    'support': 'https://tu-sitio-web.com/support',
-    'documentation': 'https://tu-sitio-web.com/docs/invoice-batch-export',
 }

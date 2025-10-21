@@ -1,288 +1,35 @@
-# invoice_download_pdf/i18n/es.po
-# Translation template for invoice_download_pdf.
-# Copyright (C) 2024 Tu Nombre
+# Translation for invoice_batch_export module.
+# Copyright (C) 2025 [TU_NOMBRE]
 # License LGPL-3.0
 msgid ""
 msgstr ""
-"Project-Id-Version: invoice_download_pdf 17.0\n"
+"Project-Id-Version: invoice_batch_export 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-20 10:00:00+0000\n"
-"PO-Revision-Date: 2024-01-20 10:00:00+0000\n"
-"Last-Translator: Tu Nombre <tu@email.com>\n"
+"POT-Creation-Date: 2025-01-20 10:00:00+0000\n"
+"PO-Revision-Date: 2025-01-20 10:00:00+0000\n"
+"Last-Translator: [TU_NOMBRE] <tu@email.com>\n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language: es\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__invoice_ids
-msgid "Selected Invoices"
-msgstr "Facturas Seleccionadas"
+#. module: invoice_batch_export
+#: model:ir.model,name:invoice_batch_export.model_batch_export_wizard
+msgid "Mass Invoice Export Wizard"
+msgstr "Asistente de Exportación Masiva de Facturas"
 
-#. module: invoice_download_pdf
-#: model:ir.model.fields,help:invoice_download_pdf.field_invoice_export_wizard__invoice_ids
-msgid "Invoices to be exported"
-msgstr "Facturas que serán exportadas"
+#. module: invoice_batch_export  
+#: model:ir.model,name:invoice_batch_export.model_export_template
+msgid "Export Template"
+msgstr "Plantilla de Exportación"
 
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__include_customer_invoices
-msgid "Customer Invoices"
-msgstr "Facturas de Cliente"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__include_vendor_bills
-msgid "Vendor Bills"
-msgstr "Facturas de Proveedor"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__include_credit_notes
-msgid "Credit Notes"
-msgstr "Notas de Crédito"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__date_from
-msgid "From Date"
-msgstr "Fecha Desde"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__date_to
-msgid "To Date"
-msgstr "Fecha Hasta"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__state
-msgid "Status Filter"
-msgstr "Filtro de Estado"
-
-#. module: invoice_download_pdf
-#: selection:invoice.export.wizard,state:0
-msgid "Draft"
-msgstr "Borrador"
-
-#. module: invoice_download_pdf
-#: selection:invoice.export.wizard,state:0
-msgid "Posted"
-msgstr "Publicada"
-
-#. module: invoice_download_pdf
-#: selection:invoice.export.wizard,state:0
-msgid "All States"
-msgstr "Todos los Estados"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__compression_format
-msgid "Compression Format"
-msgstr "Formato de Compresión"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,help:invoice_download_pdf.field_invoice_export_wizard__compression_format
-msgid "Choose compression algorithm based on file size vs speed preferences"
-msgstr "Elige el algoritmo de compresión según preferencias de tamaño vs velocidad"
-
-#. module: invoice_download_pdf
-#: selection:invoice.export.wizard,compression_format:0
-msgid "ZIP (Standard)"
-msgstr "ZIP (Estándar)"
-
-#. module: invoice_download_pdf
-#: selection:invoice.export.wizard,compression_format:0
-msgid "ZIP (Best Compression)"
-msgstr "ZIP (Mejor Compresión)"
-
-#. module: invoice_download_pdf
-#: selection:invoice.export.wizard,compression_format:0
-msgid "7-Zip (Ultra Compression)"
-msgstr "7-Zip (Compresión Ultra)"
-
-#. module: invoice_download_pdf
-#: selection:invoice.export.wizard,compression_format:0
-msgid "TAR.GZ (Unix Standard)"
-msgstr "TAR.GZ (Estándar Unix)"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__batch_size
-msgid "Batch Size"
-msgstr "Tamaño de Lote"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,help:invoice_download_pdf.field_invoice_export_wizard__batch_size
-msgid "Number of invoices to process in each batch (affects memory usage)"
-msgstr "Número de facturas a procesar en cada lote (afecta el uso de memoria)"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__export_file
-msgid "Export File"
-msgstr "Archivo de Exportación"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__export_filename
-msgid "Filename"
-msgstr "Nombre de Archivo"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__export_count
-msgid "Exported Count"
-msgstr "Cantidad Exportada"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__compression_ratio
-msgid "Compression Ratio"
-msgstr "Ratio de Compresión"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_wizard__processing_time
-msgid "Processing Time (seconds)"
-msgstr "Tiempo de Procesamiento (segundos)"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
+#. module: invoice_batch_export
+#: model:ir.actions.act_window,name:invoice_batch_export.action_batch_export_wizard
 msgid "Mass Invoice Export"
 msgstr "Exportación Masiva de Facturas"
 
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Company &amp; Template"
-msgstr "Empresa y Plantilla"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Export Options"
-msgstr "Opciones de Exportación"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Document Filters"
-msgstr "Filtros de Documentos"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Export Results"
-msgstr "Resultados de Exportación"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "🚀 Start Export"
-msgstr "🚀 Iniciar Exportación"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Close"
-msgstr "Cerrar"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Cancel"
-msgstr "Cancelar"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Export completed successfully!"
-msgstr "¡Exportación completada exitosamente!"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "invoices exported"
-msgstr "facturas exportadas"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Compression:"
-msgstr "Compresión:"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.view,arch_db:invoice_download_pdf.view_invoice_export_wizard_form
-msgid "Processing time:"
-msgstr "Tiempo de procesamiento:"
-
-#. module: invoice_download_pdf
-#: model:ir.actions.act_window,name:invoice_download_pdf.action_invoice_export_wizard
-msgid "Mass Invoice Export"
-msgstr "Exportación Masiva de Facturas"
-
-#. module: invoice_download_pdf
-#: model:ir.ui.menu,name:invoice_download_pdf.menu_invoice_export_wizard
+#. module: invoice_batch_export
+#: model:ir.ui.menu,name:invoice_batch_export.menu_batch_export_wizard
 msgid "Mass Export"
 msgstr "Exportación Masiva"
-
-# Mensajes del código Python
-#. module: invoice_download_pdf
-#: code:addons/invoice_download_pdf/wizard/invoice_export_wizard.py:150
-#, python-format
-msgid "No invoices found matching the criteria."
-msgstr "No se encontraron facturas que coincidan con los criterios."
-
-#. module: invoice_download_pdf
-#: code:addons/invoice_download_pdf/wizard/invoice_export_wizard.py:180
-#, python-format
-msgid "Error generating PDF for invoice %s. Error: %s"
-msgstr "Error generando PDF para la factura %s. Error: %s"
-
-#. module: invoice_download_pdf
-#: code:addons/invoice_download_pdf/wizard/invoice_export_wizard.py:200
-#, python-format
-msgid "Export completed: %s invoices, %.1f%% compression, %.2fs processing time"
-msgstr "Exportación completada: %s facturas, %.1f%% compresión, %.2fs tiempo de procesamiento"
-
-#. module: invoice_download_pdf
-#: code:addons/invoice_download_pdf/wizard/invoice_export_wizard.py:220
-#, python-format
-msgid "Export Completed"
-msgstr "Exportación Completada"
-
-# Plantillas de exportación
-#. module: invoice_download_pdf
-#: model:ir.model,name:invoice_download_pdf.model_invoice_export_template
-msgid "Invoice Export Template"
-msgstr "Plantilla de Exportación de Facturas"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_template__name
-msgid "Template Name"
-msgstr "Nombre de Plantilla"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_template__filename_pattern
-msgid "Filename Pattern"
-msgstr "Patrón de Nombre de Archivo"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,help:invoice_download_pdf.field_invoice_export_template__filename_pattern
-msgid "Available variables: {company_code}, {doc_type}, {number}, {partner}, {date}, {year}, {month}, {currency}, {amount}"
-msgstr "Variables disponibles: {company_code}, {doc_type}, {number}, {partner}, {date}, {year}, {month}, {currency}, {amount}"
-
-#. module: invoice_download_pdf
-#: model:ir.model.fields,field_description:invoice_download_pdf.field_invoice_export_template__is_default
-msgid "Default Template"
-msgstr "Plantilla Predeterminada"
-
-# Validaciones y errores
-#. module: invoice_download_pdf
-#: code:addons/invoice_download_pdf/models/export_template.py:45
-#, python-format
-msgid "Only one default template is allowed per company."
-msgstr "Solo se permite una plantilla predeterminada por empresa."
-
-#. module: invoice_download_pdf
-#: code:addons/invoice_download_pdf/wizard/invoice_export_wizard.py:95
-#, python-format
-msgid "The start date cannot be later than the end date."
-msgstr "La fecha de inicio no puede ser posterior a la fecha final."
-
-# Tipos de documento
-#. module: invoice_download_pdf
-msgid "CUSTOMER"
-msgstr "CLIENTE"
-
-#. module: invoice_download_pdf
-msgid "VENDOR"
-msgstr "PROVEEDOR"
-
-#. module: invoice_download_pdf
-msgid "CREDIT_NOTE_CUSTOMER"
-msgstr "NOTA_CREDITO_CLIENTE"
-
-#. module: invoice_download_pdf
-msgid "CREDIT_NOTE_VENDOR"
-msgstr "NOTA_CREDITO_PROVEEDOR"

@@ -1,318 +1,276 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!--
-        VISTA PRINCIPAL DEL WIZARD DE EXPORTACIÓN MASIVA
-        ==============================================
-        
-        Esta vista proporciona una interfaz intuitiva y moderna para configurar
-        y ejecutar exportaciones masivas de facturas con múltiples opciones.
-    -->
-    <record id="view_batch_export_wizard_form" model="ir.ui.view">
-        <field name="name">batch.export.wizard.form</field>
-        <field name="model">batch.export.wizard</field>
-        <field name="arch" type="xml">
-            <form string="Exportación Masiva de Facturas">
-                <header>
-                    <!-- Botones de acción según el estado 
-                    <button name="action_start_export" 
-                            type="object" 
-                            string="🚀 Iniciar Exportación" 
-                            class="oe_highlight"
-                            invisible="state != 'draft'"/>
-                    
-                    <button name="action_preview_selection" 
-                            type="object" 
-                            string="👁️ Previsualizar Facturas" 
-                            class="btn-secondary"
-                            invisible="state != 'draft'"/> -->
-                    
-                    <button name="action_reset_wizard" 
-                            type="object" 
-                            string="🔄 Nueva Exportación" 
-                            class="btn-secondary"
-                            invisible="state in ['draft', 'processing']"/>
-                    
-                    <!-- Indicador de estado
-                    <field name="state" widget="statusbar" 
-                           statusbar_visible="draft,processing,done"/> -->
-                </header>
+    <data>
 
-                <sheet>
-                    <!-- Título y descripción principal -->
-                    <div class="oe_title">
-                        <h1>
-                            <i class="fa fa-download"/> Exportación Masiva de Facturas
-                        </h1>
-                        <p class="o_form_subtitle">
-                            Exporte múltiples facturas en archivos comprimidos con 
-                            soporte multi-formato y opciones avanzadas de configuración.
-                        </p>
-                    </div>
-
-                    <!-- Configuración principal (visible solo en estado draft) -->
-                    <div invisible="state != 'draft'">
+        <!-- Vista principal del wizard de exportación masiva -->
+        <record id="view_batch_export_wizard_form" model="ir.ui.view">
+            <field name="name">batch.export.wizard.form</field>
+            <field name="model">batch.export.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Exportación Masiva de Facturas">
+                    
+                    <!-- Header con botones de acción -->
+                    <header>
+                        <field name="state" invisible="1"/>
                         
-                        <!-- Configuración de empresa y plantilla -->
-                        <group name="main_config" string="📊 Configuración Principal">
-                            <group>
-                                <field name="company_id" 
-                                       options="{'no_create': True, 'no_edit': True}"/>
-                                <field name="export_template_id" 
-                                       options="{'no_create_edit': True}"/>
-                            </group>
-                            <group>
-                                <field name="compression_format"/>
-                                <field name="archive_password" 
-                                       password="True"
-                                       invisible="compression_format not in ['zip_password', 'zip_password_std']"
-                                       required="compression_format in ['zip_password', 'zip_password_std']"/>
-                            </group>
-                        </group>
-
-                        <!-- Selección de facturas -->
-                        <group name="invoice_selection" string="📄 Selección de Facturas">
-                            <field name="invoice_ids" 
-                                   widget="many2many_tags"
-                                   options="{'no_create': True}"
-                                   nolabel="1"
-                                   placeholder="Facturas seleccionadas desde la vista de lista..."/>
-                        </group>
+                        <button name="action_start_export" 
+                                type="object" 
+                                string="🚀 Iniciar Exportación" 
+                                class="btn-primary"
+                                attrs="{'invisible': [('state', '!=', 'draft')]}"/>
                         
-                        <!-- Mensaje informativo para facturas preseleccionadas -->
-                        <div class="alert alert-info o_form_sheet_bg" 
-                             style="margin: 10px 0; padding: 15px; border-left: 4px solid #0066cc;"
-                             invisible="not invoice_ids">
-                            <p style="margin: 0;">
-                                <i class="fa fa-info-circle"/> <strong>Facturas preseleccionadas:</strong><br/>
-                                Se exportarán únicamente las facturas seleccionadas desde la vista de lista. 
-                                Los filtros de documentos y fechas de abajo se ignorarán.
+                        <button name="action_download_file" 
+                                type="object" 
+                                string="📥 Descargar Archivo" 
+                                class="btn-success"
+                                attrs="{'invisible': [('export_file', '=', False)]}"/>
+                        
+                        <button name="action_reset_wizard" 
+                                type="object" 
+                                string="🔄 Nueva Exportación" 
+                                class="btn-secondary"
+                                attrs="{'invisible': [('state', '=', 'draft')]}"/>
+                        
+                        <field name="state" widget="statusbar" 
+                               statusbar_visible="draft,processing,done"/>
+                    </header>
+
+                    <!-- Contenido principal -->
+                    <sheet>
+                        
+                        <!-- Título -->
+                        <div class="oe_title">
+                            <h1>
+                                <i class="fa fa-download"/> Exportación Masiva de Facturas
+                            </h1>
+                            <div class="o_row">
+                                <span class="text-muted">
+                                    Exporta múltiples facturas en un archivo comprimido con nombres organizados
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Mensaje de instrucciones -->
+                        <div class="alert alert-info" 
+                             style="margin: 15px 0; padding: 15px;"
+                             attrs="{'invisible': [('state', '!=', 'draft')]}">
+                            <h4 style="margin-top: 0;">
+                                <i class="fa fa-info-circle"/> ¿Cómo funciona esta exportación?
+                            </h4>
+                            <p style="margin-bottom: 10px;">
+                                <strong>1. Configura:</strong> Selecciona empresa, plantilla y formato de compresión<br/>
+                                <strong>2. Filtra:</strong> Define qué facturas quieres exportar<br/>
+                                <strong>3. Exporta:</strong> El sistema genera PDFs y los comprime automáticamente<br/>
+                                <strong>4. Descarga:</strong> Recibe un archivo listo para enviar o archivar
                             </p>
                         </div>
 
-                        <!-- Filtros de documentos (solo si no hay preselección) -->
-                        <group name="document_filters" 
-                               string="🎯 Filtros de Documentos"
-                               invisible="invoice_ids">
-                            <group>
-                                <field name="include_customer_invoices"/>
-                                <field name="include_vendor_bills"/>
-                                <field name="include_credit_notes"/>
-                            </group>
-                            <group>
-                                <field name="state_filter"/>
-                                <field name="partner_ids" 
-                                       widget="many2many_tags"
-                                       options="{'no_create': True}"/>
-                            </group>
-                        </group>
+                        <!-- Indicador de progreso -->
+                        <div class="alert alert-warning text-center" 
+                             style="margin: 15px 0; font-size: 16px;"
+                             attrs="{'invisible': [('state', '!=', 'processing')]}">
+                            <i class="fa fa-spinner fa-spin"/> 
+                            <strong>Procesando exportación...</strong>
+                            <br/>
+                            <span class="text-muted">
+                                Esto puede tomar varios minutos dependiendo del número de facturas
+                            </span>
+                        </div>
 
-                        <!-- Filtros de fecha -->
-                        <group name="date_filters" 
-                               string="📅 Filtros de Fecha"
-                               invisible="invoice_ids">
-                            <group>
-                                <field name="date_from"/>
-                                <field name="date_to"/>
-                            </group>
-                        </group>
-
-                        <!-- Opciones avanzadas -->
-                        <group name="advanced_options" string="⚙️ Opciones Avanzadas">
-                            <group>
-                                <field name="batch_size"/>
-                            </group>
-                        </group>
-                    </div>
-
-                    <!-- Indicador de progreso (visible durante procesamiento) -->
-                    <div invisible="state != 'processing'" 
-                         class="alert alert-info">
-                        <h4><i class="fa fa-spinner fa-spin"/> Procesando exportación...</h4>
-                        <p>Por favor espere mientras se procesan las facturas. 
-                           Este proceso puede tomar varios minutos dependiendo de la cantidad de documentos.</p>
-                        
-                        <div class="progress" style="margin: 10px 0;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                 role="progressbar" 
-                                 style="width: 100%">
-                                Procesando...
+                        <!-- Mensaje de éxito -->
+                        <div class="alert alert-success text-center" 
+                             style="margin: 15px 0; font-size: 16px;"
+                             attrs="{'invisible': [('state', '!=', 'done')]}">
+                            <i class="fa fa-check-circle"/> 
+                            <strong>¡Exportación completada exitosamente!</strong>
+                            <br/>
+                            <div style="margin-top: 10px; font-size: 14px;">
+                                <span attrs="{'invisible': [('export_count', '=', 0)]}">
+                                    <strong><field name="export_count"/> facturas exportadas</strong>
+                                </span>
+                                <span attrs="{'invisible': [('compression_ratio', '=', 0)]}">
+                                    | Compresión: <strong><field name="compression_ratio"/>%</strong>
+                                </span>
+                                <span attrs="{'invisible': [('processing_time', '=', 0)]}">
+                                    | Tiempo: <strong><field name="processing_time"/>s</strong>
+                                </span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Resultados (visible cuando está completado) -->
-                    <div invisible="state not in ['done', 'error']">
-                        
-                        <!-- Estadísticas de la exportación -->
-                        <group name="export_stats" string="📊 Estadísticas de la Exportación">
-                            <group string="Facturas Procesadas">
-                                <field name="total_invoices" readonly="1" 
-                                       string="📄 Total de Facturas"/>
-                                <field name="processed_invoices" readonly="1"
-                                       string="✅ Procesadas Exitosamente"/>
-                                <field name="failed_invoices" readonly="1"
-                                       string="❌ Con Errores"/>
-                            </group>
-                            <group string="Información del Archivo">
-                                <field name="export_size" readonly="1"
-                                       string="📦 Tamaño (MB)"/>
-                                <field name="processing_time" readonly="1"
-                                       string="⏱️ Tiempo (segundos)"/>
-                            </group>
-                        </group>
-
-                        <!-- Descarga del archivo (solo si está completado exitosamente) -->
-                        <group name="download_section" 
-                               string="⬇️ Descargar Archivo Comprimido"
-                               invisible="state != 'done'">
-                            <field name="export_filename" invisible="1"/>
-                            <field name="export_file" 
-                                   filename="export_filename" 
-                                   widget="binary"
-                                   string="📁 Archivo de Exportación"
-                                   help="Haga clic para descargar el archivo ZIP con todas las facturas"/>
+                        <!-- Configuración principal (visible solo en estado draft) -->
+                        <div attrs="{'invisible': [('state', '!=', 'draft')]}">
                             
-                            <!-- Mensaje de éxito -->
-                            <div class="alert alert-success o_form_sheet_bg" 
-                                 style="margin: 10px 0; padding: 15px; border-left: 4px solid #28a745;">
-                                <p style="margin: 0;">
-                                    <i class="fa fa-check-circle"/> <strong>¡Exportación completada!</strong><br/>
-                                    El archivo contiene todas las facturas procesadas exitosamente.
-                                </p>
+                            <!-- Configuración de empresa y plantilla -->
+                            <group name="main_config" string="📊 Configuración Principal">
+                                <group name="company_template">
+                                    <field name="company_id" 
+                                           options="{'no_create': True, 'no_edit': True}"
+                                           attrs="{'readonly': [('invoice_ids', '!=', [])]}"/>
+                                    
+                                    <field name="export_template_id" 
+                                           options="{'no_create_edit': True}"
+                                           domain="[('company_id', '=', company_id), ('active', '=', True)]"
+                                           context="{'default_company_id': company_id}"/>
+                                </group>
+                                
+                                <group name="compression_settings">
+                                    <field name="compression_format"/>
+                                    
+                                    <field name="archive_password" 
+                                           password="True"
+                                           attrs="{
+                                               'invisible': [('compression_format', 'not in', ['zip_password', 'zip_password_std'])],
+                                               'required': [('compression_format', 'in', ['zip_password', 'zip_password_std'])]
+                                           }"
+                                           placeholder="Contraseña para proteger el archivo..."/>
+                                </group>
+                            </group>
+
+                            <!-- Selección de facturas -->
+                            <group name="invoice_selection" string="📄 Selección de Facturas">
+                                
+                                <field name="invoice_ids" 
+                                       widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       nolabel="1"
+                                       placeholder="Ninguna factura preseleccionada..."
+                                       attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                                
+                                <div attrs="{'invisible': [('invoice_ids', '=', [])]}" 
+                                     class="alert alert-success" 
+                                     style="padding: 8px; margin: 5px 0;">
+                                    <i class="fa fa-check"/> 
+                                    <strong><field name="preselected_count"/> facturas preseleccionadas</strong>
+                                    desde la vista de lista. Los filtros de abajo se ignorarán.
+                                </div>
+                            </group>
+                            
+                            <!-- Filtros de documentos -->
+                            <group name="document_filters" 
+                                   string="🔍 Filtros de Documentos"
+                                   attrs="{'invisible': [('invoice_ids', '!=', [])]}">
+                                
+                                <group name="doc_types" string="Tipos de Documento">
+                                    <field name="include_customer_invoices"/>
+                                    <field name="include_vendor_bills"/>
+                                    <field name="include_credit_notes"/>
+                                    <field name="include_debit_notes"/>
+                                </group>
+                                
+                                <group name="date_status_filters" string="Fechas y Estado">
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                    <field name="state_filter"/>
+                                </group>
+                            </group>
+
+                            <!-- Opciones avanzadas -->
+                            <group name="advanced_options" 
+                                   string="⚙️ Opciones Avanzadas" 
+                                   groups="account.group_account_manager">
+                                
+                                <group name="performance_settings" string="Rendimiento">
+                                    <field name="batch_size"/>
+                                    <field name="max_invoices"/>
+                                </group>
+                                
+                                <group name="naming_options" string="Nomenclatura">
+                                    <field name="include_folders"/>
+                                    <field name="add_timestamp"/>
+                                </group>
+                            </group>
+
+                        </div>
+
+                        <!-- Resultados de la exportación -->
+                        <div attrs="{'invisible': [('state', '!=', 'done')]}">
+                            
+                            <group name="export_results" string="📊 Resultados de la Exportación">
+                                <group name="stats_group" string="Estadísticas">
+                                    <field name="export_count" readonly="1"/>
+                                    <field name="processing_time" readonly="1"/>
+                                    <field name="compression_ratio" readonly="1"/>
+                                </group>
+                                
+                                <group name="file_info" string="Información del Archivo">
+                                    <field name="export_filename" readonly="1"/>
+                                    <field name="file_size" readonly="1"/>
+                                    <field name="export_file" filename="export_filename" readonly="1"/>
+                                </group>
+                            </group>
+
+                            <!-- Botón de descarga destacado -->
+                            <div class="text-center" style="margin: 20px 0;">
+                                <button name="action_download_file" 
+                                        type="object" 
+                                        string="📥 Descargar Archivo Comprimido" 
+                                        class="btn-success btn-lg"
+                                        style="padding: 12px 30px; font-size: 16px;"/>
                             </div>
-                        </group>
 
-                        <!-- Log de procesamiento -->
-                        <group name="processing_log_section" string="📝 Registro de Procesamiento">
-                            <field name="processing_log" 
-                                   widget="text" 
-                                   readonly="1"
-                                   nolabel="1"
-                                   options="{'resizable': True}"
-                                   class="o_field_text"
-                                   style="font-family: monospace; font-size: 13px; min-height: 200px;"/>
-                        </group>
-                    </div>
+                        </div>
 
-                </sheet>
-            </form>
-        </field>
-    </record>
+                    </sheet>
 
-    <!--
-        ACCIÓN DEL WIZARD
-        ================
-        
-        Define cómo se abre el wizard desde diferentes ubicaciones en Odoo.
-    -->
-    <record id="action_batch_export_wizard" model="ir.actions.act_window">
-        <field name="name">Exportación Masiva de Facturas</field>
-        <field name="res_model">batch.export.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">new</field>
-        <field name="view_id" ref="view_batch_export_wizard_form"/>
-        
-        <!-- Contexto por defecto -->
-        <field name="context">{}</field>
-        
-        <!-- Ayuda contextual -->
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Exportación Masiva de Facturas
-            </p>
-            <p>
-                Configure los filtros y opciones de compresión para exportar 
-                múltiples facturas en un archivo comprimido.
-            </p>
-            <p>
-                <strong>Características disponibles:</strong>
-            </p>
-            <ul>
-                <li>Múltiples formatos de compresión (ZIP, 7-Zip, TAR.GZ)</li>
-                <li>Protección con contraseña</li>
-                <li>Plantillas de nomenclatura personalizables</li>
-                <li>Filtros avanzados por fecha, tipo y estado</li>
-                <li>Procesamiento optimizado por lotes</li>
-            </ul>
-        </field>
-    </record>
-
-    <!--
-        ACCIÓN DEL MENÚ CONTEXTUAL EN FACTURAS
-        =====================================
-        
-        Permite acceder al wizard directamente desde la vista de lista de facturas
-        con las facturas seleccionadas como preselección.
-    -->
-    <record id="action_batch_export_from_invoices" model="ir.actions.act_window">
-        <field name="name">📦 Exportar en Lote</field>
-        <field name="res_model">batch.export.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">new</field>
-        <field name="view_id" ref="view_batch_export_wizard_form"/>
-        
-        <!-- Configuración para que aparezca en las acciones de facturas -->
-        <field name="binding_model_id" ref="account.model_account_move"/>
-        <field name="binding_view_types">list</field>
-        
-        <!-- Contexto que incluye las facturas seleccionadas -->
-        <field name="context">{}</field>
-    </record>
-
-    <!--
-        VISTA SIMPLIFICADA PARA SELECCIÓN RÁPIDA
-        =======================================
-        
-        Vista alternativa más simple para casos de uso básicos.
-    -->
-    <record id="view_batch_export_wizard_simple" model="ir.ui.view">
-        <field name="name">batch.export.wizard.simple</field>
-        <field name="model">batch.export.wizard</field>
-        <field name="arch" type="xml">
-            <form string="Exportación Rápida">
-                <sheet>
-                    <div class="oe_title">
-                        <h1>📦 Exportación Rápida</h1>
-                        <p>Configuración simplificada para exportación inmediata</p>
-                    </div>
-
-                    <group>
-                        <group>
-                            <field name="compression_format"/>
-                            <field name="include_customer_invoices"/>
-                            <field name="include_vendor_bills"/>
-                        </group>
-                        <group>
-                            <field name="date_from"/>
-                            <field name="date_to"/>
-                            <field name="state_filter"/>
-                        </group>
-                    </group>
-
+                    <!-- Footer con botones adicionales -->
                     <footer>
-                        <button name="action_start_export" 
+                        <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                        <button string="Ayuda" 
+                                name="action_show_help" 
                                 type="object" 
-                                string="Exportar Ahora" 
-                                class="btn-primary"/>
-                        <button string="Cancelar" 
-                                class="btn-secondary" 
-                                special="cancel"/>
+                                class="btn-link"/>
                     </footer>
-                </sheet>
-            </form>
-        </field>
-    </record>
 
-    <!--
-        ACCIÓN PARA VISTA SIMPLIFICADA
-        =============================
-    -->
-    <record id="action_batch_export_wizard_simple" model="ir.actions.act_window">
-        <field name="name">Exportación Rápida</field>
-        <field name="res_model">batch.export.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">new</field>
-        <field name="view_id" ref="view_batch_export_wizard_simple"/>
-    </record>
+                </form>
+            </field>
+        </record>
 
+        <!-- Acción principal del wizard -->
+        <record id="action_batch_export_wizard" model="ir.actions.act_window">
+            <field name="name">Exportación Masiva de Facturas</field>
+            <field name="res_model">batch.export.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_batch_export_wizard_form"/>
+            
+            <field name="binding_model_id" ref="account.model_account_move"/>
+            <field name="binding_view_types">list</field>
+            
+            <field name="help" type="html">
+                <![CDATA[
+                    <p class="o_view_nocontent_smiling_face">
+                        Exportación Masiva de Facturas
+                    </p>
+                    <p>
+                        <strong>Características disponibles:</strong>
+                    </p>
+                    <ul>
+                        <li>Múltiples formatos de compresión (ZIP, 7-Zip, TAR.GZ)</li>
+                        <li>Protección con contraseña para documentos sensibles</li>
+                        <li>Plantillas de nomenclatura personalizables</li>
+                        <li>Filtros avanzados por fecha, tipo y estado</li>
+                        <li>Procesamiento optimizado por lotes</li>
+                    </ul>
+                ]]>
+            </field>
+        </record>
+
+        <!-- Acción contextual para la lista de facturas -->
+        <record id="action_batch_export_from_invoices" model="ir.actions.act_window">
+            <field name="name">📦 Exportar en Lote</field>
+            <field name="res_model">batch.export.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_batch_export_wizard_form"/>
+            
+            <field name="binding_model_id" ref="account.model_account_move"/>
+            <field name="binding_view_types">list</field>
+            
+            <field name="context">{
+                'default_invoice_ids': active_ids,
+                'from_invoice_list': True
+            }</field>
+        </record>
+
+    </data>
 </odoo>

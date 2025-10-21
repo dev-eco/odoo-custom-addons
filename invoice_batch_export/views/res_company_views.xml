@@ -1,600 +1,220 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Vistas para Configuración de Exportación en Empresas
+=============================================================================
+EXTENSIONES DE VISTA PARA CONFIGURACIÓN DE EMPRESA
+=============================================================================
 
-    Este archivo extiende las vistas existentes del modelo res.company para incluir
-    configuraciones específicas de nuestro módulo de exportación masiva. Es un
-    ejemplo perfecto de cómo Odoo permite extensiones modulares sin modificar
-    el código base del sistema.
+Este archivo extiende la vista de empresa (res.company) para añadir
+configuraciones específicas del módulo de exportación masiva.
 
-    ¿Por qué extender las vistas de empresa?
-    =======================================
-    En lugar de crear pantallas separadas para configurar la exportación, integramos
-    las opciones directamente en la configuración de empresa. Esto proporciona:
+FILOSOFÍA DE INTEGRACIÓN:
+========================
+En lugar de crear configuraciones separadas, integramos la funcionalidad
+directamente en la vista de empresa existente. Esto tiene ventajas:
 
-    1. **Experiencia Unificada**: Los usuarios encuentran las configuraciones donde
-       las esperan, en la configuración de empresa, no en un lugar separado.
+1. DESCUBRIBILIDAD: Los usuarios encuentran las configuraciones donde esperan
+2. CONTEXTO: Las configuraciones están junto a otros datos de empresa
+3. USABILIDAD: No hay navegación adicional entre diferentes pantallas
+4. CONSISTENCIA: Sigue los patrones estándar de Odoo
 
-    2. **Contexto Claro**: Las configuraciones están claramente asociadas con la
-       empresa específica, eliminando ambigüedad en entornos multi-empresa.
-
-    3. **Flujo Natural**: Los administradores configuran todo relacionado con la
-       empresa en un solo lugar, creando un flujo de trabajo más eficiente.
-
-    4. **Consistencia Visual**: Al usar las mismas vistas y patrones que el core
-       de Odoo, nuestra funcionalidad se siente nativa, no como un add-on externo.
-
-    Arquitectura de Herencia de Vistas
-    ==================================
-    Odoo permite dos tipos de herencia de vistas:
-
-    **Herencia por Extensión**: Añadimos elementos a una vista existente sin
-    reemplazarla completamente. Esto es lo que hacemos aquí.
-
-    **Herencia por Delegación**: Creamos una nueva vista que incluye una vista
-    existente como base. Más raro y solo para casos especiales.
-
-    La herencia por extensión es perfecta para nuestro caso porque queremos
-    añadir configuraciones sin disrumpir el flujo de trabajo existente.
+PATRONES IMPLEMENTADOS:
+======================
+- Smart Buttons: Para navegación contextual a plantillas relacionadas
+- Campos Computed: Para mostrar estadísticas dinámicas
+- Extensión de Vista: Sin modificar el core de Odoo
+- Configuraciones Opcionales: Solo aparecen cuando son relevantes
 -->
 
 <odoo>
-    <!--
-        EXTENSIÓN DE LA VISTA DE FORMULARIO DE EMPRESA
-        =============================================
+    <data>
+
+        <!-- 
+        =================================================================
+        EXTENSIÓN PRINCIPAL DE LA VISTA DE EMPRESA
+        =================================================================
         
-        Esta vista hereda del formulario principal de configuración de empresa
-        y añade una nueva página específica para configuraciones de exportación.
-        
-        El uso de páginas (notebook/page) es ideal cuando añadimos configuraciones
-        sustanciales que merecen su propio espacio dedicado.
-    -->
-    <record id="view_company_form_export_settings" model="ir.ui.view">
-        <field name="name">res.company.form.export.settings</field>
-        <field name="model">res.company</field>
-        <field name="inherit_id" ref="base.view_company_form"/>
-        <field name="arch" type="xml">
-            <!--
-                LOCALIZACIÓN DEL PUNTO DE INSERCIÓN
-                ==================================
+        Esta vista añade una sección completa de configuración de exportación
+        a la vista estándar de empresa.
+        -->
+        <record id="view_company_form_export_settings" model="ir.ui.view">
+            <field name="name">res.company.form.export.settings</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="priority">16</field>
+            <field name="arch" type="xml">
                 
-                Usamos XPath para localizar exactamente dónde queremos añadir
-                nuestro contenido. En este caso, buscamos el notebook (conjunto
-                de pestañas) y añadimos una nueva página al final.
-                
-                ¿Por qué usar position="inside"?
-                - Añade nuestro contenido DENTRO del elemento encontrado
-                - Alternativas: before, after, replace, attributes
-                - "inside" es perfecto para añadir nuevas páginas a un notebook
-            -->
-            <xpath expr="//notebook" position="inside">
-                <!--
-                    NUEVA PÁGINA PARA CONFIGURACIONES DE EXPORTACIÓN
-                    ==============================================
-                    
-                    Esta página agrupa todas las configuraciones relacionadas
-                    con la exportación masiva en un espacio dedicado y organizado.
-                -->
-                <page string="📦 Exportación Masiva" 
-                      name="export_settings_page"
-                      groups="account.group_account_manager">
-                    <!--
-                        groups="account.group_account_manager": Solo visible para
-                        gestores contables. Esto tiene sentido porque estas
-                        configuraciones afectan el comportamiento del sistema
-                        y requieren conocimiento de los procesos contables.
+                <!-- Insertar después de la configuración general -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="📦 Exportación de Facturas" name="export_settings">
                         
-                        name="export_settings_page": ID único para referenciar
-                        esta página desde otros módulos si fuera necesario.
-                    -->
-                    
-                    <!--
-                        CONFIGURACIONES POR DEFECTO
-                        ==========================
-                        
-                        Primera sección: configuraciones que se aplicarán
-                        automáticamente a nuevas exportaciones.
-                    -->
-                    <group string="🎯 Configuraciones Predeterminadas">
-                        <group>
-                            <!--
-                                Formato de Compresión con Widget Radio
-                                ====================================
-                                
-                                widget="radio": Muestra todas las opciones
-                                visualmente, permitiendo comparación fácil.
-                                Es mejor que un dropdown para 3-4 opciones.
-                            -->
-                            <field name="default_compression_format" 
-                                   widget="radio"
-                                   class="o_horizontal"/>
+                        <!-- Mensaje de bienvenida y descripción -->
+                        <div class="alert alert-info" style="margin: 15px 0;">
+                            <h4><i class="fa fa-info-circle"/> Configuración de Exportación Masiva</h4>
+                            <p style="margin-bottom: 0;">
+                                Configura cómo se comportará la exportación masiva de facturas para esta empresa.
+                                Estas configuraciones servirán como valores por defecto que los usuarios pueden
+                                ajustar según sus necesidades específicas.
+                            </p>
+                        </div>
+
+                        <!-- Smart Buttons para gestión de plantillas -->
+                        <div class="oe_button_box" name="button_box">
                             
-                            <!--
-                                Tamaño de Lote con Validación Visual
-                                ===================================
-                                
-                                Este campo incluye validación automática
-                                en el modelo Python para asegurar valores
-                                razonables que no causen problemas de memoria.
-                            -->
-                            <field name="default_batch_size"/>
-                        </group>
-                        
-                        <group>
-                            <!--
-                                Checkboxes para Tipos de Documento
-                                =================================
-                                
-                                Configuraciones booleanas que definen qué
-                                se preselecciona automáticamente en el wizard.
-                            -->
-                            <field name="default_include_customer_invoices"/>
-                            <field name="default_include_vendor_bills"/>
-                            <field name="default_include_credit_notes"/>
-                        </group>
-                    </group>
-                    
-                    <!--
-                        CONFIGURACIONES DE SEGURIDAD Y LÍMITES
-                        ====================================
-                        
-                        Segunda sección: configuraciones que controlan
-                        límites y políticas de seguridad empresarial.
-                    -->
-                    <group string="🛡️ Límites y Seguridad">
-                        <group>
-                            <!--
-                                Límite Máximo de Facturas
-                                ========================
-                                
-                                Previene exportaciones que podrían sobrecargar
-                                el servidor o exceder límites de almacenamiento.
-                            -->
-                            <field name="max_export_invoices" 
-                                   help="Límite máximo de facturas por exportación para prevenir sobrecarga del servidor"/>
-                            
-                            <!--
-                                Política de Borradores
-                                ====================
-                                
-                                Controla si los usuarios pueden exportar facturas
-                                no confirmadas, lo cual puede ser útil para
-                                revisiones internas pero riesgoso para entregas externas.
-                            -->
-                            <field name="allow_draft_export" 
-                                   help="Permitir exportar facturas en borrador (útil para revisiones internas)"/>
-                        </group>
-                    </group>
-                    
-                    <!--
-                        CONFIGURACIÓN DE NOMENCLATURA PERSONALIZADA
-                        ==========================================
-                        
-                        Tercera sección: permite definir un patrón personalizado
-                        a nivel de empresa para casos donde no se usan plantillas.
-                    -->
-                    <group string="📝 Nomenclatura Personalizada">
-                        <!--
-                            Activación de Patrón Personalizado
-                            =================================
-                            
-                            Checkbox que habilita/deshabilita el uso del
-                            patrón personalizado definido abajo.
-                        -->
-                        <field name="use_custom_filename_pattern" 
-                               help="Activar para usar el patrón personalizado cuando no se seleccione una plantilla específica"/>
-                        
-                        <!--
-                            Campo de Patrón Condicional
-                            ==========================
-                            
-                            invisible="not use_custom_filename_pattern": Solo
-                            muestra este campo cuando la opción de arriba está activada.
-                            Esto reduce clutter visual y evita confusión.
-                        -->
-                        <field name="custom_filename_pattern" 
-                               invisible="not use_custom_filename_pattern"
-                               widget="text"
-                               help="Patrón usando variables como {doc_type}, {number}, {partner}, {date}"
-                               placeholder="{company_code}_{doc_type}_{number}_{date}"/>
-                        
-                        <!--
-                            Botón de Prueba Condicional
-                            ==========================
-                            
-                            Solo aparece cuando hay un patrón personalizado configurado,
-                            permitiendo al usuario verificar que funciona correctamente.
-                        -->
-                        <button name="test_custom_pattern" 
-                                string="🧪 Probar Patrón"
-                                type="object"
-                                class="btn-secondary"
-                                invisible="not use_custom_filename_pattern"
-                                help="Probar el patrón personalizado con datos de ejemplo"/>
-                    </group>
-                    
-                    <!--
-                        GESTIÓN DE PLANTILLAS
-                        ====================
-                        
-                        Cuarta sección: proporciona acceso directo a la gestión
-                        de plantillas específicas de esta empresa.
-                    -->
-                    <group string="📋 Plantillas de Exportación">
-                        <!--
-                            Smart Button para Plantillas
-                            ===========================
-                            
-                            Un smart button que muestra estadísticas y proporciona
-                            acceso directo a las plantillas de esta empresa.
-                        -->
-                        <div class="o_horizontal">
-                            <!--
-                                Botón con Contador
-                                ================
-                                
-                                class="oe_stat_button": Estilo especial para
-                                botones que muestran estadísticas (smart buttons).
-                            -->
+                            <!-- Smart Button para ver plantillas de exportación -->
                             <button class="oe_stat_button" 
                                     name="action_open_export_templates"
                                     type="object"
-                                    icon="fa-file-text-o"
-                                    help="Ver y gestionar plantillas de exportación para esta empresa">
-                                
-                                <!--
-                                    Campo Estadístico
-                                    ================
-                                    
-                                    widget="statinfo": Formato especial para
-                                    mostrar números con etiqueta en smart buttons.
-                                -->
-                                <field name="export_template_count" 
-                                       widget="statinfo" 
-                                       string="Plantillas"/>
+                                    icon="fa-file-text-o">
+                                <field name="export_template_count" widget="statinfo" string="Plantillas"/>
                             </button>
                             
-                            <!--
-                                Botón de Creación Rápida
-                                =======================
-                                
-                                Permite crear una nueva plantilla directamente
-                                desde la configuración de empresa.
-                            -->
+                            <!-- Smart Button para crear nueva plantilla -->
                             <button class="oe_stat_button" 
                                     name="action_create_export_template"
                                     type="object"
-                                    icon="fa-plus"
-                                    string="Nueva Plantilla"
-                                    help="Crear una nueva plantilla de exportación"/>
+                                    icon="fa-plus">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Nueva</span>
+                                    <span class="o_stat_text">Plantilla</span>
+                                </div>
+                            </button>
                         </div>
-                        
-                        <!--
-                            Información sobre Plantilla Predeterminada
-                            =========================================
+
+                        <!-- Configuraciones de exportación -->
+                        <group name="export_configuration">
                             
-                            Muestra cuál es la plantilla predeterminada actual
-                            de la empresa, si existe alguna.
-                        -->
-                        <field name="default_export_template_id" 
-                               readonly="1"
-                               string="Plantilla Predeterminada Actual"
-                               help="Plantilla que se selecciona automáticamente en nuevas exportaciones"/>
-                    </group>
-                    
-                    <!--
-                        INFORMACIÓN Y AYUDA
-                        ==================
-                        
-                        Sección final: proporciona orientación y documentación
-                        sobre cómo usar las configuraciones de exportación.
-                    -->
-                    <group string="ℹ️ Información y Ayuda" colspan="4">
-                        <div class="alert alert-info" role="alert" colspan="4">
-                            <strong>💡 Cómo funcionan estas configuraciones:</strong>
-                            <br/><br/>
+                            <!-- Configuraciones básicas -->
+                            <group string="⚙️ Configuraciones Básicas" name="basic_export_config">
+                                <field name="default_compression_format" 
+                                       string="Formato de Compresión Por Defecto"/>
+                                
+                                <field name="default_batch_size" 
+                                       string="Tamaño de Lote Por Defecto"/>
+                                
+                                <field name="max_export_invoices" 
+                                       string="Máximo de Facturas por Exportación"/>
+                            </group>
                             
-                            <strong>1. Configuraciones Predeterminadas:</strong>
-                            Valores que se aplicarán automáticamente cuando los usuarios
-                            abran el wizard de exportación masiva.
-                            <br/><br/>
+                            <!-- Configuraciones de nomenclatura -->
+                            <group string="📝 Configuraciones de Nomenclatura" name="naming_config">
+                                <field name="use_custom_filename_pattern" 
+                                       string="Usar Patrón Personalizado"/>
+                                
+                                <field name="custom_filename_pattern" 
+                                       attrs="{'invisible': [('use_custom_filename_pattern', '=', False)],
+                                               'required': [('use_custom_filename_pattern', '=', True)]}"
+                                       string="Patrón Personalizado"
+                                       placeholder="{type}_{number}_{partner}_{date}.pdf"
+                                       help="Variables disponibles: {type}, {number}, {partner}, {date}, {year}, {month}, {company}, {reference}"/>
+                            </group>
+                        </group>
+
+                        <!-- Información sobre plantilla por defecto -->
+                        <group string="📋 Plantilla Por Defecto" name="default_template_info">
+                            <field name="default_export_template_id" 
+                                   readonly="1"
+                                   string="Plantilla Activa"/>
                             
-                            <strong>2. Límites y Seguridad:</strong>
-                            Controles que previenen exportaciones que podrían causar
-                            problemas de rendimiento o violar políticas empresariales.
-                            <br/><br/>
-                            
-                            <strong>3. Nomenclatura Personalizada:</strong>
-                            Patrón de respaldo usado cuando no se selecciona una
-                            plantilla específica en el wizard.
-                            <br/><br/>
-                            
-                            <strong>4. Plantillas:</strong>
-                            Patrones reutilizables que permiten diferentes formatos
-                            de nomenclatura para diferentes propósitos o clientes.
-                            <br/><br/>
-                            
-                            <strong>🔄 Jerarquía de Nomenclatura:</strong>
-                            <ol>
-                                <li>Plantilla seleccionada en el wizard (prioridad más alta)</li>
-                                <li>Patrón personalizado de empresa (si está activado)</li>
-                                <li>Formato por defecto del sistema (respaldo final)</li>
-                            </ol>
-                        </div>
-                    </group>
-                </page>
-            </xpath>
-        </field>
-    </record>
-    
-    <!--
-        VISTA SIMPLIFICADA PARA CONFIGURACIÓN RÁPIDA
-        ===========================================
-        
-        Una vista alternativa más simple para usuarios que solo necesitan
-        configurar opciones básicas sin acceso a configuraciones avanzadas.
-    -->
-    <record id="view_company_form_export_simple" model="ir.ui.view">
-        <field name="name">res.company.form.export.simple</field>
-        <field name="model">res.company</field>
-        <field name="inherit_id" ref="base.view_company_form"/>
-        <field name="priority">20</field>
-        <!--
-            priority="20": Prioridad más baja que la vista principal (16).
-            Esto significa que la vista principal se usará por defecto,
-            pero esta vista puede ser llamada específicamente cuando se necesite.
-        -->
-        <field name="groups_id" eval="[(4, ref('account.group_account_user'))]"/>
-        <!--
-            groups_id: Esta vista está disponible para usuarios contables
-            básicos, no solo gestores. Proporciona acceso a configuraciones
-            esenciales sin abrumar con opciones avanzadas.
-        -->
-        <field name="arch" type="xml">
-            <!--
-                INSERCIÓN EN SECCIÓN EXISTENTE
-                =============================
-                
-                En lugar de crear una página nueva, añadimos las configuraciones
-                básicas a una sección existente de la vista de empresa.
-            -->
-            <xpath expr="//group[@name='general_settings']" position="after">
-                <!--
-                    CONFIGURACIONES BÁSICAS DE EXPORTACIÓN
-                    ====================================
-                    
-                    Solo las configuraciones más esenciales, sin opciones
-                    avanzadas que podrían confundir a usuarios básicos.
-                -->
-                <group string="Exportación de Facturas" 
-                       name="export_basic_settings"
-                       groups="account.group_account_user">
-                    
-                    <field name="default_compression_format" 
-                           string="Formato de Compresión Preferido"/>
-                    
-                    <field name="max_export_invoices" 
-                           string="Máximo de Facturas por Exportación"/>
-                    
-                    <!--
-                        Acceso Directo a Plantillas
-                        ==========================
-                        
-                        Versión simplificada del smart button para acceso
-                        rápido a plantillas sin estadísticas complejas.
-                    -->
-                    <div class="o_row">
-                        <button name="action_open_export_templates" 
-                                string="Gestionar Plantillas"
-                                type="object"
-                                class="btn-link"
-                                icon="fa-external-link"/>
-                    </div>
-                </group>
-            </xpath>
-        </field>
-    </record>
-    
-    <!--
-        ACCIÓN PARA CONFIGURACIÓN DE EXPORTACIÓN
-        =======================================
-        
-        Acción específica que abre directamente la configuración de
-        exportación de la empresa actual, saltando pasos innecesarios.
-    -->
-    <record id="action_company_export_config" model="ir.actions.act_window">
-        <field name="name">Configuración de Exportación</field>
-        <field name="res_model">res.company</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
-        <!--
-            CONTEXTO ESPECÍFICO
-            ==================
-            
-            Este contexto hace que la acción abra directamente en la
-            página de configuración de exportación.
-        -->
-        <field name="context">{
-            'default_id': False,
-            'active_test': False,
-            'form_view_initial_mode': 'edit'
-        }</field>
-        <!--
-            form_view_initial_mode: 'edit': Abre directamente en modo
-            de edición, ahorrando un clic al usuario.
-        -->
-        
-        <!--
-            DOMINIO PARA EMPRESA ACTUAL
-            ==========================
-            
-            Limita la vista a la empresa del usuario actual,
-            simplificando la experiencia en entornos multi-empresa.
-        -->
-        <field name="domain">[('id', '=', user.company_id.id)]</field>
-        
-        <!--
-            VISTA ESPECÍFICA
-            ===============
-            
-            Fuerza el uso de nuestra vista extendida que incluye
-            las configuraciones de exportación.
-        -->
-        <field name="view_id" ref="view_company_form_export_settings"/>
-    </record>
-    
-    <!--
-        ÍTEM DE MENÚ PARA ACCESO DIRECTO
-        ===============================
-        
-        Proporciona acceso directo a la configuración de exportación
-        desde el menú de configuración contable.
-    -->
-    <menuitem id="menu_company_export_config"
-              name="Configuración de Exportación"
-              parent="account.menu_finance_configuration"
-              action="action_company_export_config"
-              sequence="10"
-              groups="account.group_account_manager"/>
-    <!--
-        sequence="10": Posición alta en el menú (valores bajos van primero)
-        porque la configuración de exportación es fundamental para usar
-        el módulo efectivamente.
-        
-        parent="account.menu_finance_configuration": Ubicado en configuración
-        contable donde los usuarios esperan encontrar este tipo de ajustes.
-    -->
-    
-    <!--
-        EXTENSIÓN DEL FORMULARIO DE CONFIGURACIÓN GENERAL
-        ===============================================
-        
-        Para usuarios que prefieren tener todas las configuraciones
-        en la vista principal de configuración de Odoo.
-    -->
-    <record id="view_general_configuration_export" model="ir.ui.view">
-        <field name="name">res.config.settings.export</field>
-        <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
-        <field name="arch" type="xml">
-            <!--
-                NUEVA SECCIÓN EN CONFIGURACIÓN GENERAL
-                ====================================
-                
-                Añadimos una sección específica para exportación en
-                la vista principal de configuración de contabilidad.
-            -->
-            <xpath expr="//div[hasclass('settings')]" position="inside">
-                <div class="col-12 col-lg-6 o_setting_box" 
-                     groups="account.group_account_manager">
-                    
-                    <!--
-                        ENCABEZADO DE LA SECCIÓN
-                        ======================
-                        
-                        Título e icono descriptivo para la sección de exportación.
-                    -->
-                    <div class="o_setting_left_pane">
-                        <field name="module_invoice_batch_export" 
-                               widget="upgrade_boolean"/>
-                    </div>
-                    
-                    <div class="o_setting_right_pane">
-                        <label for="module_invoice_batch_export"/>
-                        <div class="text-muted">
-                            Exportación masiva de facturas con múltiples formatos de compresión
-                        </div>
-                        
-                        <!--
-                            ACCESO DIRECTO A CONFIGURACIÓN
-                            =============================
-                            
-                            Botón que lleva directamente a la configuración
-                            detallada de exportación en la empresa.
-                        -->
-                        <div class="content-group">
-                            <div class="mt16">
-                                <button name="%(action_company_export_config)s" 
-                                        string="Configurar Exportación"
-                                        type="action"
-                                        class="btn-link"
-                                        icon="fa-arrow-right"/>
+                            <div attrs="{'invisible': [('default_export_template_id', '!=', False)]}" 
+                                 class="alert alert-warning" 
+                                 style="margin: 10px 0;">
+                                <i class="fa fa-exclamation-triangle"/> 
+                                <strong>No hay plantilla por defecto configurada.</strong>
+                                <br/>
+                                <span class="text-muted">
+                                    Crea una plantilla usando el botón "Nueva Plantilla" arriba, 
+                                    o se usará el patrón estándar del sistema.
+                                </span>
                             </div>
+                        </group>
+
+                        <!-- Sección de ayuda y documentación -->
+                        <group string="❓ Ayuda y Documentación" name="help_section">
+                            <div style="padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                                <h4 style="margin-top: 0; color: #495057;">¿Qué hace cada configuración?</h4>
+                                <ul style="margin-bottom: 0; color: #6c757d;">
+                                    <li><strong>Formato de Compresión:</strong> Algoritmo usado para comprimir las exportaciones (ZIP, 7-Zip, etc.)</li>
+                                    <li><strong>Tamaño de Lote:</strong> Cuántas facturas procesar a la vez (afecta memoria del servidor)</li>
+                                    <li><strong>Máximo de Facturas:</strong> Límite de seguridad para prevenir exportaciones excesivamente grandes</li>
+                                    <li><strong>Plantillas:</strong> Definen cómo se nombran los archivos durante la exportación</li>
+                                </ul>
+                            </div>
+                        </group>
+
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- 
+        =================================================================
+        VISTA SIMPLIFICADA PARA USUARIOS BÁSICOS
+        =================================================================
+        
+        Vista alternativa con menos opciones para usuarios que no necesitan
+        configuraciones avanzadas.
+        -->
+        <record id="view_company_form_export_simple" model="ir.ui.view">
+            <field name="name">res.company.form.export.simple</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="priority">20</field>
+            <field name="groups_id" eval="[(4, ref('account.group_account_user'))]"/>
+            <field name="arch" type="xml">
+                
+                <!-- Insertar configuraciones básicas en la configuración general -->
+                <xpath expr="//group[@name='general_settings']" position="after">
+                    <group string="📦 Exportación de Facturas" 
+                           name="export_basic_settings"
+                           groups="account.group_account_user">
+                        
+                        <field name="default_compression_format" 
+                               string="Formato de Compresión Preferido"/>
+                        
+                        <field name="max_export_invoices" 
+                               string="Máximo de Facturas por Exportación"/>
+                        
+                        <!-- Acceso directo a plantillas -->
+                        <div class="o_row">
+                            <button name="action_open_export_templates" 
+                                    string="Gestionar Plantillas"
+                                    type="object"
+                                    class="btn-link"
+                                    icon="fa-external-link"/>
                         </div>
-                    </div>
-                </div>
-            </xpath>
-        </field>
-    </record>
+                    </group>
+                </xpath>
+            </field>
+        </record>
 
+        <!-- 
+        =================================================================
+        ACCIÓN PARA ABRIR CONFIGURACIÓN DE EXPORTACIÓN
+        =================================================================
+        -->
+        <record id="action_company_export_config" model="ir.actions.act_window">
+            <field name="name">Configuración de Exportación</field>
+            <field name="res_model">res.company</field>
+            <field name="view_mode">form</field>
+            <field name="target">current</field>
+            <field name="context">{
+                'form_view_initial_mode': 'edit'
+            }</field>
+            <field name="domain">[('id', '=', uid)]</field>
+            <field name="view_id" ref="view_company_form_export_settings"/>
+        </record>
+
+        <!-- 
+        =================================================================
+        MENÚ PARA ACCESO DIRECTO A CONFIGURACIÓN
+        =================================================================
+        -->
+        <menuitem id="menu_company_export_config"
+                  name="Configuración de Exportación"
+                  parent="account.menu_finance_configuration"
+                  action="action_company_export_config"
+                  sequence="10"
+                  groups="account.group_account_manager"/>
+
+    </data>
 </odoo>
-
-<!--
-    PATRONES AVANZADOS DE INTEGRACIÓN EN ODOO
-    ========================================
-    
-    Integración No Invasiva
-    -----------------------
-    Este enfoque de extensión de vistas demuestra cómo añadir funcionalidad
-    significativa sin modificar el core de Odoo:
-    
-    - Las vistas originales permanecen intactas
-    - Nuestra funcionalidad se integra naturalmente
-    - La desinstalación restaura el estado original completamente
-    - No hay conflictos con otros módulos que usen patrones similares
-    
-    Jerarquía de Configuraciones
-    ---------------------------
-    Implementamos una jerarquía clara de configuraciones:
-    
-    1. **Configuraciones de Sistema**: Valores globales por defecto
-    2. **Configuraciones de Empresa**: Valores específicos por empresa
-    3. **Configuraciones de Usuario**: Valores específicos por operación
-    
-    Esta jerarquía permite flexibilidad sin complejidad, donde cada nivel
-    puede sobrescribir al anterior según las necesidades específicas.
-    
-    Smart Buttons y Navegación Contextual
-    ------------------------------------
-    Los smart buttons proporcionan navegación contextual inteligente:
-    
-    - Muestran estadísticas relevantes (número de plantillas)
-    - Proporcionan acceso directo a funcionalidad relacionada
-    - Mantienen el contexto (empresa específica) automáticamente
-    - Reducen clics y mejoran la eficiencia del workflow
-    
-    Vistas Múltiples para Diferentes Audiencias
-    ------------------------------------------
-    Proporcionamos diferentes niveles de acceso:
-    
-    - **Vista Completa**: Para administradores con todas las opciones
-    - **Vista Simplificada**: Para usuarios básicos con opciones esenciales
-    - **Configuración General**: Integración con flujos existentes
-    
-    Esto permite que el mismo módulo sirva tanto a usuarios novatos
-    como a usuarios expertos sin compromiser la usabilidad de ninguno.
-    
-    Conditional UI (Interfaz Condicional)
-    ------------------------------------
-    Usamos visibilidad condicional extensivamente:
-    
-    - Campos aparecen solo cuando son relevantes
-    - Opciones avanzadas se ocultan hasta que se necesiten
-    - Botones cambian según el estado actual
-    - Ayuda contextual aparece donde es más útil
-    
-    Esto reduce la carga cognitiva y hace que la interfaz se sienta
-    más inteligente y responsiva a las necesidades del usuario.
-    
-    Integration Points (Puntos de Integración)
-    -----------------------------------------
-    El módulo se integra en múltiples puntos del sistema:
-    
-    - **Configuración de Empresa**: Configuraciones centralizadas
-    - **Configuración General**: Acceso desde configuración principal
-    - **Menús Específicos**: Acceso directo para tareas frecuentes
-    - **Smart Buttons**: Navegación contextual desde registros relacionados
-    
-    Esta integración múltiple hace que la funcionalidad sea descubrible
-    y accesible desde cualquier flujo de trabajo natural del usuario.
--->
