@@ -71,19 +71,23 @@
 
                         <!-- Selección de facturas -->
                         <group name="invoice_selection" string="📄 Selección de Facturas">
-                            <group>
-                                <field name="invoice_ids" 
-                                       widget="many2many_tags"
-                                       options="{'no_create': True}"
-                                       readonly="invoice_ids"/>
-                                <div class="alert alert-info" role="alert" 
-                                     invisible="not invoice_ids">
-                                    <strong>Facturas preseleccionadas:</strong> 
-                                    Se exportarán únicamente las facturas seleccionadas. 
-                                    Los filtros de abajo se ignorarán.
-                                </div>
-                            </group>
+                            <field name="invoice_ids" 
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   nolabel="1"
+                                   placeholder="Facturas seleccionadas desde la vista de lista..."/>
                         </group>
+                        
+                        <!-- Mensaje informativo para facturas preseleccionadas -->
+                        <div class="alert alert-info o_form_sheet_bg" 
+                             style="margin: 10px 0; padding: 15px; border-left: 4px solid #0066cc;"
+                             invisible="not invoice_ids">
+                            <p style="margin: 0;">
+                                <i class="fa fa-info-circle"/> <strong>Facturas preseleccionadas:</strong><br/>
+                                Se exportarán únicamente las facturas seleccionadas desde la vista de lista. 
+                                Los filtros de documentos y fechas de abajo se ignorarán.
+                            </p>
+                        </div>
 
                         <!-- Filtros de documentos (solo si no hay preselección) -->
                         <group name="document_filters" 
@@ -141,27 +145,41 @@
                         
                         <!-- Estadísticas de la exportación -->
                         <group name="export_stats" string="📊 Estadísticas de la Exportación">
-                            <group>
-                                <field name="total_invoices" readonly="1"/>
-                                <field name="processed_invoices" readonly="1"/>
-                                <field name="failed_invoices" readonly="1"/>
+                            <group string="Facturas Procesadas">
+                                <field name="total_invoices" readonly="1" 
+                                       string="📄 Total de Facturas"/>
+                                <field name="processed_invoices" readonly="1"
+                                       string="✅ Procesadas Exitosamente"/>
+                                <field name="failed_invoices" readonly="1"
+                                       string="❌ Con Errores"/>
                             </group>
-                            <group>
-                                <field name="export_size" readonly="1"/>
-                                <field name="processing_time" readonly="1"/>
+                            <group string="Información del Archivo">
+                                <field name="export_size" readonly="1"
+                                       string="📦 Tamaño (MB)"/>
+                                <field name="processing_time" readonly="1"
+                                       string="⏱️ Tiempo (segundos)"/>
                             </group>
                         </group>
 
                         <!-- Descarga del archivo (solo si está completado exitosamente) -->
                         <group name="download_section" 
-                               string="⬇️ Descargar Archivo"
+                               string="⬇️ Descargar Archivo Comprimido"
                                invisible="state != 'done'">
-                            <group>
-                                <field name="export_filename" invisible="1"/>
-                                <field name="export_file" 
-                                       filename="export_filename" 
-                                       widget="binary"/>
-                            </group>
+                            <field name="export_filename" invisible="1"/>
+                            <field name="export_file" 
+                                   filename="export_filename" 
+                                   widget="binary"
+                                   string="📁 Archivo de Exportación"
+                                   help="Haga clic para descargar el archivo ZIP con todas las facturas"/>
+                            
+                            <!-- Mensaje de éxito -->
+                            <div class="alert alert-success o_form_sheet_bg" 
+                                 style="margin: 10px 0; padding: 15px; border-left: 4px solid #28a745;">
+                                <p style="margin: 0;">
+                                    <i class="fa fa-check-circle"/> <strong>¡Exportación completada!</strong><br/>
+                                    El archivo contiene todas las facturas procesadas exitosamente.
+                                </p>
+                            </div>
                         </group>
 
                         <!-- Log de procesamiento -->
@@ -169,7 +187,10 @@
                             <field name="processing_log" 
                                    widget="text" 
                                    readonly="1"
-                                   nolabel="1"/>
+                                   nolabel="1"
+                                   options="{'resizable': True}"
+                                   class="o_field_text"
+                                   style="font-family: monospace; font-size: 13px; min-height: 200px;"/>
                         </group>
                     </div>
 

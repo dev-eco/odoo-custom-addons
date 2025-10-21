@@ -27,6 +27,62 @@
 }
 
 /* ================================
+   MENSAJES INFORMATIVOS MEJORADOS
+   ================================ */
+
+.alert.o_form_sheet_bg {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin: 10px 0;
+    padding: 12px 16px;
+}
+
+.alert.alert-info.o_form_sheet_bg {
+    background-color: #e7f3ff !important;
+    border-color: #0066cc;
+    color: #004085;
+}
+
+.alert.alert-success.o_form_sheet_bg {
+    background-color: #e8f5e8 !important;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.alert.alert-warning.o_form_sheet_bg {
+    background-color: #fff8e1 !important;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.alert p {
+    margin: 0 !important;
+    line-height: 1.4;
+}
+
+.alert i.fa {
+    margin-right: 6px;
+}
+
+/* ================================
+   CAMPOS DE FACTURAS MEJORADOS
+   ================================ */
+
+.o_field_many2many_tags .badge {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+    margin: 2px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.o_field_many2many_tags .badge:hover {
+    background-color: #bbdefb;
+}
+
+/* ================================
    INDICADORES DE ESTADO
    ================================ */
 
@@ -197,8 +253,22 @@
 }
 
 /* ================================
-   LOG DE PROCESAMIENTO
+   LOG DE PROCESAMIENTO MEJORADO
    ================================ */
+
+.o_field_text[style*="monospace"] {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 6px !important;
+    padding: 12px !important;
+    font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    min-height: 200px !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-y: auto !important;
+}
 
 .batch-export-log {
     background-color: #f8f9fa;
@@ -266,86 +336,33 @@
 }
 
 /* ================================
-   ALERTAS Y NOTIFICACIONES
+   CAMPOS CON ICONOS MEJORADOS
    ================================ */
 
-.batch-export-alert {
-    padding: 15px;
-    border-radius: 8px;
-    margin: 15px 0;
-    border-left: 4px solid;
-    position: relative;
+.o_group .o_form_label:before {
+    font-family: 'FontAwesome';
+    margin-right: 5px;
+    color: #666;
 }
 
-.batch-export-alert.info {
-    background-color: #d1ecf1;
-    border-left-color: #bee5eb;
-    color: #0c5460;
+.o_group .o_form_label[for*="total_invoices"]:before {
+    content: "📄";
 }
 
-.batch-export-alert.success {
-    background-color: #d4edda;
-    border-left-color: #c3e6cb;
-    color: #155724;
+.o_group .o_form_label[for*="processed_invoices"]:before {
+    content: "✅";
 }
 
-.batch-export-alert.warning {
-    background-color: #fff3cd;
-    border-left-color: #ffeaa7;
-    color: #856404;
+.o_group .o_form_label[for*="failed_invoices"]:before {
+    content: "❌";
 }
 
-.batch-export-alert.error {
-    background-color: #f8d7da;
-    border-left-color: #f5c6cb;
-    color: #721c24;
+.o_group .o_form_label[for*="export_size"]:before {
+    content: "📦";
 }
 
-.batch-export-alert-icon {
-    position: absolute;
-    left: 15px;
-    top: 15px;
-    font-size: 1.2em;
-}
-
-.batch-export-alert-content {
-    margin-left: 30px;
-}
-
-/* ================================
-   PLANTILLAS DE NOMENCLATURA
-   ================================ */
-
-.template-preview {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 10px;
-    margin: 10px 0;
-    font-family: monospace;
-    font-size: 14px;
-}
-
-.template-variables {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 10px 0;
-}
-
-.template-variable {
-    background-color: #e9ecef;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-family: monospace;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.template-variable:hover {
-    background-color: #dee2e6;
+.o_group .o_form_label[for*="processing_time"]:before {
+    content: "⏱️";
 }
 
 /* ================================
@@ -367,6 +384,11 @@
     
     .batch-export-stat-card {
         min-width: auto;
+    }
+    
+    .alert.o_form_sheet_bg {
+        margin: 5px 0;
+        padding: 10px 12px;
     }
 }
 
@@ -441,8 +463,7 @@
 }
 
 .batch-export-button:focus,
-.compression-format-option:focus,
-.template-variable:focus {
+.compression-format-option:focus {
     outline: 2px solid #4CAF50;
     outline-offset: 2px;
 }
@@ -464,8 +485,8 @@
         color: #e2e8f0;
     }
     
-    .template-preview {
-        background-color: #2d3748;
+    .alert.o_form_sheet_bg {
+        background-color: #2d3748 !important;
         border-color: #4a5568;
         color: #e2e8f0;
     }
