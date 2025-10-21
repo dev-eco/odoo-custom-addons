@@ -1,308 +1,232 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        EXTENSIÓN DE LA VISTA TREE DE FACTURAS
+        EXTENSIONES PARA VISTA DE FACTURAS
+        =================================
         
-        Este archivo hereda (inherit) de la vista existente de facturas en Odoo
-        y le añade elementos adicionales sin modificar el core del sistema.
-        
-        ACTUALIZADO PARA ODOO 17.0
-        ==========================
-        - Eliminado el uso de attrs (deprecado en Odoo 17)
-        - Reemplazado por sintaxis directa de atributos
-        - Compatible con la nueva arquitectura de vistas de Odoo 17
-        
-        ¿Por qué usar herencia de vistas?
-        - No modifica el módulo base de Odoo (mantiene actualizabilidad)
-        - Compatible con otros módulos que también hereden la misma vista
-        - Si desinstalamos este módulo, la vista vuelve a su estado original
-        - Buena práctica de desarrollo modular y mantenible
-        
-        XPath: El lenguaje para localizar elementos en XML
-        - Es como un selector CSS pero para XML
-        - Permite añadir, modificar o eliminar elementos precisos
-        - Fundamental para la herencia de vistas en Odoo
+        Estas vistas extienden las vistas estándar de facturas para añadir
+        funcionalidad de exportación masiva directamente desde la interfaz.
     -->
-    
-    <record id="view_account_move_tree_inherit" model="ir.ui.view">
-        <field name="name">account.move.tree.export.button</field>
+
+    <!--
+        EXTENSIÓN DE LA VISTA DE LISTA DE FACTURAS
+        ==========================================
+        
+        Añade un botón inteligente para acceso rápido a la exportación masiva
+        cuando se tienen facturas seleccionadas.
+    -->
+    <record id="view_account_move_tree_batch_export" model="ir.ui.view">
+        <field name="name">account.move.tree.batch.export</field>
         <field name="model">account.move</field>
-        <!-- 
-            inherit_id: ID de la vista base que estamos extendiendo
-            
-            account.view_invoice_tree es la vista de lista estándar de facturas
-            en el módulo account de Odoo. Este ref (referencia) asegura que
-            nuestra herencia se aplique correctamente sobre esa vista específica.
-        -->
-        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="inherit_id" ref="account.view_move_tree"/>
         <field name="arch" type="xml">
-            <!--
-                XPath para localizar el header de la vista tree
-                
-                expr="//tree": Busca el elemento <tree> en cualquier parte del XML
-                position="inside": Añade nuestro contenido DENTRO del elemento tree
-                
-                Otras opciones de position:
-                - before: Añade antes del elemento
-                - after: Añade después del elemento
-                - replace: Reemplaza el elemento completamente
-                - attributes: Modifica atributos del elemento sin tocar su contenido
-                - inside: Añade dentro del elemento (al final de sus hijos)
-            -->
-            <xpath expr="//tree" position="inside">
-                <!--
-                    Header button: Botón que aparece en la cabecera de la vista lista
-                    
-                    Este botón solo aparece cuando hay facturas seleccionadas
-                    y ejecuta directamente el wizard de exportación.
-                    
-                    ¿Por qué un header button y no un botón normal?
-                    - Los header buttons aparecen en la parte superior de la lista
-                    - Son visibles sin necesidad de abrir el menú "Acción"
-                    - Más descubribles e intuitivos para el usuario
-                    - Especialmente útiles para acciones frecuentes
-                    
-                    NOTA IMPORTANTE: Los header buttons en tree views NO necesitan
-                    atributos de visibilidad condicional porque Odoo automáticamente
-                    los muestra/oculta según si hay registros seleccionados.
-                -->
-                <header>
-                    <button name="%(action_invoice_export_wizard)s" 
-                            type="action"
-                            string="📦 Exportar a ZIP"
-                            class="btn-primary"
-                            help="Exportar las facturas seleccionadas a un archivo ZIP"/>
-                    <!--
-                        Desglose del botón:
-                        
-                        name="%(action_invoice_export_wizard)s"
-                        ========================================
-                        - Los %() son sintaxis especial de Odoo para referencias XML
-                        - Permite referenciar un registro por su ID XML
-                        - En runtime se resuelve al ID de base de datos real
-                        - La 's' al final es parte de la sintaxis, no un typo
-                        
-                        type="action"
-                        =============
-                        - Indica que el botón ejecuta una acción (ir.actions.act_window)
-                        - Odoo buscará la acción especificada en 'name' y la ejecutará
-                        - Diferente de type="object" que llama un método Python
-                        - Diferente de type="workflow" (deprecado en Odoo 11+)
-                        
-                        string con emoji 📦
-                        ==================
-                        - Los emojis son totalmente compatibles en Odoo 17
-                        - Hacen los botones más visuales y reconocibles
-                        - Especialmente útil cuando hay muchos botones similares
-                        - Puedes usar cualquier emoji Unicode estándar
-                        - Alternativas: 🗜️ (compresión), 📁 (carpeta), 💾 (guardar)
-                        
-                        class="btn-primary"
-                        ===================
-                        - Botón azul destacado (acción principal)
-                        - Otras opciones disponibles:
-                          * btn-secondary: Botón gris (acción secundaria)
-                          * btn-success: Botón verde (éxito/confirmación)
-                          * btn-danger: Botón rojo (eliminación/acción destructiva)
-                          * btn-warning: Botón amarillo (advertencia)
-                          * btn-info: Botón azul claro (información)
-                        - Usa btn-primary para la acción más importante del contexto
-                        
-                        help (tooltip)
-                        ==============
-                        - Texto que aparece al pasar el mouse sobre el botón
-                        - Proporciona contexto adicional sin saturar la interfaz
-                        - Importante para accesibilidad y usabilidad
-                        - Debe ser conciso pero descriptivo
-                        - En español, usar lenguaje claro y directo
-                    -->
-                </header>
-            </xpath>
             
-            <!--
-                ALTERNATIVA: Botón en la vista de formulario individual
-                
-                Si descomentas este XPath, también aparecerá un botón cuando
-                abras una factura individual en vista de formulario. 
-                
-                Útil si quieres exportar una factura específica directamente
-                desde su formulario sin ir a la vista de lista.
-                
-                Lo dejo comentado porque para exportación individual, Odoo
-                ya tiene el botón "Imprimir" que genera el PDF. Este módulo
-                está más enfocado en exportación masiva (múltiples facturas).
-                
-                Sin embargo, si deseas añadirlo, simplemente descomenta el
-                bloque siguiente y ajusta según necesites.
-            -->
-            <!--
-            <xpath expr="//form//header" position="inside">
-                <!- -
-                    Botón para exportar desde vista de formulario individual
-                    
-                    ACTUALIZADO PARA ODOO 17:
-                    - Sintaxis antigua: attrs="{'invisible': [('state', '!=', 'posted')]}"
-                    - Sintaxis nueva: invisible="state != 'posted'"
-                    
-                    Explicación de la lógica condicional:
-                    =====================================
-                    - state != 'posted' significa "estado diferente de publicado"
-                    - invisible="state != 'posted'" oculta el botón si NO está publicado
-                    - Es decir, solo muestra el botón en facturas publicadas
-                    
-                    ¿Por qué solo en facturas publicadas?
-                    ======================================
-                    - Las facturas en borrador pueden no tener PDF generado aún
-                    - Exportar borradores podría confundir (no son documentos oficiales)
-                    - Las empresas normalmente solo envían facturas confirmadas a asesorías
-                    - Los borradores están sujetos a cambios, no son documentos finales
-                    
-                    Si necesitas permitir exportar borradores también:
-                    ==================================================
-                    Opción 1: Quitar el atributo invisible completamente
-                    Opción 2: Cambiar a invisible="state not in ['draft', 'posted']"
-                    Opción 3: Añadir lógica en Python para manejar borradores especialmente
-                - ->
-                <button name="%(action_invoice_export_wizard)s"
-                        type="action"
-                        string="Exportar esta Factura"
-                        invisible="state != 'posted'"
-                        class="btn-secondary"/>
-                <!- -
-                    Nota sobre class="btn-secondary":
-                    ==================================
-                    Aquí uso btn-secondary (gris) en vez de btn-primary (azul) porque:
-                    - En el formulario ya hay botones principales (Confirmar, Enviar, etc.)
-                    - Esta acción de exportar es secundaria en este contexto
-                    - Mantiene jerarquía visual: acciones principales destacan más
-                    - Evita que todos los botones sean azules (confusión visual)
-                - ->
+            <!-- Añadir información en el encabezado de la vista -->
+            <xpath expr="//tree" position="attributes">
+                <attribute name="banner_route">/invoice_batch_export/banner</attribute>
             </xpath>
-            -->
+
         </field>
     </record>
 
     <!--
-        EXTENSIÓN DE LA VISTA PIVOT/GRAPH (OPCIONAL)
+        EXTENSIÓN DE LA VISTA DE FORMULARIO DE FACTURAS
+        ==============================================
         
-        Si tu empresa usa vistas pivot o graph para análisis de facturas,
-        podrías querer añadir el botón de exportación también ahí.
-        
-        Las vistas pivot y graph son útiles para análisis y reportería:
-        - Pivot: Tabla dinámica con agrupaciones y totales
-        - Graph: Gráficos de barras, líneas, pastel, etc.
-        
-        Aunque no es común exportar desde estas vistas (se usan más para
-        visualización que para gestión de documentos), incluyo un ejemplo
-        por si tu caso de uso lo requiere.
-        
-        Para activarlo, simplemente descomenta el bloque siguiente.
+        Añade un botón smart para exportar facturas relacionadas o similares.
     -->
-    <!--
-    <record id="view_account_move_pivot_inherit" model="ir.ui.view">
-        <field name="name">account.move.pivot.export.button</field>
+    <record id="view_account_move_form_batch_export" model="ir.ui.view">
+        <field name="name">account.move.form.batch.export</field>
         <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_invoice_pivot"/>
+        <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <!- -
-                Modificar atributos de la vista pivot
-                
-                position="attributes" permite cambiar atributos del elemento
-                sin modificar su contenido interno
-            - ->
-            <xpath expr="//pivot" position="attributes">
-                <!- -
-                    Cambiar el título de la vista para indicar funcionalidad añadida
-                    
-                    attribute name="string" cambia el atributo "string"
-                    Es útil para indicar visualmente que esta vista tiene
-                    capacidades adicionales (exportación en este caso)
-                - ->
-                <attribute name="string">Facturas con Exportación</attribute>
-            </xpath>
             
-            <!- -
-                Opcional: Añadir botón de exportación en la vista pivot
-                
-                Nota: Los botones en vistas pivot funcionan diferente que en tree
-                Requieren configuración adicional y no es tan común su uso
-                
-                Si lo necesitas, consulta la documentación de Odoo sobre
-                botones en vistas analíticas (pivot/graph)
-            - ->
+            <!-- Añadir botón inteligente en el área de smart buttons -->
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button name="action_open_batch_export_for_partner"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-download"
+                        attrs="{'invisible': [('state', '=', 'draft')]}">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="partner_invoice_count" widget="integer"/>
+                        </span>
+                        <span class="o_stat_text">Facturas del Cliente</span>
+                    </div>
+                </button>
+            </xpath>
+
         </field>
     </record>
-    -->
 
     <!--
-        MEJORA FUTURA: Smart Button en el formulario de cliente/proveedor
+        VISTA PERSONALIZADA PARA SELECCIÓN MASIVA
+        =======================================
         
-        Una mejora potencial sería añadir un smart button en la vista de
-        partners (res.partner) que permita exportar todas las facturas de
-        ese cliente o proveedor de golpe.
-        
-        Visualización del Smart Button:
-        ================================
-        En la parte superior del formulario de cliente aparecería:
-        
-        ┌──────────┐
-        │    📦    │
-        │   Exportar│
-        │ Facturas │
-        │    15    │
-        └──────────┘
-        
-        El número (15) mostraría cuántas facturas tiene ese partner
-        
-        ¿Cómo implementarlo?
-        ====================
-        
-        1. Añadir campo computed en res.partner:
-        
-        invoice_count = fields.Integer(
-            string='Número de Facturas',
-            compute='_compute_invoice_count'
-        )
-        
-        @api.depends('invoice_ids')
-        def _compute_invoice_count(self):
-            for partner in self:
-                partner.invoice_count = len(partner.invoice_ids)
-        
-        2. Añadir acción que abra el wizard preconfigurado:
-        
-        def action_export_partner_invoices(self):
-            return {
-                'type': 'ir.actions.act_window',
-                'name': 'Exportar Facturas',
-                'res_model': 'invoice.export.wizard',
-                'view_mode': 'form',
-                'target': 'new',
-                'context': {
-                    'default_invoice_ids': self.invoice_ids.ids
-                }
-            }
-        
-        3. Añadir el botón en la vista XML:
-        
-        <xpath expr="//div[@name='button_box']" position="inside">
-            <button class="oe_stat_button" 
-                    type="object" 
-                    name="action_export_partner_invoices"
-                    icon="fa-download">
-                <field name="invoice_count" widget="statinfo" 
-                       string="Facturas"/>
-            </button>
-        </xpath>
-        
-        Esta funcionalidad sería muy útil para:
-        ========================================
-        - Auditorías de cliente específico
-        - Enviar historial completo a un cliente
-        - Análisis de relación comercial con un proveedor
-        - Preparar documentación para reclamaciones o disputas
-        
-        Si deseas implementar esto, puedo ayudarte a desarrollarlo completamente.
+        Vista especializada que facilita la selección masiva de facturas
+        con información relevante para exportación.
     -->
+    <record id="view_account_move_tree_batch_selection" model="ir.ui.view">
+        <field name="name">account.move.tree.batch.selection</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <tree string="Selección para Exportación Masiva" 
+                  sample="1" 
+                  multi_edit="1"
+                  default_order="invoice_date desc,name desc">
+                
+                <!-- Indicadores visuales -->
+                <field name="message_needaction" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                
+                <!-- Información principal para exportación -->
+                <field name="name" string="Número"/>
+                <field name="partner_id" string="Cliente/Proveedor"/>
+                <field name="invoice_date" string="Fecha"/>
+                <field name="move_type" string="Tipo" widget="badge"
+                       decoration-info="move_type == 'out_invoice'"
+                       decoration-warning="move_type == 'in_invoice'"
+                       decoration-success="move_type == 'out_refund'"
+                       decoration-danger="move_type == 'in_refund'"/>
+                
+                <!-- Estado -->
+                <field name="state" string="Estado" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'posted'"
+                       decoration-muted="state == 'cancel'"/>
+                
+                <!-- Información financiera -->
+                <field name="amount_total_signed" 
+                       string="Total" 
+                       sum="Total"
+                       widget="monetary"/>
+                
+                <!-- Información adicional -->
+                <field name="invoice_payment_state" 
+                       string="Estado de Pago" 
+                       widget="badge"
+                       decoration-success="invoice_payment_state == 'paid'"
+                       decoration-warning="invoice_payment_state == 'partial'"
+                       decoration-danger="invoice_payment_state == 'not_paid'"/>
+                
+                <!-- Referencias -->
+                <field name="ref" string="Referencia" optional="hide"/>
+                <field name="invoice_user_id" string="Vendedor" optional="hide"/>
+                
+                <!-- Empresa (para multi-empresa) -->
+                <field name="company_id" 
+                       groups="base.group_multi_company" 
+                       optional="hide"/>
+                
+                <!-- Campos técnicos ocultos -->
+                <field name="id" invisible="1"/>
+                <field name="company_currency_id" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!--
+        VISTA DE BÚSQUEDA ESPECIALIZADA PARA EXPORTACIÓN
+        ==============================================
+        
+        Filtros y agrupaciones optimizados para el proceso de exportación masiva.
+    -->
+    <record id="view_account_move_search_batch_export" model="ir.ui.view">
+        <field name="name">account.move.search.batch.export</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_move_filter"/>
+        <field name="arch" type="xml">
+            
+            <!-- Añadir filtros específicos para exportación -->
+            <xpath expr="//filter[@name='late']" position="after">
+                <separator/>
+                
+                <!-- Filtros para exportación -->
+                <filter name="filter_ready_for_export" 
+                        string="🚀 Listas para Exportar" 
+                        domain="[('state', '=', 'posted'), ('move_type', 'in', ['out_invoice', 'in_invoice'])]"/>
+                
+                <filter name="filter_this_month" 
+                        string="📅 Este Mes" 
+                        domain="[('invoice_date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')), 
+                                ('invoice_date', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]"/>
+                
+                <filter name="filter_last_month" 
+                        string="📅 Mes Pasado" 
+                        domain="[('invoice_date', '&gt;=', (context_today() - relativedelta(months=1, day=1)).strftime('%Y-%m-%d')), 
+                                ('invoice_date', '&lt;=', (context_today() - relativedelta(months=1, day=31)).strftime('%Y-%m-%d'))]"/>
+                
+                <filter name="filter_quarter" 
+                        string="📅 Este Trimestre" 
+                        domain="[('invoice_date', '&gt;=', time.strftime('%Y-%m-01')), 
+                                ('invoice_date', '&lt;=', time.strftime('%Y-%m-%d'))]"/>
+            </xpath>
+
+            <!-- Añadir agrupaciones útiles para exportación -->
+            <xpath expr="//group[@string='Group By']" position="inside">
+                <filter name="group_by_move_type" 
+                        string="Tipo de Documento" 
+                        context="{'group_by': 'move_type'}"/>
+                
+                <filter name="group_by_invoice_month" 
+                        string="Mes de Factura" 
+                        context="{'group_by': 'invoice_date:month'}"/>
+                
+                <filter name="group_by_payment_state" 
+                        string="Estado de Pago" 
+                        context="{'group_by': 'invoice_payment_state'}"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!--
+        ACCIÓN ESPECIALIZADA PARA SELECCIÓN DE EXPORTACIÓN
+        ================================================
+        
+        Acción que abre la vista de facturas optimizada para exportación masiva.
+    -->
+    <record id="action_account_move_batch_export_selection" model="ir.actions.act_window">
+        <field name="name">Seleccionar Facturas para Exportar</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_account_move_tree_batch_selection"/>
+        <field name="search_view_id" ref="view_account_move_search_batch_export"/>
+        
+        <!-- Dominio para mostrar solo facturas válidas -->
+        <field name="domain">[
+            ('move_type', 'in', ['out_invoice', 'in_invoice', 'out_refund', 'in_refund']),
+            ('state', 'in', ['posted', 'draft'])
+        ]</field>
+        
+        <!-- Contexto optimizado -->
+        <field name="context">{
+            'default_move_type': 'out_invoice',
+            'search_default_filter_ready_for_export': 1,
+            'export_mode': True,
+        }</field>
+        
+        <!-- Información de ayuda -->
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                📄 Selecciona las facturas que quieres exportar
+            </p>
+            <p>
+                Usa los filtros para encontrar las facturas que necesitas exportar, 
+                selecciónalas marcando las casillas correspondientes, y luego usa 
+                el botón "Acción" para acceder a la exportación masiva.
+            </p>
+            <p>
+                <strong>Consejos:</strong>
+            </p>
+            <ul>
+                <li>🔍 Usa los filtros predefinidos para encontrar facturas rápidamente</li>
+                <li>📅 Filtra por mes o trimestre para exportaciones periódicas</li>
+                <li>✅ Solo se pueden exportar facturas confirmadas por defecto</li>
+                <li>🏢 En entornos multi-empresa, se muestran facturas de tu empresa actual</li>
+            </ul>
+        </field>
+    </record>
 
 </odoo>

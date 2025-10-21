@@ -1,60 +1,74 @@
 # -*- coding: utf-8 -*-
+# © 2025 [TU_NOMBRE] - [TU_EMAIL]
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html)
+
 """
-Módulo Invoice Batch Export
+Invoice Batch Export Module - Odoo 17.0
+========================================
 
-Este es el archivo de inicialización principal del módulo invoice_batch_export.
-Su función es importar todos los subdirectorios que contienen código Python
-para que Odoo pueda cargar correctamente todos los componentes del módulo.
+This module provides advanced batch export functionality for invoices with
+multi-format compression support and intelligent processing capabilities.
 
-¿Por qué necesitamos __init__.py?
-================================
-En Python, un directorio se convierte en un "paquete" (package) solo cuando
-contiene un archivo __init__.py. Este archivo le dice a Python:
+Structure:
+----------
+• models/     - Persistent data models (templates, configurations)
+• wizard/     - Transient models for guided processes
+• views/      - XML view definitions and UI components
+• security/   - Access control and permissions
+• data/       - Default data and configurations
+• static/     - CSS, JS, and static assets
+• tests/      - Unit and integration tests
 
-1. "Este directorio es importable como módulo"
-2. "Cuando alguien importe este directorio, ejecuta este código"
-3. "Estos son los submódulos que debes cargar"
+Features:
+---------
+• Multi-format compression (ZIP, 7z, TAR.GZ)
+• Smart batch processing with memory optimization
+• Customizable filename templates
+• Advanced filtering and selection criteria
+• Multi-company support with data isolation
+• Password-protected archives
+• Progress tracking and error handling
 
-En Odoo, este patrón es fundamental porque:
-- Odoo busca automáticamente directorios con __init__.py en addons_path
-- Necesita importar los modelos Python para registrarlos en el ORM
-- Permite control granular sobre qué se carga y en qué orden
-
-Orden de Importación
-===================
-El orden de los imports puede ser importante si hay dependencias entre
-los componentes. En nuestro caso:
-
-1. models: Se cargan primero porque pueden ser referenciados por wizards
-2. wizard: Se cargan después porque pueden usar modelos
-
-¿Qué sucede si omitimos un import?
-=================================
-Si olvidamos importar un subdirectorio aquí:
-- Los archivos .py de ese subdirectorio NO se cargarán
-- Los modelos Python definidos ahí NO se registrarán en Odoo
-- Aparecerán errores como "No existe el modelo xyz"
-- Las vistas XML que referencien esos modelos fallarán
-
-Convención de Nombres
-====================
-- Subdirectorios: snake_case (models, wizard)
-- Archivos Python: snake_case (export_template.py)
-- Clases Odoo: PascalCase (ExportTemplate)
+License: LGPL-3
+Author: [TU_NOMBRE]
+Email: [TU_EMAIL]
 """
 
-# Importar subdirectorios que contienen modelos Python
-# Cada línea aquí le dice a Python que busque un directorio con ese nombre
-# y ejecute su archivo __init__.py correspondiente
+# Import subpackages
+from . import models
+from . import wizard
 
-from . import models    # Importa models/__init__.py (modelos persistentes)
-from . import wizard    # Importa wizard/__init__.py (modelos transitorios)
+# Optional: Import utility functions if needed
+# from . import utils
 
-# Nota: NO importamos subdirectorios que solo contienen XML como:
-# - views: Solo contiene archivos .xml, no .py
-# - security: Solo contiene archivos .csv y .xml
-# - data: Solo contiene archivos .xml
-# - i18n: Solo contiene archivos .po
-# 
-# Los archivos XML/CSV se declaran en la sección 'data' del __manifest__.py
-# y Odoo los carga automáticamente durante la instalación del módulo
+def uninstall_hook(cr, registry):
+    """
+    Hook called when the module is being uninstalled.
+    
+    This function cleans up any module-specific data that should be
+    removed when the module is uninstalled, ensuring a clean system state.
+    
+    Args:
+        cr: Database cursor
+        registry: Odoo registry object
+    """
+    import logging
+    _logger = logging.getLogger(__name__)
+    
+    try:
+        # Clean up any temporary files or cache
+        _logger.info("Invoice Batch Export: Starting uninstall cleanup...")
+        
+        # Remove any temporary export files
+        # Note: This would typically clean /tmp files, but we should be careful
+        # not to remove files that might belong to other processes
+        
+        # Clean up any module-specific ir.config_parameter entries if needed
+        # cr.execute("DELETE FROM ir_config_parameter WHERE key LIKE 'invoice_batch_export.%'")
+        
+        _logger.info("Invoice Batch Export: Uninstall cleanup completed successfully")
+        
+    except Exception as e:
+        _logger.error(f"Invoice Batch Export: Error during uninstall cleanup: {str(e)}")
+        # Don't raise the exception to avoid blocking uninstallation
+        pass

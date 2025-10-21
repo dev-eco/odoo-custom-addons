@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        ESTRUCTURA DE MENÚS - INVOICE BATCH EXPORT
+        =========================================
+        
+        Este archivo define la estructura de menús y navegación para el módulo
+        de exportación masiva de facturas, organizando las funcionalidades
+        de manera lógica y accesible.
+    -->
+
+    <!--
+        MENÚ PRINCIPAL BAJO CONTABILIDAD
+        ===============================
+        
+        Crea un submenú principal bajo Contabilidad > Informes para agrupar
+        todas las funcionalidades de exportación masiva.
+    -->
+    <menuitem id="menu_batch_export_main"
+              name="📦 Exportación Masiva"
+              parent="account.menu_finance_reports"
+              sequence="60"
+              groups="account.group_account_user"/>
+
+    <!--
+        WIZARD DE EXPORTACIÓN MASIVA
+        ===========================
+        
+        Acceso directo al wizard principal de exportación masiva.
+    -->
+    <menuitem id="menu_batch_export_wizard"
+              name="Exportar Facturas"
+              parent="menu_batch_export_main"
+              action="action_batch_export_wizard"
+              sequence="10"
+              groups="account.group_account_user"/>
+
+    <!--
+        SELECCIÓN DE FACTURAS PARA EXPORTACIÓN
+        =====================================
+        
+        Vista especializada para seleccionar facturas que se van a exportar.
+    -->
+    <menuitem id="menu_batch_export_selection"
+              name="Seleccionar Facturas"
+              parent="menu_batch_export_main"
+              action="action_account_move_batch_export_selection"
+              sequence="20"
+              groups="account.group_account_user"/>
+
+    <!--
+        EXPORTACIÓN RÁPIDA
+        ================
+        
+        Acceso a la versión simplificada del wizard para usuarios menos técnicos.
+    -->
+    <menuitem id="menu_batch_export_quick"
+              name="Exportación Rápida"
+              parent="menu_batch_export_main"
+              action="action_batch_export_wizard_simple"
+              sequence="30"
+              groups="account.group_account_user"/>
+
+    <!--
+        SEPARADOR
+        ========
+    -->
+    <menuitem id="menu_batch_export_separator"
+              name="──────────────────"
+              parent="menu_batch_export_main"
+              sequence="40"
+              groups="account.group_account_manager"/>
+
+    <!--
+        CONFIGURACIÓN Y PLANTILLAS
+        =========================
+        
+        Submenú para gestión de plantillas y configuraciones avanzadas.
+        Solo visible para gestores de contabilidad.
+    -->
+    <menuitem id="menu_batch_export_config"
+              name="⚙️ Configuración"
+              parent="menu_batch_export_main"
+              sequence="50"
+              groups="account.group_account_manager"/>
+
+    <!--
+        PLANTILLAS DE NOMENCLATURA
+        =========================
+        
+        Gestión de plantillas para nombres de archivo.
+    -->
+    <menuitem id="menu_export_templates"
+              name="Plantillas de Nomenclatura"
+              parent="menu_batch_export_config"
+              action="action_export_template"
+              sequence="10"
+              groups="account.group_account_manager"/>
+
+    <!--
+        MENÚ EN FACTURAS DE CLIENTE
+        ==========================
+        
+        Añade acceso directo desde el menú de facturas de cliente.
+    -->
+    <menuitem id="menu_customer_invoice_batch_export"
+              name="📦 Exportación Masiva"
+              parent="account.menu_action_move_out_invoice_type"
+              action="action_batch_export_wizard"
+              sequence="99"
+              groups="account.group_account_user"/>
+
+    <!--
+        MENÚ EN FACTURAS DE PROVEEDOR
+        ============================
+        
+        Añade acceso directo desde el menú de facturas de proveedor.
+    -->
+    <menuitem id="menu_vendor_bill_batch_export"
+              name="📦 Exportación Masiva"
+              parent="account.menu_action_move_in_invoice_type"
+              action="action_batch_export_wizard"
+              sequence="99"
+              groups="account.group_account_user"/>
+
+    <!--
+        ACCESO RÁPIDO DESDE TABLERO
+        ==========================
+        
+        Menú de nivel superior para acceso muy rápido (opcional).
+        Descomenta si quieres acceso directo desde el menú principal.
+    -->
+    <!--
+    <menuitem id="menu_batch_export_top_level"
+              name="📦 Exportar Facturas"
+              parent="account.menu_finance"
+              action="action_batch_export_wizard"
+              sequence="1"
+              groups="account.group_account_user"/>
+    -->
+
+</odoo>

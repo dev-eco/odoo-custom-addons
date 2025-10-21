@@ -1,73 +1,51 @@
 # -*- coding: utf-8 -*-
-"""
-Modelo Export Template - Plantillas de Exportación Personalizables
+# © 2025 [TU_NOMBRE] - [TU_EMAIL]
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html)
 
-Este archivo define el modelo que permite a las empresas crear plantillas
-personalizadas para generar nombres de archivo durante la exportación.
-
-¿Por qué necesitamos plantillas de nomenclatura?
-===============================================
-Imagina una asesoría fiscal que maneja 50 empresas diferentes. Cada empresa
-puede tener requisitos específicos para nombrar sus archivos:
-
-- Empresa A: "CLIENTE_FACTURA123_EMPRESA-A_20240115.pdf"
-- Empresa B: "2024-01-15_FACT123_CLIENTE.pdf"
-- Empresa C: "FACT-CLIENTE-EMPRESA-2024-01.pdf"
-
-Sin plantillas, tendríamos que programar cada formato manualmente. Con 
-plantillas, el usuario puede crear patrones flexibles usando variables
-predefinidas como {doc_type}, {number}, {partner}, {date}, etc.
-
-Arquitectura del Modelo
-======================
-Este modelo sigue el patrón estándar de Odoo:
-
-1. Hereda de models.Model (modelo persistente)
-2. Define _name único en el sistema
-3. Incluye campos con tipos, validaciones y ayudas
-4. Implementa métodos de negocio específicos
-5. Añade constrains para validar integridad de datos
-
-El patrón de plantillas es muy común en software empresarial porque
-proporciona flexibilidad sin complejidad técnica para el usuario final.
-"""
-
-from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
 import re
 import logging
+from datetime import datetime
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
-
 class ExportTemplate(models.Model):
     """
-    Plantillas de Exportación para Nomenclatura Personalizada
+    Plantillas de Nomenclatura para Exportación de Facturas
     
-    Este modelo permite a las empresas definir patrones personalizados
-    para generar nombres de archivo durante la exportación masiva de facturas.
+    Este modelo permite definir patrones personalizables para generar
+    nombres de archivo durante la exportación masiva. Cada empresa puede
+    tener múltiples plantillas para diferentes propósitos.
     
-    La flexibilidad de estas plantillas es clave para adaptarse a los
-    diferentes requisitos de nomenclatura que pueden tener las empresas
-    o sus clientes externos (bancos, auditorías, sistemas contables).
+    Variables disponibles en las plantillas:
+    - {type}: Tipo de documento (CLIENTE, PROVEEDOR, NC_CLIENTE, NC_PROVEEDOR)
+    - {number}: Número de la factura
+    - {partner}: Nombre del partner sanitizado
+    - {date}: Fecha de la factura (YYYY-MM-DD)
+    - {year}: Año de la factura (YYYY)
+    - {month}: Mes de la factura (MM)
+    - {company}: Nombre de la empresa
+    - {reference}: Referencia del partner (si existe)
     """
     
-    # DEFINICIÓN DEL MODELO
-    # ====================
     _name = 'export.template'
-    _description = 'Plantilla de Exportación de Facturas'
-    _order = 'company_id, name'  # Ordenar por empresa y luego por nombre
-    
-    # Control automático de empresa para seguridad multi-empresa
-    # Esto asegura que los usuarios solo vean plantillas de sus empresas
+    _description = 'Plantilla de Nomenclatura para Exportación'
+    _order = 'company_id, sequence, name'
     _check_company_auto = True
     
-    # CAMPOS BÁSICOS DE IDENTIFICACIÓN
-    # ===============================
+    # CAMPOS BÁSICOS
+    # ==============
     name = fields.Char(
-        string='Nombre de Plantilla',
+        string='Nombre de la Plantilla',
         required=True,
-        help='Nombre descriptivo para identificar esta plantilla (ej: "Facturas Cliente Standard")'
+        help='Nombre descriptivo para identificar esta plantilla'
+    )
+    
+    active = fields.Boolean(
+        string='Activo',
+        default=True,
+        help='Desmarcar para deshabilitar esta plantilla sin eliminarla'
     )
     
     company_id = fields.Many2one(
@@ -78,363 +56,296 @@ class ExportTemplate(models.Model):
         help='Empresa a la que pertenece esta plantilla'
     )
     
-    # CONFIGURACIÓN PRINCIPAL DE LA PLANTILLA
-    # =======================================
-    filename_pattern = fields.Char(
-        string='Patrón de Nombre de Archivo',
+    sequence = fields.Integer(
+        string='Secuencia',
+        default=10,
+        help='Orden de aparición en las listas de selección'
+    )
+    
+    # CONFIGURACIÓN DE LA PLANTILLA
+    # =============================
+    pattern = fields.Char(
+        string='Patrón de Nomenclatura',
         required=True,
-        default='{doc_type}_{number}_{partner}_{date}',
-        help='Patrón para generar nombres. Variables disponibles: '
-             '{company_code}, {doc_type}, {number}, {partner}, {date}, '
-             '{year}, {month}, {currency}, {amount}'
+        default='{type}_{number}_{partner}_{date}.pdf',
+        help='Patrón para generar nombres de archivo. '
+             'Variables disponibles: {type}, {number}, {partner}, {date}, '
+             '{year}, {month}, {company}, {reference}'
     )
     
-    # CAMPOS DE CONTROL Y CONFIGURACIÓN
-    # =================================
-    is_default = fields.Boolean(
-        string='Plantilla Predeterminada',
-        default=False,
-        help='Si está marcado, será la plantilla usada por defecto para esta empresa'
-    )
-    
-    active = fields.Boolean(
-        string='Activa',
-        default=True,
-        help='Las plantillas inactivas no aparecen en las opciones de selección'
-    )
-    
-    # CAMPOS DESCRIPTIVOS
-    # ==================
     description = fields.Text(
         string='Descripción',
-        help='Descripción detallada del propósito y uso de esta plantilla'
+        help='Descripción detallada del propósito de esta plantilla'
     )
     
-    # CAMPO COMPUTED PARA MOSTRAR EJEMPLO
-    # ==================================
-    example_filename = fields.Char(
-        string='Ejemplo de Nombre',
-        compute='_compute_example_filename',
-        help='Muestra cómo se vería un nombre de archivo con esta plantilla'
+    # EJEMPLOS Y VALIDACIONES
+    # ======================
+    example_output = fields.Char(
+        string='Ejemplo de Salida',
+        compute='_compute_example_output',
+        help='Ejemplo de cómo se vería un archivo generado con esta plantilla'
     )
     
-    # MÉTODOS COMPUTED
-    # ===============
-    @api.depends('filename_pattern')
-    def _compute_example_filename(self):
-        """
-        Generar un ejemplo de nombre de archivo usando la plantilla actual.
-        
-        Este método computed se ejecuta automáticamente cada vez que cambia
-        el patrón de nombre, proporcionando feedback inmediato al usuario
-        sobre cómo se verán los archivos generados.
-        
-        ¿Por qué usar un campo computed?
-        Los campos computed son ideales para mostrar información derivada
-        que se calcula automáticamente a partir de otros campos. En este
-        caso, ayuda al usuario a visualizar el resultado de su plantilla
-        sin necesidad de hacer una exportación real.
-        """
-        for template in self:
-            if template.filename_pattern:
-                try:
-                    # Variables de ejemplo para mostrar el patrón
-                    example_vars = {
-                        'company_code': template.company_id.code or 'COMP',
-                        'doc_type': 'CLIENTE',
-                        'number': 'FACT001',
-                        'partner': 'EMPRESA_EJEMPLO',
-                        'date': '20240115',
-                        'year': '2024',
-                        'month': '01',
-                        'currency': 'EUR',
-                        'amount': '1500',
-                    }
-                    
-                    # Intentar formatear con las variables de ejemplo
-                    example = template.filename_pattern.format(**example_vars)
-                    template.example_filename = f"{example}.pdf"
-                    
-                except (KeyError, ValueError) as e:
-                    # Si hay error en el patrón, mostrar mensaje descriptivo
-                    template.example_filename = f"Error en patrón: {str(e)}"
-            else:
-                template.example_filename = _('Sin patrón definido')
+    is_default = fields.Boolean(
+        string='Plantilla por Defecto',
+        help='Marca esta plantilla como la predeterminada para la empresa'
+    )
     
-    # VALIDACIONES Y CONSTRAINS
-    # =========================
-    @api.constrains('is_default', 'company_id')
-    def _check_unique_default(self):
-        """
-        Asegurar que solo existe una plantilla predeterminada por empresa.
-        
-        Esta validación es crucial para mantener la integridad del sistema.
-        Sin ella, podrían existir múltiples plantillas "por defecto", lo
-        que causaría ambigüedad al momento de determinar cuál usar.
-        
-        ¿Por qué usar @api.constrains?
-        Los constrains se ejecutan automáticamente cuando se modifican los
-        campos especificados, proporcionando validación en tiempo real.
-        Es mejor que validar manualmente en cada método write/create.
-        """
-        for template in self.filtered('is_default'):
-            # Buscar otras plantillas por defecto de la misma empresa
-            other_defaults = self.search([
-                ('company_id', '=', template.company_id.id),
-                ('is_default', '=', True),
-                ('id', '!=', template.id),  # Excluir el registro actual
-                ('active', '=', True),       # Solo considerar activas
-            ])
-            
-            if other_defaults:
-                raise ValidationError(_(
-                    'Solo puede existir una plantilla predeterminada por empresa. '
-                    'La empresa "%s" ya tiene la plantilla "%s" como predeterminada.'
-                ) % (template.company_id.name, other_defaults[0].name))
+    # ESTADÍSTICAS DE USO
+    # ==================
+    usage_count = fields.Integer(
+        string='Veces Utilizada',
+        default=0,
+        readonly=True,
+        help='Número de veces que se ha usado esta plantilla'
+    )
     
-    @api.constrains('filename_pattern')
-    def _check_filename_pattern(self):
-        """
-        Validar que el patrón de nombre de archivo sea válido.
+    last_used = fields.Datetime(
+        string='Último Uso',
+        readonly=True,
+        help='Última vez que se utilizó esta plantilla'
+    )
+
+    # CONSTRAINTS Y VALIDACIONES
+    # ==========================
+    @api.constrains('pattern')
+    def _check_pattern_validity(self):
+        """Validar que el patrón contenga variables válidas"""
+        valid_variables = {
+            'type', 'number', 'partner', 'date', 
+            'year', 'month', 'company', 'reference'
+        }
         
-        Esta validación previene errores en tiempo de ejecución al verificar
-        que el patrón pueda ser formateado correctamente con variables válidas.
-        """
-        for template in self:
-            if not template.filename_pattern:
+        for record in self:
+            if not record.pattern:
                 continue
                 
-            # Variables válidas que pueden usarse en las plantillas
-            valid_variables = {
-                'company_code', 'doc_type', 'number', 'partner', 
-                'date', 'year', 'month', 'currency', 'amount'
+            # Extraer variables del patrón usando regex
+            variables_in_pattern = set(re.findall(r'\{(\w+)\}', record.pattern))
+            
+            # Verificar variables inválidas
+            invalid_variables = variables_in_pattern - valid_variables
+            if invalid_variables:
+                raise ValidationError(_(
+                    "Variables inválidas en el patrón: %s\n"
+                    "Variables válidas: %s"
+                ) % (
+                    ', '.join(invalid_variables),
+                    ', '.join(sorted(valid_variables))
+                ))
+            
+            # Verificar que contenga al menos {number}
+            if 'number' not in variables_in_pattern:
+                raise ValidationError(_(
+                    "El patrón debe incluir al menos la variable {number} "
+                    "para asegurar nombres únicos"
+                ))
+
+    @api.constrains('is_default', 'company_id')
+    def _check_single_default_per_company(self):
+        """Asegurar que solo hay una plantilla por defecto por empresa"""
+        for record in self:
+            if record.is_default:
+                existing_default = self.search([
+                    ('company_id', '=', record.company_id.id),
+                    ('is_default', '=', True),
+                    ('id', '!=', record.id)
+                ])
+                if existing_default:
+                    raise ValidationError(_(
+                        "Ya existe una plantilla por defecto para la empresa %s: %s"
+                    ) % (record.company_id.name, existing_default.name))
+
+    # MÉTODOS COMPUTADOS
+    # ==================
+    @api.depends('pattern')
+    def _compute_example_output(self):
+        """Generar ejemplo de salida basado en el patrón"""
+        for record in self:
+            if not record.pattern:
+                record.example_output = ''
+                continue
+            
+            # Datos de ejemplo
+            example_data = {
+                'type': 'CLIENTE',
+                'number': 'INV-2024-001',
+                'partner': 'ACME_CORP',
+                'date': '2024-01-15',
+                'year': '2024',
+                'month': '01',
+                'company': 'MI_EMPRESA',
+                'reference': 'REF-123'
             }
             
             try:
-                # Intentar extraer variables del patrón usando regex
-                pattern_variables = set(re.findall(r'\{(\w+)\}', template.filename_pattern))
-                
-                # Verificar que todas las variables usadas sean válidas
-                invalid_vars = pattern_variables - valid_variables
-                if invalid_vars:
-                    raise ValidationError(_(
-                        'Variables inválidas en el patrón: %s\n'
-                        'Variables disponibles: %s'
-                    ) % (', '.join(invalid_vars), ', '.join(sorted(valid_variables))))
-                
-                # Probar que el patrón pueda formatearse sin errores
-                test_vars = {var: 'test' for var in valid_variables}
-                template.filename_pattern.format(**test_vars)
-                
-            except ValueError as e:
-                raise ValidationError(_(
-                    'Patrón de nombre inválido: %s\n'
-                    'Asegúrese de usar la sintaxis correcta: {variable}'
-                ) % str(e))
-    
-    # MÉTODOS DE NEGOCIO
-    # =================
-    @api.model
-    def get_default_template(self, company_id):
+                record.example_output = record.pattern.format(**example_data)
+            except KeyError as e:
+                record.example_output = f"Error: Variable {e} no válida"
+            except Exception:
+                record.example_output = "Error en el patrón"
+
+    # MÉTODOS DE ACCIÓN
+    # ================
+    def generate_filename(self, invoice):
         """
-        Obtener la plantilla predeterminada para una empresa específica.
-        
-        Este método es útil para ser llamado desde otros modelos (como el wizard)
-        cuando necesitan determinar automáticamente qué plantilla usar.
+        Generar nombre de archivo para una factura específica
         
         Args:
-            company_id (int): ID de la empresa
+            invoice (account.move): Registro de factura
             
         Returns:
-            export.template: Plantilla predeterminada o False si no existe
+            str: Nombre de archivo generado
         """
-        return self.search([
-            ('company_id', '=', company_id),
-            ('is_default', '=', True),
-            ('active', '=', True),
-        ], limit=1)
-    
-    def set_as_default(self):
-        """
-        Establecer esta plantilla como predeterminada para su empresa.
+        self.ensure_one()
         
-        Este método proporciona una forma conveniente de cambiar la plantilla
-        predeterminada sin necesidad de editar manualmente los campos.
-        """
-        self.ensure_one()  # Asegurar que solo se procese un registro
+        # Preparar datos para la plantilla
+        template_data = self._prepare_template_data(invoice)
         
-        # Quitar el flag de predeterminada a otras plantillas de la misma empresa
-        other_defaults = self.search([
+        try:
+            # Generar nombre usando la plantilla
+            filename = self.pattern.format(**template_data)
+            
+            # Sanitizar caracteres problemáticos
+            filename = self._sanitize_filename(filename)
+            
+            # Actualizar estadísticas de uso
+            self._update_usage_stats()
+            
+            return filename
+            
+        except Exception as e:
+            _logger.error(f"Error generando nombre de archivo: {str(e)}")
+            # Fallback a patrón básico
+            return f"{template_data['type']}_{template_data['number']}.pdf"
+
+    def _prepare_template_data(self, invoice):
+        """Preparar datos para usar en la plantilla"""
+        # Determinar tipo de documento
+        doc_type = self._get_document_type(invoice)
+        
+        # Sanitizar nombre del partner
+        partner_name = self._sanitize_filename(
+            invoice.partner_id.name or 'SIN_NOMBRE'
+        )
+        
+        # Formatear fecha
+        invoice_date = invoice.invoice_date or fields.Date.today()
+        
+        return {
+            'type': doc_type,
+            'number': self._sanitize_filename(invoice.name or 'SIN_NUMERO'),
+            'partner': partner_name,
+            'date': invoice_date.strftime('%Y-%m-%d'),
+            'year': invoice_date.strftime('%Y'),
+            'month': invoice_date.strftime('%m'),
+            'company': self._sanitize_filename(invoice.company_id.name),
+            'reference': self._sanitize_filename(
+                invoice.partner_id.ref or 'SIN_REF'
+            ),
+        }
+
+    def _get_document_type(self, invoice):
+        """Determinar tipo de documento"""
+        if invoice.move_type == 'out_invoice':
+            return 'CLIENTE'
+        elif invoice.move_type == 'out_refund':
+            return 'NC_CLIENTE'
+        elif invoice.move_type == 'in_invoice':
+            return 'PROVEEDOR'
+        elif invoice.move_type == 'in_refund':
+            return 'NC_PROVEEDOR'
+        else:
+            return 'DOCUMENTO'
+
+    def _sanitize_filename(self, filename):
+        """Sanitizar nombre de archivo eliminando caracteres problemáticos"""
+        if not filename:
+            return 'VACIO'
+        
+        # Reemplazar caracteres problemáticos
+        filename = re.sub(r'[/\\:*?"<>|]', '_', str(filename))
+        
+        # Reemplazar espacios múltiples con uno solo
+        filename = re.sub(r'\s+', '_', filename)
+        
+        # Remover guiones bajos múltiples
+        filename = re.sub(r'_+', '_', filename)
+        
+        # Remover guiones bajos al inicio y final
+        filename = filename.strip('_')
+        
+        # Limitar longitud (Windows tiene límite de 255 caracteres)
+        if len(filename) > 200:
+            filename = filename[:200]
+        
+        return filename or 'ARCHIVO'
+
+    def _update_usage_stats(self):
+        """Actualizar estadísticas de uso"""
+        self.sudo().write({
+            'usage_count': self.usage_count + 1,
+            'last_used': fields.Datetime.now(),
+        })
+
+    # MÉTODOS DE ACCIÓN PARA LA INTERFAZ
+    # =================================
+    def action_test_template(self):
+        """Acción para probar la plantilla con una factura real"""
+        self.ensure_one()
+        
+        # Buscar una factura de ejemplo
+        example_invoice = self.env['account.move'].search([
             ('company_id', '=', self.company_id.id),
-            ('is_default', '=', True),
-            ('id', '!=', self.id),
-        ])
-        other_defaults.write({'is_default': False})
+            ('move_type', 'in', ['out_invoice', 'in_invoice']),
+            ('state', '=', 'posted')
+        ], limit=1)
         
-        # Establecer esta plantilla como predeterminada
-        self.write({'is_default': True})
+        if not example_invoice:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Sin facturas'),
+                    'message': _('No se encontraron facturas para probar la plantilla'),
+                    'type': 'warning',
+                }
+            }
+        
+        # Generar nombre de ejemplo
+        example_filename = self.generate_filename(example_invoice)
         
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Plantilla Actualizada'),
-                'message': _('"%s" es ahora la plantilla predeterminada') % self.name,
+                'title': _('Plantilla probada'),
+                'message': _(
+                    'Ejemplo con factura %s:\n%s'
+                ) % (example_invoice.name, example_filename),
                 'type': 'success',
             }
         }
-    
-    def test_template(self):
-        """
-        Probar la plantilla con datos de ejemplo para verificar su funcionamiento.
-        
-        Este método permite al usuario verificar que su plantilla funciona
-        correctamente antes de usarla en una exportación real.
-        """
-        self.ensure_one()
-        
-        # Datos de ejemplo para probar la plantilla
-        test_data = {
-            'company_code': self.company_id.code or 'TEST',
-            'doc_type': 'CLIENTE',
-            'number': 'FACT2024001',
-            'partner': 'CLIENTE_EJEMPLO_SA',
-            'date': '20240115',
-            'year': '2024',
-            'month': '01',
-            'currency': 'EUR',
-            'amount': '2450',
-        }
-        
-        try:
-            result_filename = self.filename_pattern.format(**test_data)
-            message = _(
-                'Plantilla probada exitosamente!\n\n'
-                'Patrón: %s\n'
-                'Resultado: %s.pdf'
-            ) % (self.filename_pattern, result_filename)
-            
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Prueba de Plantilla'),
-                    'message': message,
-                    'type': 'success',
-                    'sticky': True,
-                }
-            }
-            
-        except Exception as e:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Error en Plantilla'),
-                    'message': _('La plantilla tiene errores: %s') % str(e),
-                    'type': 'danger',
-                    'sticky': True,
-                }
-            }
-    
-    # MÉTODOS DE HERENCIA ESTÁNDAR
-    # ===========================
-    def name_get(self):
-        """
-        Personalizar cómo se muestra el nombre del registro en selecciones.
-        
-        En lugar de mostrar solo el nombre, mostramos también la empresa
-        para facilitar la identificación en entornos multi-empresa.
-        """
-        result = []
-        for template in self:
-            name = template.name
-            if template.company_id.code:
-                name = f"[{template.company_id.code}] {name}"
-            if template.is_default:
-                name = f"{name} (Predeterminada)"
-            result.append((template.id, name))
-        return result
-    
+
     @api.model
-    def create(self, vals):
-        """
-        Sobrescribir create para manejar lógica especial al crear plantillas.
+    def get_default_template(self, company_id=None):
+        """Obtener plantilla por defecto para una empresa"""
+        company_id = company_id or self.env.company.id
         
-        Si se crea una plantilla marcada como predeterminada, automáticamente
-        desmarcamos otras plantillas predeterminadas de la misma empresa.
-        """
-        # Crear el registro primero
-        template = super().create(vals)
+        default_template = self.search([
+            ('company_id', '=', company_id),
+            ('is_default', '=', True),
+            ('active', '=', True)
+        ], limit=1)
         
-        # Si es la primera plantilla de la empresa, marcarla como predeterminada
-        if not template.is_default:
-            other_templates = self.search([
-                ('company_id', '=', template.company_id.id),
-                ('id', '!=', template.id),
-                ('active', '=', True),
-            ])
-            
-            if not other_templates:
-                template.write({'is_default': True})
-                _logger.info(
-                    _('Plantilla "%s" marcada como predeterminada '
-                      'por ser la primera de la empresa %s') % 
-                    (template.name, template.company_id.name)
-                )
+        if not default_template:
+            # Crear plantilla por defecto si no existe
+            default_template = self.create({
+                'name': 'Plantilla Estándar',
+                'pattern': '{type}_{number}_{partner}_{date}.pdf',
+                'description': 'Plantilla por defecto del sistema',
+                'company_id': company_id,
+                'is_default': True,
+            })
         
-        return template
-
-
-"""
-CONCEPTOS AVANZADOS EXPLICADOS
-=============================
-
-¿Por qué usar _check_company_auto = True?
-----------------------------------------
-En Odoo multi-empresa, este flag hace que automáticamente se añada un
-filtro por empresa en todas las búsquedas y operaciones. Esto significa
-que los usuarios solo verán plantillas de sus empresas autorizadas,
-mejorando la seguridad sin código adicional.
-
-Patrón de Plantillas con Variables
----------------------------------
-El sistema de plantillas usa el método .format() de Python, que es muy
-potente y flexible. Por ejemplo:
-
-Patrón: "{doc_type}_{number}_{year}-{month}"
-Variables: {"doc_type": "CLIENTE", "number": "F001", "year": "2024", "month": "01"}
-Resultado: "CLIENTE_F001_2024-01"
-
-Este patrón es extensible: en futuras versiones podemos añadir más variables
-sin romper las plantillas existentes.
-
-Constrains vs Validaciones en Métodos
-------------------------------------
-Los @api.constrains son superiores a validaciones manuales porque:
-1. Se ejecutan automáticamente cuando cambian los campos especificados
-2. Funcionan tanto en create() como en write()
-3. Se ejecutan incluso cuando los cambios vienen de importaciones o XML
-4. Proporcionan mejor experiencia de usuario (feedback inmediato)
-
-Método name_get() Personalizado
-------------------------------
-name_get() controla cómo se muestran los registros en:
-- Campos Many2one y Many2many
-- Listas de selección
-- Breadcrumbs y títulos
-
-Es muy útil para hacer la interfaz más informativa, especialmente en
-entornos multi-empresa donde necesitas distinguir entre registros
-similares de diferentes empresas.
-
-Logging Estratégico
-------------------
-El logging con _logger.info() es crucial para debugging y auditoría.
-En este modelo, loggeamos eventos importantes como:
-- Creación de plantillas predeterminadas automáticas
-- Cambios de plantilla predeterminada
-- Errores en patrones de nomenclatura
-
-Esto facilita enormemente el soporte técnico y la resolución de problemas.
-"""
+        return default_template
