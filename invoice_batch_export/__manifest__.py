@@ -42,12 +42,19 @@ Key Features:
         ],
     },
     
-    # Data files (ORDEN CRÍTICO CORREGIDO)
+    # ORDEN CRÍTICO DE CARGA - SOLO ARCHIVOS ESENCIALES
     'data': [
+        # 1. Security (always first)
         'security/ir.model.access.csv',
+        
+        # 2. Data (master data before views)
         'data/export_templates_data.xml',
+        
+        # 3. Views (models first, then wizards)
         'views/export_template_views.xml',
         'wizard/batch_export_wizard_views.xml',
+        
+        # 4. Menus (always last)
         'views/menu_items.xml',
     ],
     
@@ -57,9 +64,9 @@ Key Features:
     'installable': True,
     'auto_install': False,
     
-    # Hooks
-    'post_init_hook': 'post_init_hook',
-    'uninstall_hook': 'uninstall_hook',
+    # NO HOOKS - Para máxima compatibilidad durante debugging
+    # Los hooks se pueden añadir en versiones futuras una vez
+    # que el módulo funcione correctamente
     
     # Version info
     'python_requires': '>=3.8',

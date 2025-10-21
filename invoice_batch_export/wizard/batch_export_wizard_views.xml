@@ -45,23 +45,23 @@
                             </h1>
                             <div class="o_row">
                                 <span class="text-muted">
-                                    Exporta múltiples facturas en un archivo comprimido con nombres organizados
+                                    Exporta múltiples facturas en un archivo comprimido
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Mensaje de instrucciones -->
+                        <!-- Mensaje informativo para estado draft -->
                         <div class="alert alert-info" 
                              style="margin: 15px 0; padding: 15px;"
                              attrs="{'invisible': [('state', '!=', 'draft')]}">
                             <h4 style="margin-top: 0;">
-                                <i class="fa fa-info-circle"/> ¿Cómo funciona esta exportación?
+                                <i class="fa fa-info-circle"/> Proceso de Exportación
                             </h4>
                             <p style="margin-bottom: 10px;">
-                                <strong>1. Configura:</strong> Selecciona empresa, plantilla y formato de compresión<br/>
-                                <strong>2. Filtra:</strong> Define qué facturas quieres exportar<br/>
-                                <strong>3. Exporta:</strong> El sistema genera PDFs y los comprime automáticamente<br/>
-                                <strong>4. Descarga:</strong> Recibe un archivo listo para enviar o archivar
+                                <strong>1.</strong> Configura empresa y formato de compresión<br/>
+                                <strong>2.</strong> Selecciona facturas o define filtros<br/>
+                                <strong>3.</strong> Inicia la exportación<br/>
+                                <strong>4.</strong> Descarga el archivo generado
                             </p>
                         </div>
 
@@ -71,10 +71,6 @@
                              attrs="{'invisible': [('state', '!=', 'processing')]}">
                             <i class="fa fa-spinner fa-spin"/> 
                             <strong>Procesando exportación...</strong>
-                            <br/>
-                            <span class="text-muted">
-                                Esto puede tomar varios minutos dependiendo del número de facturas
-                            </span>
                         </div>
 
                         <!-- Mensaje de éxito -->
@@ -82,81 +78,63 @@
                              style="margin: 15px 0; font-size: 16px;"
                              attrs="{'invisible': [('state', '!=', 'done')]}">
                             <i class="fa fa-check-circle"/> 
-                            <strong>¡Exportación completada exitosamente!</strong>
+                            <strong>¡Exportación completada!</strong>
                             <br/>
-                            <div style="margin-top: 10px; font-size: 14px;">
-                                <span attrs="{'invisible': [('export_count', '=', 0)]}">
-                                    <strong><field name="export_count"/> facturas exportadas</strong>
-                                </span>
-                                <span attrs="{'invisible': [('compression_ratio', '=', 0)]}">
-                                    | Compresión: <strong><field name="compression_ratio"/>%</strong>
-                                </span>
-                                <span attrs="{'invisible': [('processing_time', '=', 0)]}">
-                                    | Tiempo: <strong><field name="processing_time"/>s</strong>
-                                </span>
-                            </div>
+                            <field name="export_count"/> facturas procesadas
                         </div>
 
-                        <!-- Configuración principal (visible solo en estado draft) -->
+                        <!-- Configuración principal - visible solo en draft -->
                         <div attrs="{'invisible': [('state', '!=', 'draft')]}">
                             
-                            <!-- Configuración de empresa y plantilla -->
+                            <!-- Configuración básica -->
                             <group name="main_config" string="📊 Configuración Principal">
-                                <group name="company_template">
+                                <group>
                                     <field name="company_id" 
-                                           options="{'no_create': True, 'no_edit': True}"
-                                           attrs="{'readonly': [('invoice_ids', '!=', [])]}"/>
+                                           options="{'no_create': True, 'no_edit': True}"/>
                                     
                                     <field name="export_template_id" 
-                                           options="{'no_create_edit': True}"
-                                           domain="[('company_id', '=', company_id), ('active', '=', True)]"
-                                           context="{'default_company_id': company_id}"/>
+                                           options="{'no_create_edit': True}"/>
                                 </group>
                                 
-                                <group name="compression_settings">
+                                <group>
                                     <field name="compression_format"/>
                                     
                                     <field name="archive_password" 
                                            password="True"
-                                           attrs="{
-                                               'invisible': [('compression_format', 'not in', ['zip_password', 'zip_password_std'])],
-                                               'required': [('compression_format', 'in', ['zip_password', 'zip_password_std'])]
-                                           }"
-                                           placeholder="Contraseña para proteger el archivo..."/>
+                                           attrs="{'invisible': [('compression_format', '!=', 'zip_password')], 
+                                                   'required': [('compression_format', '=', 'zip_password')]}"/>
                                 </group>
                             </group>
 
                             <!-- Selección de facturas -->
-                            <group name="invoice_selection" string="📄 Selección de Facturas">
+                            <group name="invoice_selection" string="📄 Facturas a Exportar">
                                 
                                 <field name="invoice_ids" 
                                        widget="many2many_tags"
                                        options="{'no_create': True}"
                                        nolabel="1"
-                                       placeholder="Ninguna factura preseleccionada..."
-                                       attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                                       placeholder="Facturas seleccionadas desde la vista de lista..."/>
                                 
-                                <div attrs="{'invisible': [('invoice_ids', '=', [])]}" 
+                                <div attrs="{'invisible': [('preselected_count', '=', 0)]}" 
                                      class="alert alert-success" 
                                      style="padding: 8px; margin: 5px 0;">
                                     <i class="fa fa-check"/> 
                                     <strong><field name="preselected_count"/> facturas preseleccionadas</strong>
-                                    desde la vista de lista. Los filtros de abajo se ignorarán.
                                 </div>
                             </group>
                             
-                            <!-- Filtros de documentos -->
-                            <group name="document_filters" 
+                            <!-- Filtros - solo si no hay preselección -->
+                            <group name="filters" 
                                    string="🔍 Filtros de Documentos"
-                                   attrs="{'invisible': [('invoice_ids', '!=', [])]}">
+                                   attrs="{'invisible': [('preselected_count', '>', 0)]}">
                                 
-                                <group name="doc_types" string="Tipos de Documento">
+                                <group>
                                     <field name="include_customer_invoices"/>
                                     <field name="include_vendor_bills"/>
                                     <field name="include_credit_notes"/>
                                 </group>
                                 
-                                <group name="date_status_filters" string="Fechas y Estado">
+                                <group>
                                     <field name="date_from"/>
                                     <field name="date_to"/>
                                     <field name="state_filter"/>
@@ -165,59 +143,42 @@
 
                             <!-- Opciones avanzadas -->
                             <group name="advanced_options" 
-                                   string="⚙️ Opciones Avanzadas" 
-                                   groups="account.group_account_manager">
+                                   string="⚙️ Opciones Avanzadas">
                                 
-                                <group name="performance_settings" string="Rendimiento">
+                                <group>
                                     <field name="batch_size"/>
-                                    <field name="max_invoices"/>
+                                    <field name="include_folders"/>
                                 </group>
                                 
-                                <group name="naming_options" string="Nomenclatura">
-                                    <field name="include_folders"/>
+                                <group>
                                     <field name="add_timestamp"/>
                                 </group>
                             </group>
 
                         </div>
 
-                        <!-- Resultados de la exportación -->
+                        <!-- Resultados - visible solo en done -->
                         <div attrs="{'invisible': [('state', '!=', 'done')]}">
                             
-                            <group name="export_results" string="📊 Resultados de la Exportación">
-                                <group name="stats_group" string="Estadísticas">
+                            <group name="results" string="📊 Resultados">
+                                <group>
                                     <field name="export_count" readonly="1"/>
                                     <field name="processing_time" readonly="1"/>
-                                    <field name="compression_ratio" readonly="1"/>
                                 </group>
                                 
-                                <group name="file_info" string="Información del Archivo">
+                                <group>
                                     <field name="export_filename" readonly="1"/>
-                                    <field name="file_size" readonly="1"/>
                                     <field name="export_file" filename="export_filename" readonly="1"/>
                                 </group>
                             </group>
-
-                            <!-- Botón de descarga destacado -->
-                            <div class="text-center" style="margin: 20px 0;">
-                                <button name="action_download_file" 
-                                        type="object" 
-                                        string="📥 Descargar Archivo Comprimido" 
-                                        class="btn-success btn-lg"
-                                        style="padding: 12px 30px; font-size: 16px;"/>
-                            </div>
 
                         </div>
 
                     </sheet>
 
-                    <!-- Footer con botones adicionales -->
+                    <!-- Footer -->
                     <footer>
                         <button string="Cerrar" class="btn-secondary" special="cancel"/>
-                        <button string="Ayuda" 
-                                name="action_show_help" 
-                                type="object" 
-                                class="btn-link"/>
                     </footer>
 
                 </form>
@@ -227,36 +188,6 @@
         <!-- Acción principal del wizard -->
         <record id="action_batch_export_wizard" model="ir.actions.act_window">
             <field name="name">Exportación Masiva de Facturas</field>
-            <field name="res_model">batch.export.wizard</field>
-            <field name="view_mode">form</field>
-            <field name="target">new</field>
-            <field name="view_id" ref="view_batch_export_wizard_form"/>
-            
-            <field name="binding_model_id" ref="account.model_account_move"/>
-            <field name="binding_view_types">list</field>
-            
-            <field name="help" type="html">
-                <![CDATA[
-                    <p class="o_view_nocontent_smiling_face">
-                        Exportación Masiva de Facturas
-                    </p>
-                    <p>
-                        <strong>Características disponibles:</strong>
-                    </p>
-                    <ul>
-                        <li>Múltiples formatos de compresión (ZIP, 7-Zip, TAR.GZ)</li>
-                        <li>Protección con contraseña para documentos sensibles</li>
-                        <li>Plantillas de nomenclatura personalizables</li>
-                        <li>Filtros avanzados por fecha, tipo y estado</li>
-                        <li>Procesamiento optimizado por lotes</li>
-                    </ul>
-                ]]>
-            </field>
-        </record>
-
-        <!-- Acción contextual para la lista de facturas -->
-        <record id="action_batch_export_from_invoices" model="ir.actions.act_window">
-            <field name="name">📦 Exportar en Lote</field>
             <field name="res_model">batch.export.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
