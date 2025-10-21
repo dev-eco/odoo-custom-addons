@@ -42,20 +42,12 @@ Key Features:
         ],
     },
     
-    # Data files (ORDEN CRÍTICO - modelos antes que vistas)
+    # Data files (ORDEN CRÍTICO CORREGIDO)
     'data': [
-        # Security files (loaded first)
         'security/ir.model.access.csv',
-        
-        # Master data (after security, before views)
         'data/export_templates_data.xml',
-        
-        # Views (after models are loaded)
         'views/export_template_views.xml',
         'wizard/batch_export_wizard_views.xml',
-        'views/res_company_views.xml',
-        
-        # Menu items (last)
         'views/menu_items.xml',
     ],
     

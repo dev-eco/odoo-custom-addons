@@ -154,7 +154,6 @@
                                     <field name="include_customer_invoices"/>
                                     <field name="include_vendor_bills"/>
                                     <field name="include_credit_notes"/>
-                                    <field name="include_debit_notes"/>
                                 </group>
                                 
                                 <group name="date_status_filters" string="Fechas y Estado">
