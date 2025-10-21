@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Wizard Form View -->
+        <record id="view_bulk_export_wizard_form" model="ir.ui.view">
+            <field name="name">account.bulk.export.wizard.form</field>
+            <field name="model">account.bulk.export.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Bulk Invoice Export">
+                    
+                    <header>
+                        <field name="state" invisible="1"/>
+                        
+                        <button name="action_start_export" 
+                                type="object" 
+                                string="Start Export" 
+                                class="btn-primary"
+                                attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                        
+                        <button name="action_download" 
+                                type="object" 
+                                string="Download File" 
+                                class="btn-success"
+                                attrs="{'invisible': [('state', '!=', 'done')]}"/>
+                        
+                        <button name="action_restart" 
+                                type="object" 
+                                string="New Export" 
+                                class="btn-secondary"
+                                attrs="{'invisible': [('state', '=', 'draft')]}"/>
+                        
+                        <field name="state" widget="statusbar" 
+                               statusbar_visible="draft,processing,done"/>
+                    </header>
+
+                    <sheet>
+                        
+                        <div class="oe_title">
+                            <h1>
+                                <i class="fa fa-file-archive-o"/> Bulk Invoice Export
+                            </h1>
+                        </div>
+
+                        <!-- Processing indicator -->
+                        <div class="alert alert-warning" 
+                             attrs="{'invisible': [('state', '!=', 'processing')]}">
+                            <i class="fa fa-spinner fa-spin"/> Processing export...
+                        </div>
+
+                        <!-- Error message -->
+                        <div class="alert alert-danger" 
+                             attrs="{'invisible': [('state', '!=', 'error')]}">
+                            <h4>Export Failed</h4>
+                            <field name="error_message" readonly="1"/>
+                        </div>
+
+                        <!-- Success message -->
+                        <div class="alert alert-success" 
+                             attrs="{'invisible': [('state', '!=', 'done')]}">
+                            <h4>Export Completed Successfully</h4>
+                            <p>
+                                <strong><field name="export_count"/> invoices</strong> exported in 
+                                <strong><field name="processing_time"/> seconds</strong>
+                                <span attrs="{'invisible': [('failed_count', '=', 0)]}">
+                                    (<field name="failed_count"/> failed)
+                                </span>
+                            </p>
+                        </div>
+
+                        <!-- Configuration (draft state) -->
+                        <div attrs="{'invisible': [('state', '!=', 'draft')]}">
+                            
+                            <group string="Basic Configuration">
+                                <group>
+                                    <field name="company_id" options="{'no_create': True}"/>
+                                    <field name="compression_format"/>
+                                    <field name="archive_password" 
+                                           password="True"
+                                           attrs="{'invisible': [('compression_format', '!=', 'zip_password')], 
+                                                   'required': [('compression_format', '=', 'zip_password')]}"/>
+                                </group>
+                                <group>
+                                    <field name="filename_pattern"/>
+                                    <field name="batch_size"/>
+                                </group>
+                            </group>
+
+                            <group string="Invoice Selection">
+                                <field name="invoice_ids" 
+                                       widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       nolabel="1"/>
+                                
+                                <div attrs="{'invisible': [('selected_count', '=', 0)]}" 
+                                     class="alert alert-info">
+                                    <field name="selected_count"/> invoices pre-selected from list view.
+                                    Filters below will be ignored.
+                                </div>
+                            </group>
+
+                            <group string="Filters" 
+                                   attrs="{'invisible': [('selected_count', '>', 0)]}">
+                                <group>
+                                    <field name="include_out_invoice"/>
+                                    <field name="include_in_invoice"/>
+                                    <field name="include_out_refund"/>
+                                    <field name="include_in_refund"/>
+                                </group>
+                                <group>
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                    <field name="state_filter"/>
+                                    <field name="partner_ids" 
+                                           widget="many2many_tags"
+                                           options="{'no_create': True}"/>
+                                </group>
+                            </group>
+
+                        </div>
+
+                        <!-- Results (done state) -->
+                        <div attrs="{'invisible': [('state', '!=', 'done')]}">
+                            <group string="Export Results">
+                                <group>
+                                    <field name="export_count" readonly="1"/>
+                                    <field name="failed_count" readonly="1"/>
+                                    <field name="processing_time" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="export_filename" readonly="1"/>
+                                    <field name="export_file" 
+                                           filename="export_filename" 
+                                           readonly="1"/>
+                                </group>
+                            </group>
+                        </div>
+
+                    </sheet>
+
+                    <footer>
+                        <button string="Close" class="btn-secondary" special="cancel"/>
+                    </footer>
+
+                </form>
+            </field>
+        </record>
+
+        <!-- Wizard Action -->
+        <record id="action_bulk_export_wizard" model="ir.actions.act_window">
+            <field name="name">Bulk Export Invoices</field>
+            <field name="res_model">account.bulk.export.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_bulk_export_wizard_form"/>
+            <field name="binding_model_id" ref="account.model_account_move"/>
+            <field name="binding_view_types">list</field>
+            <field name="context">{
+                'default_invoice_ids': active_ids,
+            }</field>
+        </record>
+
+    </data>
+</odoo>

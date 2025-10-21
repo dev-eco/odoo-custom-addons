@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Menu Item -->
+        <menuitem id="menu_bulk_export"
+                  name="Bulk Export"
+                  parent="account.menu_finance_reports"
+                  action="action_bulk_export_wizard"
+                  sequence="90"
+                  groups="account.group_account_user"/>
+
+    </data>
+</odoo>
