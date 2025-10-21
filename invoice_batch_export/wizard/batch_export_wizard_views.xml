@@ -62,7 +62,7 @@
                                        options="{'no_create_edit': True}"/>
                             </group>
                             <group>
-                                <field name="compression_format" widget="radio"/>
+                                <field name="compression_format"/>
                                 <field name="archive_password" 
                                        password="True"
                                        invisible="compression_format not in ['zip_password', 'zip_password_std']"

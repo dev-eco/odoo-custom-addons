@@ -128,10 +128,6 @@ Technical Specifications
     'assets': {
         'web.assets_backend': [
             'invoice_batch_export/static/src/css/batch_export.css',
-            'invoice_batch_export/static/src/js/batch_export_widget.js',
-        ],
-        'web.assets_qweb': [
-            'invoice_batch_export/static/src/xml/batch_export_templates.xml',
         ],
     },
     
