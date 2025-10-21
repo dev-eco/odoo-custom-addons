@@ -118,7 +118,6 @@ Technical Specifications
         
         # Views
         'views/export_template_views.xml',
-        'views/account_move_views.xml',
         'wizard/batch_export_wizard_views.xml',
         
         # Menu items

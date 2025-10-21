@@ -39,36 +39,23 @@
         SELECCIÓN DE FACTURAS PARA EXPORTACIÓN
         =====================================
         
-        Vista especializada para seleccionar facturas que se van a exportar.
+        Redirige al wizard de exportación masiva para configurar filtros.
     -->
     <menuitem id="menu_batch_export_selection"
               name="Seleccionar Facturas"
               parent="menu_batch_export_main"
-              action="action_account_move_batch_export_selection"
+              action="action_batch_export_wizard"
               sequence="20"
               groups="account.group_account_user"/>
 
     <!--
-        EXPORTACIÓN RÁPIDA
-        ================
-        
-        Acceso a la versión simplificada del wizard para usuarios menos técnicos.
-    -->
-    <menuitem id="menu_batch_export_quick"
-              name="Exportación Rápida"
-              parent="menu_batch_export_main"
-              action="action_batch_export_wizard_simple"
-              sequence="30"
-              groups="account.group_account_user"/>
-
-    <!--
-        SEPARADOR
-        ========
+        SEPARADOR PARA CONFIGURACIÓN
+        ============================
     -->
     <menuitem id="menu_batch_export_separator"
               name="──────────────────"
               parent="menu_batch_export_main"
-              sequence="40"
+              sequence="30"
               groups="account.group_account_manager"/>
 
     <!--
@@ -81,7 +68,7 @@
     <menuitem id="menu_batch_export_config"
               name="⚙️ Configuración"
               parent="menu_batch_export_main"
-              sequence="50"
+              sequence="40"
               groups="account.group_account_manager"/>
 
     <!--
