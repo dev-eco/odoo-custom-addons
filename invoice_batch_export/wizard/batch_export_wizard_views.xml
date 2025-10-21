@@ -18,19 +18,19 @@
                             type="object" 
                             string="🚀 Iniciar Exportación" 
                             class="oe_highlight"
-                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                            invisible="state != 'draft'"/>
                     
                     <button name="action_preview_selection" 
                             type="object" 
                             string="👁️ Previsualizar Facturas" 
                             class="btn-secondary"
-                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                            invisible="state != 'draft'"/>
                     
                     <button name="action_reset_wizard" 
                             type="object" 
                             string="🔄 Nueva Exportación" 
                             class="btn-secondary"
-                            attrs="{'invisible': [('state', 'in', ['draft', 'processing'])]}"/>
+                            invisible="state in ['draft', 'processing']"/>
                     
                     <!-- Indicador de estado -->
                     <field name="state" widget="statusbar" 
@@ -50,7 +50,7 @@
                     </div>
 
                     <!-- Configuración principal (visible solo en estado draft) -->
-                    <div attrs="{'invisible': [('state', '!=', 'draft')]}">
+                    <div invisible="state != 'draft'">
                         
                         <!-- Configuración de empresa y plantilla -->
                         <group name="main_config" string="📊 Configuración Principal">
@@ -65,8 +65,8 @@
                                 <field name="compression_format" widget="radio"/>
                                 <field name="archive_password" 
                                        password="True"
-                                       attrs="{'invisible': [('compression_format', 'not in', ['zip_password', 'zip_password_std'])],
-                                              'required': [('compression_format', 'in', ['zip_password', 'zip_password_std'])]}"/>
+                                       invisible="compression_format not in ['zip_password', 'zip_password_std']"
+                                       required="compression_format in ['zip_password', 'zip_password_std']"/>
                             </group>
                         </group>
 
@@ -76,9 +76,9 @@
                                 <field name="invoice_ids" 
                                        widget="many2many_tags"
                                        options="{'no_create': True}"
-                                       attrs="{'readonly': [('invoice_ids', '!=', False)]}"/>
+                                       readonly="invoice_ids"/>
                                 <div class="alert alert-info" role="alert" 
-                                     attrs="{'invisible': [('invoice_ids', '=', False)]}">
+                                     invisible="not invoice_ids">
                                     <strong>Facturas preseleccionadas:</strong> 
                                     Se exportarán únicamente las facturas seleccionadas. 
                                     Los filtros de abajo se ignorarán.
@@ -89,7 +89,7 @@
                         <!-- Filtros de documentos (solo si no hay preselección) -->
                         <group name="document_filters" 
                                string="🎯 Filtros de Documentos"
-                               attrs="{'invisible': [('invoice_ids', '!=', False)]}">
+                               invisible="invoice_ids">
                             <group>
                                 <field name="include_customer_invoices"/>
                                 <field name="include_vendor_bills"/>
@@ -106,7 +106,7 @@
                         <!-- Filtros de fecha -->
                         <group name="date_filters" 
                                string="📅 Filtros de Fecha"
-                               attrs="{'invisible': [('invoice_ids', '!=', False)]}">
+                               invisible="invoice_ids">
                             <group>
                                 <field name="date_from"/>
                                 <field name="date_to"/>
@@ -122,7 +122,7 @@
                     </div>
 
                     <!-- Indicador de progreso (visible durante procesamiento) -->
-                    <div attrs="{'invisible': [('state', '!=', 'processing')]}" 
+                    <div invisible="state != 'processing'" 
                          class="alert alert-info">
                         <h4><i class="fa fa-spinner fa-spin"/> Procesando exportación...</h4>
                         <p>Por favor espere mientras se procesan las facturas. 
@@ -138,7 +138,7 @@
                     </div>
 
                     <!-- Resultados (visible cuando está completado) -->
-                    <div attrs="{'invisible': [('state', 'not in', ['done', 'error'])]}">
+                    <div invisible="state not in ['done', 'error']">
                         
                         <!-- Estadísticas de la exportación -->
                         <group name="export_stats" string="📊 Estadísticas de la Exportación">
@@ -156,7 +156,7 @@
                         <!-- Descarga del archivo (solo si está completado exitosamente) -->
                         <group name="download_section" 
                                string="⬇️ Descargar Archivo"
-                               attrs="{'invisible': [('state', '!=', 'done')]}">
+                               invisible="state != 'done'">
                             <group>
                                 <field name="export_filename" invisible="1"/>
                                 <field name="export_file" 

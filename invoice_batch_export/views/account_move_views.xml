@@ -12,8 +12,8 @@
         EXTENSIÓN DE LA VISTA DE LISTA DE FACTURAS
         ==========================================
         
-        Añade un botón inteligente para acceso rápido a la exportación masiva
-        cuando se tienen facturas seleccionadas.
+        Añade información contextual para facilitar la exportación masiva.
+        La funcionalidad principal se accede desde Actions > Export in Batch.
     -->
     <record id="view_account_move_tree_batch_export" model="ir.ui.view">
         <field name="name">account.move.tree.batch.export</field>
@@ -24,37 +24,6 @@
             <!-- Añadir información en el encabezado de la vista -->
             <xpath expr="//tree" position="attributes">
                 <attribute name="banner_route">/invoice_batch_export/banner</attribute>
-            </xpath>
-
-        </field>
-    </record>
-
-    <!--
-        EXTENSIÓN DE LA VISTA DE FORMULARIO DE FACTURAS
-        ==============================================
-        
-        Añade un botón smart para exportar facturas relacionadas o similares.
-    -->
-    <record id="view_account_move_form_batch_export" model="ir.ui.view">
-        <field name="name">account.move.form.batch.export</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_move_form"/>
-        <field name="arch" type="xml">
-            
-            <!-- Añadir botón inteligente en el área de smart buttons -->
-            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
-                <button name="action_open_batch_export_for_partner"
-                        type="object"
-                        class="oe_stat_button"
-                        icon="fa-download"
-                        invisible="state == 'draft'">
-                    <div class="o_field_widget o_stat_info">
-                        <span class="o_stat_value">
-                            <field name="partner_invoice_count" widget="integer"/>
-                        </span>
-                        <span class="o_stat_text">Facturas del Cliente</span>
-                    </div>
-                </button>
             </xpath>
 
         </field>
