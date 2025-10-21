@@ -13,67 +13,77 @@ Invoice Batch Export - Enhanced Multi-Format Compression
 Advanced invoice export module supporting multiple compression formats and
 intelligent batch processing for optimal performance and storage efficiency.
 
-🚀 **Key Features:**
-==================
-✅ **Multi-Format Compression Support:**
-   • ZIP (Standard, fast processing)
-   • 7-Zip (Maximum compression ratio)
-   • TAR.GZ (Unix/Linux standard)
-   • Password-protected ZIP archives
+Key Features
+============
 
-✅ **Smart Batch Processing:**
-   • Configurable batch sizes for memory optimization
-   • Progress tracking for large exports
-   • Robust error handling with detailed logging
-   • Resume functionality for interrupted exports
+**Multi-Format Compression Support:**
 
-✅ **Advanced Filtering Options:**
-   • Date ranges with flexible criteria
-   • Document types (invoices, bills, credit notes)
-   • Partner-specific filtering
-   • Multi-company support with isolation
+* ZIP (Standard, fast processing)
+* 7-Zip (Maximum compression ratio)
+* TAR.GZ (Unix/Linux standard)
+* Password-protected ZIP archives
 
-✅ **Intelligent Filename Generation:**
-   • Customizable naming templates
-   • Company-specific patterns
-   • Automatic conflict resolution
-   • Special character sanitization
+**Smart Batch Processing:**
 
-✅ **Enterprise Features:**
-   • Multi-company compliance
-   • Role-based access control
-   • Audit trail integration
-   • Performance monitoring
+* Configurable batch sizes for memory optimization
+* Progress tracking for large exports
+* Robust error handling with detailed logging
+* Resume functionality for interrupted exports
 
-📊 **Performance Optimizations:**
-==============================
-• Memory-efficient streaming for large datasets
-• Concurrent PDF generation where possible
-• Intelligent caching of report data
-• Database query optimization
+**Advanced Filtering Options:**
 
-🔐 **Security & Compliance:**
-============================
-• Encrypted archive support
-• Access logging and auditing
-• Data isolation per company
-• GDPR-compliant data handling
+* Date ranges with flexible criteria
+* Document types (invoices, bills, credit notes)
+* Partner-specific filtering
+* Multi-company support with isolation
 
-💼 **Use Cases:**
-================
-• Monthly submissions to accounting firms
-• Quarterly regulatory reporting
-• Bulk document archival
-• Client document delivery
-• Backup and migration scenarios
+**Intelligent Filename Generation:**
 
-⚡ **Technical Specifications:**
-==============================
-• Compatible with Odoo 17.0 Community & Enterprise
-• Supports 1-10,000+ invoice exports
-• Memory usage: 50-200MB (depending on batch size)
-• Processing speed: 10-100 invoices/minute
-• Storage efficiency: 60-90% compression ratio
+* Customizable naming templates
+* Company-specific patterns
+* Automatic conflict resolution
+* Special character sanitization
+
+**Enterprise Features:**
+
+* Multi-company compliance
+* Role-based access control
+* Audit trail integration
+* Performance monitoring
+
+Performance Optimizations
+==========================
+
+* Memory-efficient streaming for large datasets
+* Concurrent PDF generation where possible
+* Intelligent caching of report data
+* Database query optimization
+
+Security & Compliance
+======================
+
+* Encrypted archive support
+* Access logging and auditing
+* Data isolation per company
+* GDPR-compliant data handling
+
+Use Cases
+=========
+
+* Monthly submissions to accounting firms
+* Quarterly regulatory reporting
+* Bulk document archival
+* Client document delivery
+* Backup and migration scenarios
+
+Technical Specifications
+========================
+
+* Compatible with Odoo 17.0 Community & Enterprise
+* Supports 1-10,000+ invoice exports
+* Memory usage: 50-200MB (depending on batch size)
+* Processing speed: 10-100 invoices/minute
+* Storage efficiency: 60-90% compression ratio
     """,
     'category': 'Accounting/Accounting',
     'author': '[TU_NOMBRE]',
