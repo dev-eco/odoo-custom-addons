@@ -169,7 +169,8 @@
                 
                 <filter name="filter_my_company" 
                         string="Mi Empresa" 
-                        domain="[('company_id', '=', company_id)]"/>
+                        domain="[('company_id', '=', context.get('allowed_company_ids', [company_id])[0] if context.get('allowed_company_ids') else company_id)]"
+                        groups="base.group_multi_company"/>
                 
                 <separator/>
                 
