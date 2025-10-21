@@ -182,12 +182,40 @@ class BulkExportWizard(models.TransientModel):
     # ==========================================
 
     def action_start_export(self):
-        """Start the export process with security validation."""
+        """Start the export process with comprehensive security validation."""
         self.ensure_one()
         
-        # Security check: verify user has access to accounting
-        if not self.env.user.has_group('account.group_account_user'):
-            raise AccessError(_('You do not have permission to export invoices.'))
+        # IMPROVED SECURITY CHECK: Verify user has access to accounting with multiple group support
+        # Instead of checking only one specific group, we check if user has ANY appropriate accounting access
+        accounting_groups = [
+            'account.group_account_user',      # Basic accounting users
+            'account.group_account_manager',   # Accounting managers  
+            'account.group_account_invoice',   # Invoice users
+            'account.group_account_readonly',  # Read-only users (can view but not export)
+        ]
+        
+        has_accounting_access = False
+        user_groups = []  # For debugging purposes
+        
+        for group in accounting_groups:
+            if self.env.user.has_group(group):
+                has_accounting_access = True
+                user_groups.append(group)
+                # Special case: readonly users can't export
+                if group == 'account.group_account_readonly':
+                    has_accounting_access = False
+                    break
+        
+        # Log user groups for debugging (remove in production)
+        _logger.info(f"User {self.env.user.name} has accounting groups: {user_groups}")
+        
+        if not has_accounting_access:
+            # More detailed error message for debugging
+            raise AccessError(_(
+                'You do not have permission to export invoices. '
+                'Required groups: Accounting User, Accounting Manager, or Invoice User. '
+                'Contact your administrator to grant appropriate access.'
+            ))
 
         try:
             self.write({'state': 'processing', 'error_message': False})
