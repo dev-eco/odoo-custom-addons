@@ -552,16 +552,87 @@ class BatchExportWizard(models.TransientModel):
                 self._handle_invoice_error(invoice, str(e))
 
     def _generate_invoice_pdf(self, invoice):
-        """Generar PDF de una factura"""
+        """Generar PDF de una factura usando API de Odoo 17.0"""
         try:
-            # Usar el reporte estándar de facturas
-            report = self.env.ref('account.account_invoices')
-            pdf_content, _ = report._render_qweb_pdf([invoice.id])
+            # Método 1: Buscar reporte de facturas dinámicamente
+            report_name = None
+            if invoice.move_type in ['out_invoice', 'out_refund']:
+                # Facturas de cliente
+                report_name = 'account.report_invoice'
+            elif invoice.move_type in ['in_invoice', 'in_refund']:
+                # Facturas de proveedor (usar mismo reporte)
+                report_name = 'account.report_invoice'
+            
+            if not report_name:
+                _logger.warning(f"No se encontró reporte para tipo {invoice.move_type}")
+                return None
+            
+            # Obtener el reporte
+            try:
+                report = self.env.ref(report_name)
+            except ValueError:
+                # Si no existe ese reporte, buscar alternativo
+                _logger.warning(f"Reporte {report_name} no encontrado, buscando alternativo...")
+                report = self._find_invoice_report()
+                if not report:
+                    return None
+            
+            # Generar PDF usando API correcta de Odoo 17.0
+            pdf_content, _ = report._render_qweb_pdf(invoice.ids)
             return pdf_content
             
         except Exception as e:
             _logger.error(f"Error generando PDF para factura {invoice.name}: {str(e)}")
-            return None
+            # Método de respaldo: usar action_invoice_print si está disponible
+            return self._generate_pdf_fallback(invoice)
+
+    def _find_invoice_report(self):
+        """Buscar reporte de facturas disponible"""
+        possible_reports = [
+            'account.report_invoice',
+            'account.account_invoices',
+            'account.report_invoice_with_payments',
+            'account.action_report_invoice',
+        ]
+        
+        for report_name in possible_reports:
+            try:
+                report = self.env.ref(report_name)
+                _logger.info(f"Encontrado reporte alternativo: {report_name}")
+                return report
+            except ValueError:
+                continue
+        
+        _logger.error("No se encontró ningún reporte de facturas disponible")
+        return None
+
+    def _generate_pdf_fallback(self, invoice):
+        """Método de respaldo para generar PDF"""
+        try:
+            # Método de respaldo: usar el método print_invoice si existe
+            if hasattr(invoice, 'action_invoice_print'):
+                # Este método puede devolver una acción que contenga el PDF
+                action = invoice.action_invoice_print()
+                if isinstance(action, dict) and 'url' in action:
+                    # Si devuelve URL, no podemos obtener el contenido directamente
+                    _logger.warning(f"Método de respaldo no disponible para {invoice.name}")
+                    return None
+            
+            # Último recurso: intentar con reporte genérico
+            report_model = self.env['ir.actions.report']
+            reports = report_model.search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ], limit=1)
+            
+            if reports:
+                pdf_content, _ = reports._render_qweb_pdf(invoice.ids)
+                return pdf_content
+            
+        except Exception as e:
+            _logger.error(f"Error en método de respaldo para {invoice.name}: {str(e)}")
+        
+        return None
 
     def _handle_invoice_error(self, invoice, error_msg):
         """Manejar error en procesamiento de factura"""
