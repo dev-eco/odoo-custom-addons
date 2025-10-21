@@ -140,7 +140,7 @@ intelligent batch processing for optimal performance and storage efficiency.
     'maintainers': ['tu_usuario_github'],
     
     # Version and migration info
-    'uninstall_hook': 'uninstall_hook',
+    #'uninstall_hook': 'uninstall_hook',
     
     # Technical information
     'python_requires': '>=3.8',
