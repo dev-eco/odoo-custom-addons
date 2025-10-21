@@ -41,7 +41,7 @@ from . import wizard
 # Optional: Import utility functions if needed
 # from . import utils
 
-def uninstall_hook(cr, registry):
+def uninstall_hook(env):
     """
     Hook called when the module is being uninstalled.
     
