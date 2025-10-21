@@ -2,83 +2,86 @@
 <odoo>
     <data>
 
-        <!-- Wizard Form View -->
+        <!-- Vista principal del wizard de exportación masiva -->
         <record id="view_bulk_export_wizard_form" model="ir.ui.view">
             <field name="name">account.bulk.export.wizard.form</field>
             <field name="model">account.bulk.export.wizard</field>
             <field name="arch" type="xml">
                 <form string="Bulk Invoice Export">
-                    
+
+                    <!-- Header con controles de estado y botones -->
                     <header>
                         <field name="state" invisible="1"/>
                         
                         <button name="action_start_export" 
                                 type="object" 
                                 string="Start Export" 
-                                class="btn-primary"
-                                attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                                class="btn-primary" 
+                                invisible="state != 'draft'"/>
                         
                         <button name="action_download" 
                                 type="object" 
                                 string="Download File" 
-                                class="btn-success"
-                                attrs="{'invisible': [('state', '!=', 'done')]}"/>
+                                class="btn-success" 
+                                invisible="state != 'done'"/>
                         
                         <button name="action_restart" 
                                 type="object" 
                                 string="New Export" 
-                                class="btn-secondary"
-                                attrs="{'invisible': [('state', '=', 'draft')]}"/>
+                                class="btn-secondary" 
+                                invisible="state == 'draft'"/>
                         
-                        <field name="state" widget="statusbar" 
+                        <field name="state" 
+                               widget="statusbar" 
                                statusbar_visible="draft,processing,done"/>
                     </header>
 
+                    <!-- Contenido principal del formulario -->
                     <sheet>
                         
+                        <!-- Título del wizard -->
                         <div class="oe_title">
-                            <h1>
-                                <i class="fa fa-file-archive-o"/> Bulk Invoice Export
-                            </h1>
+                            <h1>Bulk Invoice Export</h1>
                         </div>
 
-                        <!-- Processing indicator -->
+                        <!-- Indicador de procesamiento -->
                         <div class="alert alert-warning" 
-                             attrs="{'invisible': [('state', '!=', 'processing')]}">
-                            <i class="fa fa-spinner fa-spin"/> Processing export...
+                             invisible="state != 'processing'">
+                            <p>Processing export, please wait...</p>
                         </div>
 
-                        <!-- Error message -->
+                        <!-- Mensaje de error -->
                         <div class="alert alert-danger" 
-                             attrs="{'invisible': [('state', '!=', 'error')]}">
+                             invisible="state != 'error'">
                             <h4>Export Failed</h4>
                             <field name="error_message" readonly="1"/>
                         </div>
 
-                        <!-- Success message -->
+                        <!-- Mensaje de éxito -->
                         <div class="alert alert-success" 
-                             attrs="{'invisible': [('state', '!=', 'done')]}">
+                             invisible="state != 'done'">
                             <h4>Export Completed Successfully</h4>
                             <p>
                                 <strong><field name="export_count"/> invoices</strong> exported in 
                                 <strong><field name="processing_time"/> seconds</strong>
-                                <span attrs="{'invisible': [('failed_count', '=', 0)]}">
-                                    (<field name="failed_count"/> failed)
-                                </span>
                             </p>
                         </div>
 
-                        <!-- Configuration (draft state) -->
-                        <div attrs="{'invisible': [('state', '!=', 'draft')]}">
-                            
+                        <!-- Sección de configuración - visible solo en estado draft -->
+                        <div invisible="state != 'draft'">
+
+                            <!-- Configuración básica -->
                             <group string="Basic Configuration">
                                 <group>
-                                    <field name="company_id" options="{'no_create': True}"/>
+                                    <field name="company_id" 
+                                           options="{'no_create': True}"/>
+                                    
                                     <field name="compression_format"/>
+                                    
                                     <field name="archive_password" 
-                                           password="True"
-                                           attrs="{'invisible': [('compression_format', '!=', 'zip_password')], 
-                                                   'required': [('compression_format', '=', 'zip_password')]}"/>
+                                           password="True" 
+                                           invisible="compression_format != 'zip_password'" 
+                                           required="compression_format == 'zip_password'"/>
                                 </group>
                                 <group>
                                     <field name="filename_pattern"/>
@@ -86,21 +89,25 @@
                                 </group>
                             </group>
 
+                            <!-- Selección de facturas -->
                             <group string="Invoice Selection">
                                 <field name="invoice_ids" 
-                                       widget="many2many_tags"
-                                       options="{'no_create': True}"
+                                       widget="many2many_tags" 
+                                       options="{'no_create': True}" 
                                        nolabel="1"/>
                                 
-                                <div attrs="{'invisible': [('selected_count', '=', 0)]}" 
+                                <div invisible="selected_count == 0" 
                                      class="alert alert-info">
-                                    <field name="selected_count"/> invoices pre-selected from list view.
-                                    Filters below will be ignored.
+                                    <p>
+                                        <strong><field name="selected_count"/> invoices</strong> 
+                                        pre-selected from list view.
+                                    </p>
                                 </div>
                             </group>
 
-                            <group string="Filters" 
-                                   attrs="{'invisible': [('selected_count', '>', 0)]}">
+                            <!-- Filtros de documentos - solo visible cuando no hay selección previa -->
+                            <group string="Document Filters" 
+                                   invisible="selected_count > 0">
                                 <group>
                                     <field name="include_out_invoice"/>
                                     <field name="include_in_invoice"/>
@@ -112,19 +119,21 @@
                                     <field name="date_to"/>
                                     <field name="state_filter"/>
                                     <field name="partner_ids" 
-                                           widget="many2many_tags"
+                                           widget="many2many_tags" 
                                            options="{'no_create': True}"/>
                                 </group>
                             </group>
 
                         </div>
 
-                        <!-- Results (done state) -->
-                        <div attrs="{'invisible': [('state', '!=', 'done')]}">
+                        <!-- Sección de resultados - visible solo cuando está terminado -->
+                        <div invisible="state != 'done'">
                             <group string="Export Results">
                                 <group>
                                     <field name="export_count" readonly="1"/>
-                                    <field name="failed_count" readonly="1"/>
+                                    <field name="failed_count" 
+                                           readonly="1" 
+                                           invisible="failed_count == 0"/>
                                     <field name="processing_time" readonly="1"/>
                                 </group>
                                 <group>
@@ -138,15 +147,18 @@
 
                     </sheet>
 
+                    <!-- Footer del formulario -->
                     <footer>
-                        <button string="Close" class="btn-secondary" special="cancel"/>
+                        <button string="Close" 
+                                class="btn-secondary" 
+                                special="cancel"/>
                     </footer>
 
                 </form>
             </field>
         </record>
 
-        <!-- Wizard Action -->
+        <!-- Acción del wizard para mostrar el formulario -->
         <record id="action_bulk_export_wizard" model="ir.actions.act_window">
             <field name="name">Bulk Export Invoices</field>
             <field name="res_model">account.bulk.export.wizard</field>
@@ -155,9 +167,7 @@
             <field name="view_id" ref="view_bulk_export_wizard_form"/>
             <field name="binding_model_id" ref="account.model_account_move"/>
             <field name="binding_view_types">list</field>
-            <field name="context">{
-                'default_invoice_ids': active_ids,
-            }</field>
+            <field name="context">{'default_invoice_ids': active_ids}</field>
         </record>
 
     </data>
