@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <!-- Vista de formulario de partner - VERSIÓN ESPAÑA -->
-    <record id="view_partner_form_distributor_es" model="ir.ui.view">
-        <field name="name">res.partner.form.distributor.es</field>
+    <!-- Vista de formulario de partner - SIMPLIFICADA SIN CAMPOS PROBLEMÁTICOS -->
+    <record id="view_partner_form_distributor_simple" model="ir.ui.view">
+        <field name="name">res.partner.form.distributor.simple</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
@@ -30,8 +30,8 @@
     </record>
 
     <!-- Vista de lista con información de distribuidor -->
-    <record id="view_partner_tree_distributor_es" model="ir.ui.view">
-        <field name="name">res.partner.tree.distributor.es</field>
+    <record id="view_partner_tree_distributor_simple" model="ir.ui.view">
+        <field name="name">res.partner.tree.distributor.simple</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_tree"/>
         <field name="arch" type="xml">
@@ -45,8 +45,8 @@
     </record>
 
     <!-- Vista de búsqueda con filtros en español -->
-    <record id="view_res_partner_filter_distributor_es" model="ir.ui.view">
-        <field name="name">res.partner.search.distributor.es</field>
+    <record id="view_res_partner_filter_distributor_simple" model="ir.ui.view">
+        <field name="name">res.partner.search.distributor.simple</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_res_partner_filter"/>
         <field name="arch" type="xml">
@@ -71,8 +71,8 @@
     </record>
 
     <!-- Smart button mejorado para direcciones de entrega -->
-    <record id="view_partner_form_delivery_button_es" model="ir.ui.view">
-        <field name="name">res.partner.form.delivery.button.es</field>
+    <record id="view_partner_form_delivery_button_simple" model="ir.ui.view">
+        <field name="name">res.partner.form.delivery.button.simple</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
@@ -91,7 +91,7 @@
     </record>
 
     <!-- Acción para gestionar direcciones de entrega -->
-    <record id="action_partner_delivery_addresses_es" model="ir.actions.act_window">
+    <record id="action_partner_delivery_addresses_simple" model="ir.actions.act_window">
         <field name="name">Direcciones de Entrega</field>
         <field name="res_model">res.partner</field>
         <field name="view_mode">tree,form</field>
@@ -112,15 +112,15 @@
     </record>
 
     <!-- Menú para gestionar direcciones de entrega -->
-    <menuitem id="menu_partner_delivery_addresses_es"
+    <menuitem id="menu_partner_delivery_addresses_simple"
               name="Direcciones de Entrega"
               parent="contacts.menu_contacts"
-              action="action_partner_delivery_addresses_es"
+              action="action_partner_delivery_addresses_simple"
               sequence="35"/>
 
     <!-- Vista específica para crear/editar direcciones de entrega -->
-    <record id="view_delivery_address_form_es" model="ir.ui.view">
-        <field name="name">res.partner.delivery.form.es</field>
+    <record id="view_delivery_address_form_simple" model="ir.ui.view">
+        <field name="name">res.partner.delivery.form.simple</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <form string="Dirección de Entrega">

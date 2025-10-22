@@ -7,20 +7,12 @@ from odoo.exceptions import ValidationError
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
-    # Campo principal para identificar distribuidores
+    # Campo principal para identificar distribuidores (SOLO LOS BÁSICOS)
     is_distributor = fields.Boolean(
         string='Es Distribuidor',
         default=False,
         help='Marque esta casilla si este cliente es un distribuidor con múltiples direcciones de entrega'
     )
-    
-    # Campos específicos para distribuidores en España
-    distributor_type = fields.Selection([
-        ('regional', 'Distribuidor Regional'),
-        ('local', 'Distribuidor Local'),
-        ('nacional', 'Distribuidor Nacional'),
-        ('internacional', 'Distribuidor Internacional'),
-    ], string='Tipo de Distribuidor', help='Tipo de distribuidor según su alcance geográfico')
     
     # Contador de direcciones de entrega
     delivery_address_count = fields.Integer(
@@ -37,37 +29,6 @@ class ResPartner(models.Model):
         string='Direcciones de Entrega',
         help='Direcciones de entrega asociadas a este distribuidor'
     )
-    
-    # Campos adicionales para gestión de losas
-    losa_preferences = fields.Text(
-        string='Preferencias de Productos de Losa',
-        help='Preferencias específicas del cliente sobre tipos de losas, colores, tamaños, etc.'
-    )
-    
-    delivery_schedule_notes = fields.Text(
-        string='Notas de Horarios de Entrega',
-        help='Información sobre horarios preferidos, restricciones de acceso, etc.'
-    )
-    
-    installation_capability = fields.Boolean(
-        string='Capacidad de Instalación Propia',
-        help='Indica si el cliente/distribuidor tiene capacidad de instalación propia'
-    )
-    
-    # Información logística específica para España
-    truck_access = fields.Selection([
-        ('camion_grande', 'Acceso para Camión Grande (+12m)'),
-        ('camion_mediano', 'Acceso para Camión Mediano (7-12m)'),
-        ('furgoneta', 'Solo Furgoneta/Camión Pequeño (<7m)'),
-        ('manual', 'Solo Descarga Manual'),
-    ], string='Tipo de Acceso para Vehículos', help='Tipo de vehículo que puede acceder para descarga')
-    
-    loading_equipment = fields.Selection([
-        ('grua', 'Grúa Disponible'),
-        ('carretilla', 'Carretilla Elevadora'),
-        ('transpaleta', 'Transpaleta'),
-        ('manual', 'Solo Descarga Manual'),
-    ], string='Equipo de Descarga Disponible', help='Equipamiento disponible en destino para descarga')
 
     @api.depends('child_ids')
     def _compute_delivery_address_count(self):
@@ -152,105 +113,12 @@ class ResPartner(models.Model):
             'email': address_data.get('email', ''),
             'company_id': parent_partner.company_id.id,
             'is_company': False,
-            'truck_access': address_data.get('truck_access', 'camion_mediano'),
-            'loading_equipment': address_data.get('loading_equipment', 'manual'),
         }
         
         # Crear la nueva dirección
         new_address = self.create(delivery_data)
         
         return new_address
-
-    def get_installation_info(self):
-        """Obtener información de instalación y logística"""
-        self.ensure_one()
-        
-        info = {
-            'can_install': self.installation_capability,
-            'truck_access': dict(self._fields['truck_access'].selection).get(self.truck_access, 'No especificado'),
-            'loading_equipment': dict(self._fields['loading_equipment'].selection).get(self.loading_equipment, 'No especificado'),
-            'schedule_notes': self.delivery_schedule_notes or 'Sin notas específicas',
-        }
-        
-        return info
-
-    def action_create_project_delivery(self):
-        """Crear dirección de entrega específica para un proyecto"""
-        self.ensure_one()
-        
-        return {
-            'name': _('Nueva Dirección de Proyecto'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'res.partner',
-            'view_mode': 'form',
-            'view_id': self.env.ref('sale_delivery_address_inline.view_delivery_address_form_es').id,
-            'target': 'new',
-            'context': {
-                'default_parent_id': self.id,
-                'default_type': 'delivery',
-                'default_country_id': self.env.ref('base.es').id,
-                'default_is_company': False,
-                'default_name': f"{self.name} - Proyecto Nuevo",
-            }
-        }
-
-    @api.model
-    def get_spanish_provinces_stats(self):
-        """Obtener estadísticas de direcciones por provincia española"""
-        query = """
-            SELECT 
-                rcs.name as provincia,
-                COUNT(rp.id) as total_direcciones,
-                COUNT(CASE WHEN rp.type = 'delivery' THEN 1 END) as direcciones_entrega
-            FROM res_partner rp
-            LEFT JOIN res_country_state rcs ON rp.state_id = rcs.id
-            LEFT JOIN res_country rc ON rp.country_id = rc.id
-            WHERE rc.code = 'ES' OR rc.id IS NULL
-            GROUP BY rcs.name, rcs.id
-            ORDER BY total_direcciones DESC
-        """
-        
-        self.env.cr.execute(query)
-        return self.env.cr.dictfetchall()
-
-    def check_delivery_compatibility(self, product_weight=0, product_volume=0):
-        """
-        Verificar compatibilidad de entrega según peso y volumen del producto
-        
-        Args:
-            product_weight (float): Peso en kg
-            product_volume (float): Volumen en m³
-            
-        Returns:
-            dict: Información de compatibilidad
-        """
-        self.ensure_one()
-        
-        compatibility = {
-            'can_deliver': True,
-            'warnings': [],
-            'recommendations': [],
-        }
-        
-        # Verificar acceso según peso (losas de caucho son pesadas)
-        if product_weight > 1000:  # Más de 1 tonelada
-            if self.truck_access in ['furgoneta', 'manual']:
-                compatibility['warnings'].append(
-                    'Peso elevado para vehículo pequeño. Considerar fraccionamiento de entrega.'
-                )
-        
-        # Verificar equipo de descarga
-        if product_weight > 500 and self.loading_equipment == 'manual':
-            compatibility['warnings'].append(
-                'Descarga manual no recomendada para este peso. Valorar equipo mecánico.'
-            )
-        
-        if product_weight > 100 and not self.loading_equipment:
-            compatibility['recommendations'].append(
-                'Especificar equipo de descarga disponible para optimizar entrega.'
-            )
-        
-        return compatibility
 
     def _get_contact_address_formatted(self):
         """Obtener dirección formateada para España"""

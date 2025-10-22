@@ -88,17 +88,6 @@ class SaleOrder(models.Model):
         inverse='_inverse_delivery_email',
         help='Email de contacto para coordinar la entrega'
     )
-    
-    # Campo adicional para facilitar gestión
-    delivery_contact_person = fields.Char(
-        string='Persona de Contacto en Destino',
-        help='Nombre de la persona responsable en el lugar de entrega'
-    )
-    
-    delivery_instructions = fields.Text(
-        string='Instrucciones de Entrega',
-        help='Instrucciones especiales para la entrega (horarios, acceso, etc.)'
-    )
 
     @api.depends('partner_id', 'partner_id.is_distributor')
     def _compute_use_alternative_delivery(self):
@@ -239,7 +228,7 @@ class SaleOrder(models.Model):
         """Resetear selecciones de entrega cuando cambia el partner principal"""
         if self.partner_id:
             self.selected_delivery_partner_id = False
-            self.use_alternative_delivery = self.partner_id.is_distributor
+            self.use_alternative_delivery = self.partner_id.is_distribuidor if hasattr(self.partner_id, 'is_distributor') else False
             # Establecer país por defecto España
             if not self.delivery_country_id:
                 spain = self.env.ref('base.es', raise_if_not_found=False)
