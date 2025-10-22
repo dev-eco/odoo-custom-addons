@@ -2,13 +2,21 @@
 <odoo>
     <data>
 
-        <!-- Menu Item -->
+        <!-- Ítem de menú principal -->
         <menuitem id="menu_bulk_export"
-                  name="Bulk Export"
+                  name="Exportación Masiva"
                   parent="account.menu_finance_reports"
-                  action="action_bulk_export_wizard"
+                  action="action_bulk_export_wizard_menu"
                   sequence="90"
                   groups="account.group_account_user"/>
+
+        <!-- Submenu alternativo en Configuración (opcional) -->
+        <menuitem id="menu_bulk_export_config"
+                  name="Exportación de Facturas"
+                  parent="account.menu_finance_configuration"
+                  action="action_bulk_export_wizard_menu"
+                  sequence="100"
+                  groups="account.group_account_manager"/>
 
     </data>
 </odoo>
