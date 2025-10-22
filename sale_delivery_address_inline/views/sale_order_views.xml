@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <!-- Vista del formulario de sale.order - ODOO 17.0 SYNTAX -->
-    <record id="view_order_form_delivery_inline" model="ir.ui.view">
-        <field name="name">sale.order.form.delivery.inline</field>
+    <!-- Vista del formulario de sale.order - VERSIÓN ESPAÑA -->
+    <record id="view_order_form_delivery_inline_es" model="ir.ui.view">
+        <field name="name">sale.order.form.delivery.inline.es</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
@@ -11,25 +11,69 @@
             <!-- Extender después del partner_shipping_id -->
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
                 
-                <!-- Campos para distribuidores -->
+                <!-- Campo oculto para detectar distribuidores -->
                 <field name="use_alternative_delivery" invisible="1"/>
                 
-                <group string="Distributor Delivery Options" 
-                       invisible="not use_alternative_delivery">
+                <!-- Sección para distribuidores -->
+                <group string="🚛 Opciones de Entrega para Distribuidores" 
+                       invisible="not use_alternative_delivery"
+                       class="oe_border">
+                    <div class="alert alert-info" role="alert">
+                        <strong>Modo Distribuidor:</strong> Puede seleccionar entre direcciones de entrega existentes o crear una nueva.
+                    </div>
                     <field name="selected_delivery_partner_id" 
+                           string="Dirección de Entrega Alternativa"
                            domain="[('parent_id', '=', partner_id), ('type', '=', 'delivery')]"
                            context="{'default_parent_id': partner_id, 'default_type': 'delivery'}"
-                           options="{'no_create': True}"/>
+                           options="{'no_create': True}"
+                           placeholder="Seleccionar dirección de entrega..."/>
                 </group>
                 
-                <!-- Campos inline básicos -->
-                <group string="Delivery Address Details" col="2">
-                    <field name="delivery_name" placeholder="Contact name for delivery"/>
-                    <field name="delivery_phone" placeholder="Phone"/>
-                    <field name="delivery_street" placeholder="Street address"/>
-                    <field name="delivery_email" placeholder="Email"/>
-                    <field name="delivery_city" placeholder="City"/>
-                    <field name="delivery_zip" placeholder="ZIP Code"/>
+                <!-- Sección principal de dirección de entrega -->
+                <group string="📍 Detalles de Dirección de Entrega" class="oe_border">
+                    
+                    <!-- Fila 1: Datos de contacto -->
+                    <group string="Datos de Contacto" col="2">
+                        <field name="delivery_name" 
+                               string="Nombre de Contacto"
+                               placeholder="Ej: Juan García - Recepción"/>
+                        <field name="delivery_phone" 
+                               string="Teléfono de Contacto"
+                               placeholder="Ej: +34 912 345 678"/>
+                        <field name="delivery_email" 
+                               string="Email de Contacto"
+                               placeholder="Ej: recepcion@empresa.com"/>
+                    </group>
+                    
+                    <!-- Fila 2: Dirección física -->
+                    <group string="Dirección Física" col="2">
+                        <field name="delivery_street" 
+                               string="Dirección"
+                               placeholder="Ej: Calle Mayor, 123"/>
+                        <field name="delivery_street2" 
+                               string="Información Adicional"
+                               placeholder="Ej: Polígono Industrial, Nave 5"/>
+                        <field name="delivery_city" 
+                               string="Ciudad/Localidad"
+                               placeholder="Ej: Madrid"/>
+                        <field name="delivery_state_id" 
+                               string="Provincia"
+                               options="{'no_create': True}"
+                               domain="[('country_id', '=', delivery_country_id)]"/>
+                        <field name="delivery_zip" 
+                               string="Código Postal"
+                               placeholder="Ej: 28001"/>
+                        <field name="delivery_country_id" 
+                               string="País"
+                               options="{'no_create': True}"/>
+                    </group>
+                    
+                    <!-- Nota informativa -->
+                    <div class="alert alert-success mt-3" role="alert">
+                        <i class="fa fa-info-circle"/> <strong>Información:</strong> 
+                        Los cambios se guardan automáticamente y se registran en el historial del pedido.
+                    </div>
+                    
                 </group>
                 
             </xpath>
@@ -37,16 +81,48 @@
         </field>
     </record>
 
-    <!-- Vista de lista extendida -->
-    <record id="view_quotation_tree_delivery" model="ir.ui.view">
-        <field name="name">sale.order.tree.delivery</field>
+    <!-- Vista de lista con información de entrega en español -->
+    <record id="view_quotation_tree_delivery_es" model="ir.ui.view">
+        <field name="name">sale.order.tree.delivery.es</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
             
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="delivery_city" string="Delivery City" optional="hide"/>
-                <field name="use_alternative_delivery" string="Alt. Delivery" optional="hide"/>
+                <field name="delivery_city" string="Ciudad Entrega" optional="hide"/>
+                <field name="use_alternative_delivery" string="Distribuidor" optional="hide"/>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda con filtros en español -->
+    <record id="view_sales_order_filter_delivery_es" model="ir.ui.view">
+        <field name="name">sale.order.search.delivery.es</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                <separator/>
+                <filter string="Con Entrega Alternativa" 
+                        name="entrega_alternativa"
+                        domain="[('use_alternative_delivery', '=', True)]"/>
+                <filter string="Solo Distribuidores" 
+                        name="solo_distribuidores"
+                        domain="[('partner_id.is_distributor', '=', True)]"/>
+            </xpath>
+            
+            <xpath expr="//group[@name='group_by']" position="inside">
+                <filter string="Tipo de Entrega" 
+                        name="group_delivery_type"
+                        context="{'group_by': 'use_alternative_delivery'}"/>
+            </xpath>
+            
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="delivery_city" 
+                       string="Ciudad de Entrega"
+                       filter_domain="[('delivery_city', 'ilike', self)]"/>
             </xpath>
             
         </field>

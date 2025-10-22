@@ -1,34 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <!-- Vista de formulario de partner - ODOO 17.0 SYNTAX -->
-    <record id="view_partner_form_distributor" model="ir.ui.view">
-        <field name="name">res.partner.form.distributor</field>
+    <!-- Vista de formulario de partner - VERSIÓN ESPAÑA -->
+    <record id="view_partner_form_distributor_es" model="ir.ui.view">
+        <field name="name">res.partner.form.distributor.es</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             
-            <!-- Añadir campo is_distributor en la sección correcta -->
-            <xpath expr="//field[@name='category_id']" position="after">
-                <field name="is_distributor" 
-                       string="Is Distributor"
-                       help="Check if this partner is a distributor with multiple delivery addresses"/>
+            <!-- Añadir configuración de distribuidor en la pestaña de Ventas -->
+            <xpath expr="//page[@name='sales_purchases']" position="inside">
+                <group string="🚛 Configuración de Distribución" name="distributor_config" class="oe_border">
+                    <field name="is_distributor" 
+                           string="Es Distribuidor"
+                           help="Marque esta casilla si este cliente es un distribuidor con múltiples direcciones de entrega"/>
+                    <field name="delivery_address_count" 
+                           string="Direcciones de Entrega"
+                           invisible="not is_distributor"
+                           readonly="1"/>
+                    <div invisible="not is_distributor" class="alert alert-info">
+                        <i class="fa fa-info-circle"/> 
+                        <strong>Distribuidor:</strong> Este cliente puede tener múltiples direcciones de entrega. 
+                        Use el botón de arriba para gestionarlas.
+                    </div>
+                </group>
             </xpath>
             
         </field>
     </record>
 
-    <!-- Vista de lista con campo distribuidor -->
-    <record id="view_partner_tree_distributor" model="ir.ui.view">
-        <field name="name">res.partner.tree.distributor</field>
+    <!-- Vista de lista con información de distribuidor -->
+    <record id="view_partner_tree_distributor_es" model="ir.ui.view">
+        <field name="name">res.partner.tree.distributor.es</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_tree"/>
         <field name="arch" type="xml">
             
             <xpath expr="//field[@name='display_name']" position="after">
-                <field name="is_distributor" optional="hide"/>
+                <field name="is_distributor" string="Distribuidor" optional="hide"/>
+                <field name="delivery_address_count" string="Dir. Entrega" optional="hide"/>
             </xpath>
             
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda con filtros en español -->
+    <record id="view_res_partner_filter_distributor_es" model="ir.ui.view">
+        <field name="name">res.partner.search.distributor.es</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//filter[@name='supplier']" position="after">
+                <separator/>
+                <filter string="Distribuidores" 
+                        name="distribuidores"
+                        domain="[('is_distributor', '=', True)]"/>
+                <filter string="Con Direcciones de Entrega" 
+                        name="con_direcciones_entrega"
+                        domain="[('delivery_address_count', '>', 0)]"/>
+            </xpath>
+            
+            <xpath expr="//group[@name='group_by']" position="inside">
+                <filter string="Tipo de Cliente" 
+                        name="group_distribuidor"
+                        context="{'group_by': 'is_distributor'}"/>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <!-- Smart button mejorado para direcciones de entrega -->
+    <record id="view_partner_form_delivery_button_es" model="ir.ui.view">
+        <field name="name">res.partner.form.delivery.button.es</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_delivery_addresses" 
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck"
+                        invisible="not is_distributor">
+                    <field name="delivery_address_count" widget="statinfo" string="Direcciones de Entrega"/>
+                </button>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <!-- Acción para gestionar direcciones de entrega -->
+    <record id="action_partner_delivery_addresses_es" model="ir.actions.act_window">
+        <field name="name">Direcciones de Entrega</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('type', '=', 'delivery')]</field>
+        <field name="context">{
+            'default_type': 'delivery',
+            'default_is_company': False,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear direcciones de entrega para distribuidores
+            </p>
+            <p>
+                Las direcciones de entrega permiten gestionar múltiples ubicaciones 
+                de envío para clientes distribuidores.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú para gestionar direcciones de entrega -->
+    <menuitem id="menu_partner_delivery_addresses_es"
+              name="Direcciones de Entrega"
+              parent="contacts.menu_contacts"
+              action="action_partner_delivery_addresses_es"
+              sequence="35"/>
+
+    <!-- Vista específica para crear/editar direcciones de entrega -->
+    <record id="view_delivery_address_form_es" model="ir.ui.view">
+        <field name="name">res.partner.delivery.form.es</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <form string="Dirección de Entrega">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Ej: Almacén Central, Sucursal Barcelona"/></h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Información General">
+                            <field name="parent_id" readonly="1" string="Cliente/Distribuidor"/>
+                            <field name="type" invisible="1"/>
+                            <field name="is_company" invisible="1"/>
+                        </group>
+                        <group string="Datos de Contacto">
+                            <field name="phone" placeholder="+34 912 345 678"/>
+                            <field name="mobile" placeholder="+34 678 901 234"/>
+                            <field name="email" placeholder="contacto@empresa.com"/>
+                        </group>
+                    </group>
+                    
+                    <group string="📍 Dirección de Entrega">
+                        <field name="street" placeholder="Calle, Avenida, Plaza..."/>
+                        <field name="street2" placeholder="Piso, Puerta, Polígono Industrial..."/>
+                        <field name="city" placeholder="Ciudad o Localidad"/>
+                        <field name="state_id" string="Provincia" options="{'no_create': True}"/>
+                        <field name="zip" string="Código Postal" placeholder="28001"/>
+                        <field name="country_id" string="País" options="{'no_create': True}"/>
+                    </group>
+                    
+                    <group string="📝 Información Adicional">
+                        <field name="comment" placeholder="Notas internas, horarios de entrega, instrucciones especiales..."/>
+                    </group>
+                    
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
         </field>
     </record>
 
