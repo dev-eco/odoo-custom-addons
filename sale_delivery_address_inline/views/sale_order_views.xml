@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <!-- Vista del formulario de sale.order - VERSIÓN ESPAÑA -->
-    <record id="view_order_form_delivery_inline_es" model="ir.ui.view">
-        <field name="name">sale.order.form.delivery.inline.es</field>
+    <!-- Vista del formulario de sale.order - VERSIÓN CORREGIDA SIN XPATHS PROBLEMÁTICOS -->
+    <record id="view_order_form_delivery_inline_fixed" model="ir.ui.view">
+        <field name="name">sale.order.form.delivery.inline.fixed</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
@@ -81,9 +81,9 @@
         </field>
     </record>
 
-    <!-- Vista de lista con información de entrega en español -->
-    <record id="view_quotation_tree_delivery_es" model="ir.ui.view">
-        <field name="name">sale.order.tree.delivery.es</field>
+    <!-- Vista de lista BÁSICA con información de entrega -->
+    <record id="view_quotation_tree_delivery_fixed" model="ir.ui.view">
+        <field name="name">sale.order.tree.delivery.fixed</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
@@ -96,13 +96,14 @@
         </field>
     </record>
 
-    <!-- Vista de búsqueda con filtros en español -->
-    <record id="view_sales_order_filter_delivery_es" model="ir.ui.view">
-        <field name="name">sale.order.search.delivery.es</field>
+    <!-- Vista de búsqueda SIMPLIFICADA - SIN XPATHS COMPLEJOS -->
+    <record id="view_sales_order_filter_delivery_fixed" model="ir.ui.view">
+        <field name="name">sale.order.search.delivery.fixed</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_sales_order_filter"/>
         <field name="arch" type="xml">
             
+            <!-- Solo agregar filtros básicos sin buscar elementos que pueden no existir -->
             <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
                 <separator/>
                 <filter string="Con Entrega Alternativa" 
@@ -113,17 +114,14 @@
                         domain="[('partner_id.is_distributor', '=', True)]"/>
             </xpath>
             
-            <xpath expr="//group[@name='group_by']" position="inside">
-                <filter string="Tipo de Entrega" 
-                        name="group_delivery_type"
-                        context="{'group_by': 'use_alternative_delivery'}"/>
-            </xpath>
-            
+            <!-- Agregar campo de búsqueda sin buscar group_by que puede no existir -->
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="delivery_city" 
                        string="Ciudad de Entrega"
                        filter_domain="[('delivery_city', 'ilike', self)]"/>
             </xpath>
+            
+            <!-- NO INCLUIR AGRUPACIONES que buscan elementos inexistentes -->
             
         </field>
     </record>
