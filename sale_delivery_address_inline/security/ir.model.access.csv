@@ -1,7 +1,2 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_sale_order_delivery_user,sale.order.delivery.user,sale.model_sale_order,sales_team.group_sale_salesman,1,1,1,0
-access_sale_order_delivery_manager,sale.order.delivery.manager,sale.model_sale_order,sales_team.group_sale_manager,1,1,1,1
-access_res_partner_delivery_user,res.partner.delivery.user,base.model_res_partner,sales_team.group_sale_salesman,1,1,1,0
-access_res_partner_delivery_manager,res.partner.delivery.manager,base.model_res_partner,sales_team.group_sale_manager,1,1,1,1
-access_res_partner_delivery_portal,res.partner.delivery.portal,base.model_res_partner,base.group_portal,1,0,0,0
-access_res_partner_delivery_public,res.partner.delivery.public,base.model_res_partner,base.group_public,1,0,0,0
+access_sale_delivery_address_inline,access_sale_delivery_address_inline,model_sale_order,base.group_user,1,1,1,0
