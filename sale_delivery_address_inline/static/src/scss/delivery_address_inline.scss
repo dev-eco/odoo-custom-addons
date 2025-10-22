@@ -1,0 +1,68 @@
+// Estilos para mejorar accesibilidad en direcciones de entrega
+.address_inline {
+    // Aumentar contraste de textos
+    label {
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 4px;
+    }
+    
+    // Focus visible para todos los campos
+    .o_input:focus {
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        border-color: #80bdff;
+        outline: 0;
+    }
+    
+    // Botones más accesibles
+    .btn {
+        min-height: 36px;
+        font-weight: 500;
+        
+        &:focus {
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+    }
+    
+    // Contraste mejorado en los selectores
+    select.o_input, .o_field_many2one input {
+        color: #212529;
+        background-color: #fff;
+    }
+    
+    // Secciones más definidas
+    fieldset {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        
+        legend {
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0 10px;
+        }
+    }
+    
+    // Mejorar visibilidad de placeholder
+    ::placeholder {
+        color: #6c757d;
+        opacity: 0.8;
+    }
+    
+    // Separación entre grupos de campos
+    h6 {
+        font-weight: 600;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+    }
+    
+    // Ajustes para modo móvil/responsive
+    @media (max-width: 767.98px) {
+        .row {
+            margin-bottom: 10px;
+        }
+        
+        [class*="col-"] {
+            margin-bottom: 15px;
+        }
+    }
+}

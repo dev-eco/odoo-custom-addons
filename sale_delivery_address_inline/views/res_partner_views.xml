@@ -1,41 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Vista de formulario para res.partner con opciones de distribuidor -->
+    <record id="view_partner_form_distributor" model="ir.ui.view">
+        <field name="name">res.partner.form.distributor</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Añadir campo de distribuidor en la pestaña Ventas & Compras -->
+            <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']/group[@name='sale']" position="inside">
+                <field name="is_distributor" string="Es Distribuidor"/>
+            </xpath>
+            
+            <!-- Añadir sección de configuración de distribuidor -->
+            <xpath expr="//page[@name='sales_purchases']" position="after">
+                <page string="Datos de Distribución" 
+                      attrs="{'invisible': [('is_distributor', '=', False)]}">
+                    <group>
+                        <group string="🚛 Configuración de Distribución">
+                            <field name="distributor_type" 
+                                   attrs="{'required': [('is_distributor', '=', True)]}"/>
+                            <field name="truck_access"/>
+                            <field name="loading_equipment"/>
+                            <field name="delivery_schedule_notes" placeholder="Ej: Horario de recepción: L-V 8:00 - 18:00"/>
+                        </group>
+                        <group string="Direcciones de Entrega">
+                            <field name="delivery_address_count"/>
+                            <div class="oe_inline">
+                                <button name="action_view_delivery_addresses" 
+                                        type="object"
+                                        class="oe_stat_button"
+                                        icon="fa-truck">
+                                    <div class="o_form_field o_stat_info">
+                                        <span class="o_stat_value">
+                                            <field name="delivery_address_count"/>
+                                        </span>
+                                        <span class="o_stat_text">Direcciones</span>
+                                    </div>
+                                </button>
+                                <button name="action_create_delivery_address" 
+                                        string="Nueva Dirección" type="object"
+                                        class="btn btn-sm btn-primary ml-2"/>
+                            </div>
+                            <div class="text-muted mt-3">
+                                Este cliente puede tener múltiples direcciones de entrega. 
+                                Use el botón de arriba para gestionarlas.
+                            </div>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
     
-    <!-- Vista de formulario básica para partner -->
-    <record id="view_partner_form_basic" model="ir.ui.view">
-        <field name="name">res.partner.form.basic</field>
+    <!-- Mejora en la búsqueda de clientes/distribuidores -->
+    <record id="view_res_partner_filter_distributor" model="ir.ui.view">
+        <field name="name">res.partner.filter.distributor</field>
         <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
         <field name="arch" type="xml">
-            
-            <!-- Solo agregar campo básico en Sales -->
-            <xpath expr="//page[@name='sales_purchases']" position="inside">
-                <group string="Configuración de Distribución">
-                    <field name="is_distributor" string="Es Distribuidor"/>
-                </group>
+            <xpath expr="//filter[@name='supplier']" position="after">
+                <separator/>
+                <filter string="Distribuidores" name="distributor" domain="[('is_distributor', '=', True)]"/>
+                <filter string="Con Direcciones de Entrega" name="with_delivery_addresses" 
+                        domain="[('delivery_address_count', '>', 0)]"/>
             </xpath>
             
-        </field>
-    </record>
-
-    <!-- Smart button básico -->
-    <record id="view_partner_button_basic" model="ir.ui.view">
-        <field name="name">res.partner.button.basic</field>
-        <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_form"/>
-        <field name="arch" type="xml">
-            
-            <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_view_delivery_addresses" 
-                        type="object"
-                        class="oe_stat_button"
-                        icon="fa-truck"
-                        invisible="not is_distributor">
-                    <field name="delivery_address_count" widget="statinfo" string="Direcciones"/>
-                </button>
+            <xpath expr="//filter[@name='group_country']" position="after">
+                <filter string="Tipo de Cliente" name="group_distributor_type" 
+                        context="{'group_by': 'distributor_type'}"/>
             </xpath>
-            
         </field>
     </record>
-
+    
+    <!-- Acción para ver direcciones de entrega -->
+    <record id="action_partner_delivery_addresses" model="ir.actions.act_window">
+        <field name="name">Direcciones de Entrega</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('type', '=', 'delivery')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear direcciones de entrega para distribuidores
+            </p>
+            <p>
+                Las direcciones de entrega permiten gestionar múltiples ubicaciones de envío para clientes distribuidores.
+            </p>
+        </field>
+    </record>
 </odoo>
