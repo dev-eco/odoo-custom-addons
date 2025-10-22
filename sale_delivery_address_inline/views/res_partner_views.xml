@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <!-- Vista de formulario de partner - SIMPLIFICADA SIN CAMPOS PROBLEMÁTICOS -->
-    <record id="view_partner_form_distributor_simple" model="ir.ui.view">
-        <field name="name">res.partner.form.distributor.simple</field>
+    <!-- Vista de formulario de partner - VERSIÓN CORREGIDA -->
+    <record id="view_partner_form_distributor_fixed" model="ir.ui.view">
+        <field name="name">res.partner.form.distributor.fixed</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
@@ -30,8 +30,8 @@
     </record>
 
     <!-- Vista de lista con información de distribuidor -->
-    <record id="view_partner_tree_distributor_simple" model="ir.ui.view">
-        <field name="name">res.partner.tree.distributor.simple</field>
+    <record id="view_partner_tree_distributor_fixed" model="ir.ui.view">
+        <field name="name">res.partner.tree.distributor.fixed</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_tree"/>
         <field name="arch" type="xml">
@@ -44,9 +44,9 @@
         </field>
     </record>
 
-    <!-- Vista de búsqueda con filtros en español -->
-    <record id="view_res_partner_filter_distributor_simple" model="ir.ui.view">
-        <field name="name">res.partner.search.distributor.simple</field>
+    <!-- Vista de búsqueda CORREGIDA - SIN FILTROS PROBLEMÁTICOS -->
+    <record id="view_res_partner_filter_distributor_fixed" model="ir.ui.view">
+        <field name="name">res.partner.search.distributor.fixed</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_res_partner_filter"/>
         <field name="arch" type="xml">
@@ -56,9 +56,8 @@
                 <filter string="Distribuidores" 
                         name="distribuidores"
                         domain="[('is_distributor', '=', True)]"/>
-                <filter string="Con Direcciones de Entrega" 
-                        name="con_direcciones_entrega"
-                        domain="[('delivery_address_count', '>', 0)]"/>
+                <!-- FILTRO PROBLEMÁTICO ELIMINADO: Con Direcciones de Entrega -->
+                <!-- Este filtro causaba error porque delivery_address_count es computed sin store -->
             </xpath>
             
             <xpath expr="//group[@name='group_by']" position="inside">
@@ -71,8 +70,8 @@
     </record>
 
     <!-- Smart button mejorado para direcciones de entrega -->
-    <record id="view_partner_form_delivery_button_simple" model="ir.ui.view">
-        <field name="name">res.partner.form.delivery.button.simple</field>
+    <record id="view_partner_form_delivery_button_fixed" model="ir.ui.view">
+        <field name="name">res.partner.form.delivery.button.fixed</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
@@ -91,7 +90,7 @@
     </record>
 
     <!-- Acción para gestionar direcciones de entrega -->
-    <record id="action_partner_delivery_addresses_simple" model="ir.actions.act_window">
+    <record id="action_partner_delivery_addresses_fixed" model="ir.actions.act_window">
         <field name="name">Direcciones de Entrega</field>
         <field name="res_model">res.partner</field>
         <field name="view_mode">tree,form</field>
@@ -112,15 +111,15 @@
     </record>
 
     <!-- Menú para gestionar direcciones de entrega -->
-    <menuitem id="menu_partner_delivery_addresses_simple"
+    <menuitem id="menu_partner_delivery_addresses_fixed"
               name="Direcciones de Entrega"
               parent="contacts.menu_contacts"
-              action="action_partner_delivery_addresses_simple"
+              action="action_partner_delivery_addresses_fixed"
               sequence="35"/>
 
     <!-- Vista específica para crear/editar direcciones de entrega -->
-    <record id="view_delivery_address_form_simple" model="ir.ui.view">
-        <field name="name">res.partner.delivery.form.simple</field>
+    <record id="view_delivery_address_form_fixed" model="ir.ui.view">
+        <field name="name">res.partner.delivery.form.fixed</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <form string="Dirección de Entrega">
