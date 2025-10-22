@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_bulk_export_wizard_user,Bulk Export Wizard User,model_account_bulk_export_wizard,account.group_account_user,1,1,1,1
-access_bulk_export_wizard_manager,Bulk Export Wizard Manager,model_account_bulk_export_wizard,account.group_account_manager,1,1,1,1
-access_bulk_export_wizard_readonly,Bulk Export Wizard Readonly,model_account_bulk_export_wizard,account.group_account_readonly,1,0,0,0
-access_bulk_export_wizard_invoice,Bulk Export Wizard Invoice User,model_account_bulk_export_wizard,account.group_account_invoice,1,1,1,1
