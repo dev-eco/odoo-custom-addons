@@ -1,0 +1,269 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sale_delivery_address_inline
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-15 10:00+0000\n"
+"PO-Revision-Date: 2024-01-15 10:00+0000\n"
+"Last-Translator: EcoCaucho Team\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_res_partner__delivery_address_count
+msgid "Delivery Address Count"
+msgstr "Número de Direcciones de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_res_partner__delivery_address_ids
+msgid "Delivery Addresses"
+msgstr "Direcciones de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_order_form_delivery_inline
+msgid "Delivery Address Details"
+msgstr "Detalles de Dirección de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_city
+msgid "Delivery City"
+msgstr "Ciudad de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_country_id
+msgid "Delivery Country"
+msgstr "País de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_email
+msgid "Delivery Email"
+msgstr "Email de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_name
+msgid "Delivery Contact Name"
+msgstr "Nombre de Contacto de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_phone
+msgid "Delivery Phone"
+msgstr "Teléfono de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_state_id
+msgid "Delivery State"
+msgstr "Provincia de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_street
+msgid "Delivery Street"
+msgstr "Calle de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_street2
+msgid "Delivery Street 2"
+msgstr "Calle de Entrega 2"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__delivery_zip
+msgid "Delivery ZIP"
+msgstr "Código Postal de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_order_form_delivery_inline
+msgid "Distributor Mode:"
+msgstr "Modo Distribuidor:"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_order_form_delivery_inline
+msgid "Distributor Delivery Options"
+msgstr "Opciones de Entrega para Distribuidor"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_res_partner__is_distributor
+msgid "Is Distributor"
+msgstr "Es Distribuidor"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__selected_delivery_partner_id
+msgid "Selected Delivery Address"
+msgstr "Dirección de Entrega Seleccionada"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__use_alternative_delivery
+msgid "Use Alternative Delivery Address"
+msgstr "Usar Dirección de Entrega Alternativa"
+
+#. module: sale_delivery_address_inline
+#: model:ir.model.fields,field_description:sale_delivery_address_inline.field_sale_order__can_edit_delivery
+msgid "Can Edit Delivery"
+msgstr "Puede Editar Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.actions.act_window,name:sale_delivery_address_inline.action_create_delivery_address
+msgid "Create Delivery Address"
+msgstr "Crear Dirección de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_order_form_delivery_inline
+msgid "Create Delivery Address"
+msgstr "Crear Dirección de Entrega"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "You do not have permission to edit delivery address for confirmed orders"
+msgstr "No tiene permisos para editar la dirección de entrega en pedidos confirmados"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "You do not have permission to create delivery addresses for confirmed orders"
+msgstr "No tiene permisos para crear direcciones de entrega en pedidos confirmados"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/res_partner.py
+#, python-format
+msgid "Parent partner not found"
+msgstr "Partner padre no encontrado"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/res_partner.py
+#, python-format
+msgid "A contact cannot be marked as distributor if it has a parent company"
+msgstr "Un contacto no puede marcarse como distribuidor si tiene una empresa padre"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "New delivery address created: %s"
+msgstr "Nueva dirección de entrega creada: %s"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Delivery address updated for %s:\n%s"
+msgstr "Dirección de entrega actualizada para %s:\n%s"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Contact Name"
+msgstr "Nombre de Contacto"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Street"
+msgstr "Calle"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Street 2"
+msgstr "Calle 2"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "City"
+msgstr "Ciudad"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "State"
+msgstr "Provincia"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "ZIP"
+msgstr "Código Postal"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Country"
+msgstr "País"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Phone"
+msgstr "Teléfono"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Email"
+msgstr "Email"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "(empty)"
+msgstr "(vacío)"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Success"
+msgstr "Éxito"
+
+#. module: sale_delivery_address_inline
+#: code:addons/sale_delivery_address_inline/models/sale_order.py
+#, python-format
+msgid "Delivery address created successfully"
+msgstr "Dirección de entrega creada correctamente"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_order_form_delivery_inline
+msgid "You can select from existing delivery addresses or create new ones by filling the fields above and clicking \"Create Delivery Address\"."
+msgstr "Puedes seleccionar entre direcciones de entrega existentes o crear nuevas rellenando los campos de arriba y haciendo clic en \"Crear Dirección de Entrega\"."
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_order_form_delivery_inline
+msgid "Read-only:"
+msgstr "Solo lectura:"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_order_form_delivery_inline
+msgid "Delivery address can only be modified by Sales Managers after order confirmation."
+msgstr "La dirección de entrega solo puede ser modificada por Gerentes de Ventas después de la confirmación del pedido."
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_sales_order_filter_delivery
+msgid "With Alternative Delivery"
+msgstr "Con Entrega Alternativa"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_sales_order_filter_delivery
+msgid "Distributors Only"
+msgstr "Solo Distribuidores"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_sales_order_filter_delivery
+msgid "Delivery Type"
+msgstr "Tipo de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_res_partner_filter_distributor
+msgid "Distributors"
+msgstr "Distribuidores"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_res_partner_filter_distributor
+msgid "With Delivery Addresses"
+msgstr "Con Direcciones de Entrega"
+
+#. module: sale_delivery_address_inline
+#: model:ir.ui.view,arch_db:sale_delivery_address_inline.view_res_partner_filter_distributor
+msgid "Distributor Type"
+msgstr "Tipo de Distribuidor"
