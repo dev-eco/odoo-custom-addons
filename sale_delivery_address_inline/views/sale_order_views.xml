@@ -1,144 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Vista del formulario de sale.order con dirección de entrega inline -->
+    
+    <!-- Vista del formulario de sale.order - ODOO 17.0 SYNTAX -->
     <record id="view_order_form_delivery_inline" model="ir.ui.view">
         <field name="name">sale.order.form.delivery.inline</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             
-            <!-- Añadir botón en el header para crear dirección rápida -->
-            <xpath expr="//header" position="inside">
-                <button name="action_create_delivery_address" 
-                        type="object" 
-                        string="Create Delivery Address" 
-                        class="btn-secondary"
-                        attrs="{'invisible': ['|', ('can_edit_delivery', '=', False), ('state', 'not in', ['draft', 'sent'])]}"
-                        help="Create new delivery address from inline fields"/>
-            </xpath>
-            
-            <!-- Extender la sección de dirección de entrega después del partner_shipping_id -->
+            <!-- Extender después del partner_shipping_id -->
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
                 
-                <!-- Grupo para distribuidores con direcciones alternativas -->
-                <group attrs="{'invisible': [('use_alternative_delivery', '=', False)]}" 
-                       string="Distributor Delivery Options">
-                    <field name="use_alternative_delivery" invisible="1"/>
+                <!-- Campos para distribuidores -->
+                <field name="use_alternative_delivery" invisible="1"/>
+                
+                <group string="Distributor Delivery Options" 
+                       invisible="not use_alternative_delivery">
                     <field name="selected_delivery_partner_id" 
-                           options="{'no_create': True, 'no_create_edit': True}"
-                           attrs="{'required': [('use_alternative_delivery', '=', True)]}"
                            domain="[('parent_id', '=', partner_id), ('type', '=', 'delivery')]"
-                           context="{'default_parent_id': partner_id, 'default_type': 'delivery'}"/>
+                           context="{'default_parent_id': partner_id, 'default_type': 'delivery'}"
+                           options="{'no_create': True}"/>
                 </group>
                 
-                <!-- Grupo principal de dirección de entrega inline -->
+                <!-- Campos inline básicos -->
                 <group string="Delivery Address Details" col="2">
-                    <field name="can_edit_delivery" invisible="1"/>
-                    
-                    <field name="delivery_name" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           placeholder="Contact name for delivery"/>
-                    
-                    <field name="delivery_phone" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           placeholder="Delivery contact phone"/>
-                    
-                    <field name="delivery_street" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           placeholder="Street address"/>
-                    
-                    <field name="delivery_email" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           placeholder="Delivery contact email"/>
-                    
-                    <field name="delivery_street2" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           placeholder="Additional address info"/>
-                    
-                    <field name="delivery_country_id" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           options="{'no_create': True, 'no_create_edit': True}"/>
-                    
-                    <field name="delivery_city" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           placeholder="City"/>
-                    
-                    <field name="delivery_state_id" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           options="{'no_create': True, 'no_create_edit': True}"
-                           domain="[('country_id', '=', delivery_country_id)]"/>
-                    
-                    <field name="delivery_zip" 
-                           attrs="{'readonly': [('can_edit_delivery', '=', False)]}"
-                           placeholder="ZIP Code"/>
-                    
-                    <newline/>
+                    <field name="delivery_name" placeholder="Contact name for delivery"/>
+                    <field name="delivery_phone" placeholder="Phone"/>
+                    <field name="delivery_street" placeholder="Street address"/>
+                    <field name="delivery_email" placeholder="Email"/>
+                    <field name="delivery_city" placeholder="City"/>
+                    <field name="delivery_zip" placeholder="ZIP Code"/>
                 </group>
-                
-                <!-- Información de ayuda -->
-                <div class="alert alert-info" 
-                     attrs="{'invisible': ['|', ('partner_id', '=', False), ('use_alternative_delivery', '=', False)]}">
-                    <strong>Distributor Mode:</strong> You can select from existing delivery addresses 
-                    or create new ones by filling the fields above and clicking "Create Delivery Address".
-                </div>
-                
-                <div class="alert alert-warning" 
-                     attrs="{'invisible': [('can_edit_delivery', '=', True)]}">
-                    <strong>Read-only:</strong> Delivery address can only be modified by Sales Managers 
-                    after order confirmation.
-                </div>
                 
             </xpath>
             
         </field>
     </record>
 
-    <!-- Vista de lista extendida para mostrar información de entrega -->
+    <!-- Vista de lista extendida -->
     <record id="view_quotation_tree_delivery" model="ir.ui.view">
         <field name="name">sale.order.tree.delivery</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
             
-            <!-- Añadir columna de dirección de entrega en la vista lista -->
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="delivery_city" string="Delivery City" optional="hide"/>
                 <field name="use_alternative_delivery" string="Alt. Delivery" optional="hide"/>
-            </xpath>
-            
-        </field>
-    </record>
-
-    <!-- Vista de búsqueda extendida -->
-    <record id="view_sales_order_filter_delivery" model="ir.ui.view">
-        <field name="name">sale.order.search.delivery</field>
-        <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
-        <field name="arch" type="xml">
-            
-            <!-- Añadir filtros de búsqueda por dirección de entrega -->
-            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
-                <separator/>
-                <filter string="With Alternative Delivery" 
-                        name="alternative_delivery"
-                        domain="[('use_alternative_delivery', '=', True)]"/>
-                <filter string="Distributors Only" 
-                        name="distributors_only"
-                        domain="[('partner_id.is_distributor', '=', True)]"/>
-            </xpath>
-            
-            <!-- Añadir agrupación por tipo de entrega -->
-            <xpath expr="//group[@name='group_by']" position="inside">
-                <filter string="Delivery Type" 
-                        name="group_delivery_type"
-                        context="{'group_by': 'use_alternative_delivery'}"/>
-            </xpath>
-            
-            <!-- Añadir búsqueda por ciudad de entrega -->
-            <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="delivery_city" 
-                       string="Delivery City"
-                       filter_domain="[('delivery_city', 'ilike', self)]"/>
             </xpath>
             
         </field>
