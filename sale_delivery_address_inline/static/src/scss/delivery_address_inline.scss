@@ -1,68 +1,134 @@
-// Estilos para mejorar accesibilidad en direcciones de entrega
-.address_inline {
-    // Aumentar contraste de textos
-    label {
-        font-weight: 600;
-        color: #212529;
-        margin-bottom: 4px;
-    }
-    
-    // Focus visible para todos los campos
-    .o_input:focus {
-        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-        border-color: #80bdff;
-        outline: 0;
-    }
-    
-    // Botones más accesibles
-    .btn {
-        min-height: 36px;
+.delivery-address-fieldset {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 0.25rem;
+
+    legend {
+        font-size: 1rem;
         font-weight: 500;
-        
-        &:focus {
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-        }
-    }
-    
-    // Contraste mejorado en los selectores
-    select.o_input, .o_field_many2one input {
-        color: #212529;
+        padding: 0 0.5rem;
+        margin-bottom: 0;
         background-color: #fff;
-    }
-    
-    // Secciones más definidas
-    fieldset {
         border: 1px solid #dee2e6;
-        border-radius: 4px;
-        
-        legend {
-            font-size: 1rem;
-            font-weight: 500;
-            padding: 0 10px;
-        }
+        border-radius: 0.25rem;
     }
-    
-    // Mejorar visibilidad de placeholder
-    ::placeholder {
-        color: #6c757d;
-        opacity: 0.8;
-    }
-    
-    // Separación entre grupos de campos
+
     h6 {
-        font-weight: 600;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 5px;
+        border-bottom: 1px dashed #dee2e6;
+        padding-bottom: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .row {
+        margin-bottom: 0.5rem;
+    }
+
+    label {
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+}
+
+// Estilos para el modo distribuidor
+.alert-info {
+    background-color: #e8f4f8;
+    border-color: #bee5eb;
+
+    strong {
+        color: #0c5460;
+    }
+}
+
+// Estilos para la advertencia de dirección modificada
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+
+    strong {
+        color: #856404;
+    }
+}
+
+// Mejoras para dispositivos móviles
+@media (max-width: 767.98px) {
+    .delivery-address-fieldset {
+        padding: 1rem !important;
+
+        .row > div {
+            margin-bottom: 1rem;
+        }
+    }
+}
+.delivery-address-fieldset {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 0.25rem;
+    
+    legend {
+        font-size: 1rem;
+        font-weight: 500;
+        padding: 0 0.5rem;
+        margin-bottom: 0;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
     }
     
-    // Ajustes para modo móvil/responsive
-    @media (max-width: 767.98px) {
-        .row {
-            margin-bottom: 10px;
-        }
+    h6 {
+        border-bottom: 1px dashed #dee2e6;
+        padding-bottom: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .row {
+        margin-bottom: 0.5rem;
+    }
+    
+    label {
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+}
+
+// Estilos para el modo distribuidor
+.alert-info {
+    background-color: #e8f4f8;
+    border-color: #bee5eb;
+    
+    strong {
+        color: #0c5460;
+    }
+}
+
+// Estilos para la advertencia de dirección modificada
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    
+    strong {
+        color: #856404;
+    }
+}
+
+// Mejoras para dispositivos móviles
+@media (max-width: 767.98px) {
+    .delivery-address-fieldset {
+        padding: 1rem !important;
         
-        [class*="col-"] {
-            margin-bottom: 15px;
+        .row > div {
+            margin-bottom: 1rem;
         }
     }
 }

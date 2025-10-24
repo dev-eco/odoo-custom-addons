@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, AccessError
 
 
 class SaleOrder(models.Model):
@@ -38,35 +38,35 @@ class SaleOrder(models.Model):
         inverse='_inverse_delivery_name',
         tracking=True
     )
-    
+
     delivery_street = fields.Char(
         string='Dirección de Entrega',
         compute='_compute_delivery_fields',
         inverse='_inverse_delivery_street',
         tracking=True
     )
-    
+
     delivery_street2 = fields.Char(
         string='Información Adicional',
         compute='_compute_delivery_fields',
         inverse='_inverse_delivery_street2',
         tracking=True
     )
-    
+
     delivery_city = fields.Char(
         string='Ciudad de Entrega',
         compute='_compute_delivery_fields',
         inverse='_inverse_delivery_city',
         tracking=True
     )
-    
+
     delivery_zip = fields.Char(
         string='Código Postal',
         compute='_compute_delivery_fields',
         inverse='_inverse_delivery_zip',
         tracking=True
     )
-    
+
     delivery_state_id = fields.Many2one(
         'res.country.state',
         string='Provincia/Estado',
@@ -74,7 +74,7 @@ class SaleOrder(models.Model):
         inverse='_inverse_delivery_state',
         tracking=True
     )
-    
+
     delivery_country_id = fields.Many2one(
         'res.country',
         string='País',
@@ -82,14 +82,14 @@ class SaleOrder(models.Model):
         inverse='_inverse_delivery_country',
         tracking=True
     )
-    
+
     delivery_phone = fields.Char(
         string='Teléfono de Contacto',
         compute='_compute_delivery_fields',
         inverse='_inverse_delivery_phone',
         tracking=True
     )
-    
+
     delivery_email = fields.Char(
         string='Email de Contacto',
         compute='_compute_delivery_fields',
@@ -179,6 +179,10 @@ class SaleOrder(models.Model):
     def _inverse_delivery_name(self):
         for order in self:
             if order.partner_shipping_id and order.delivery_name:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.name
                 new_value = order.delivery_name
                 if old_value != new_value:
@@ -190,6 +194,10 @@ class SaleOrder(models.Model):
     def _inverse_delivery_street(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.street
                 new_value = order.delivery_street
                 if old_value != new_value:
@@ -201,6 +209,10 @@ class SaleOrder(models.Model):
     def _inverse_delivery_street2(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.street2
                 new_value = order.delivery_street2
                 if old_value != new_value:
@@ -212,6 +224,10 @@ class SaleOrder(models.Model):
     def _inverse_delivery_city(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.city
                 new_value = order.delivery_city
                 if old_value != new_value:
@@ -223,6 +239,10 @@ class SaleOrder(models.Model):
     def _inverse_delivery_zip(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.zip
                 new_value = order.delivery_zip
                 if old_value != new_value:
@@ -234,32 +254,44 @@ class SaleOrder(models.Model):
     def _inverse_delivery_state(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.state_id.id
                 new_value = order.delivery_state_id.id if order.delivery_state_id else False
                 if old_value != new_value:
                     order.partner_shipping_id.state_id = new_value
                     if order.state != 'draft':
                         order.delivery_address_modified = True
-                        old_name = order.partner_shipping_id.state_id.name
+                        old_name = order.partner_shipping_id.state_id.name if order.partner_shipping_id.state_id else ''
                         new_name = order.delivery_state_id.name if order.delivery_state_id else ''
                         self._log_delivery_field_change('Provincia/Estado', old_name, new_name)
 
     def _inverse_delivery_country(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.country_id.id
                 new_value = order.delivery_country_id.id if order.delivery_country_id else False
                 if old_value != new_value:
                     order.partner_shipping_id.country_id = new_value
                     if order.state != 'draft':
                         order.delivery_address_modified = True
-                        old_name = order.partner_shipping_id.country_id.name
+                        old_name = order.partner_shipping_id.country_id.name if order.partner_shipping_id.country_id else ''
                         new_name = order.delivery_country_id.name if order.delivery_country_id else ''
                         self._log_delivery_field_change('País', old_name, new_name)
 
     def _inverse_delivery_phone(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.phone
                 new_value = order.delivery_phone
                 if old_value != new_value:
@@ -271,6 +303,10 @@ class SaleOrder(models.Model):
     def _inverse_delivery_email(self):
         for order in self:
             if order.partner_shipping_id:
+                # Verificar permisos para pedidos confirmados
+                if order.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+                    raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
                 old_value = order.partner_shipping_id.email
                 new_value = order.delivery_email
                 if old_value != new_value:
@@ -294,11 +330,11 @@ class SaleOrder(models.Model):
         self.ensure_one()
         if not self.partner_id:
             raise UserError(_("Debe seleccionar un cliente primero"))
-        
+
         # Validar datos mínimos
         if not address_data.get('name') or not address_data.get('street'):
             raise UserError(_("El nombre y la dirección son obligatorios"))
-            
+
         # Crear dirección de entrega
         vals = {
             'name': address_data.get('name'),
@@ -315,33 +351,45 @@ class SaleOrder(models.Model):
             'comment': _("Creada desde pedido %s", self.name),
             'company_id': self.company_id.id,
         }
-        
+
         new_address = self.env['res.partner'].with_context(tracking_disable=True).create(vals)
-        
+
         # Actualizar el pedido
         self.partner_shipping_id = new_address.id
         self.selected_delivery_partner_id = new_address.id
-        
+
         # Registrar en el historial
         address_summary = "%s, %s, %s" % (
             new_address.street or '',
             new_address.city or '',
             new_address.country_id.name if new_address.country_id else ''
         )
-        
+
         self.message_post(
             body=_("🏭 Nueva dirección de entrega creada: <strong>%s</strong><br/>📍 %s") % (
                 new_address.name, address_summary
             ),
             subtype_xmlid="mail.mt_note"
         )
-        
+
         return new_address
 
     def action_create_delivery_address(self):
         """Acción para crear una nueva dirección de entrega desde el formulario"""
         self.ensure_one()
-        
+
+        # Verificar permisos para pedidos confirmados
+        if self.state in ['sale', 'done'] and not self.env.user.has_group('sales_team.group_sale_manager'):
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Acceso Denegado'),
+                    'message': _('Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados'),
+                    'type': 'danger',
+                }
+            }
+
         if not self.partner_id:
             return {
                 'type': 'ir.actions.client',
@@ -352,7 +400,7 @@ class SaleOrder(models.Model):
                     'type': 'danger',
                 }
             }
-            
+
         # Preparar datos de la dirección
         address_data = {
             'name': self.delivery_name or _('Dirección de entrega para %s', self.name),
@@ -365,7 +413,7 @@ class SaleOrder(models.Model):
             'phone': self.delivery_phone or '',
             'email': self.delivery_email or '',
         }
-        
+
         try:
             new_address = self._create_new_delivery_address(address_data)
             return {
@@ -390,8 +438,18 @@ class SaleOrder(models.Model):
 
     def write(self, vals):
         """Sobreescribir write para gestionar cambios en direcciones después de confirmación"""
+        # Verificar permisos para modificar direcciones en pedidos confirmados
+        if any(order.state in ['sale', 'done'] for order in self) and not self.env.user.has_group('sales_team.group_sale_manager'):
+            delivery_fields = [
+                'delivery_name', 'delivery_street', 'delivery_street2', 'delivery_city',
+                'delivery_zip', 'delivery_state_id', 'delivery_country_id', 'delivery_phone',
+                'delivery_email', 'selected_delivery_partner_id', 'partner_shipping_id'
+            ]
+            if any(field in vals for field in delivery_fields):
+                raise AccessError(_("Solo los gerentes de ventas pueden modificar direcciones en pedidos confirmados"))
+
         res = super(SaleOrder, self).write(vals)
-        
+
         # Si el pedido está confirmado y se modifica la dirección, notificar
         for order in self:
             if order.state in ['sale', 'done'] and order.delivery_address_modified:
@@ -399,7 +457,7 @@ class SaleOrder(models.Model):
                 user_ids = order.team_id.member_ids.ids if order.team_id else []
                 if order.user_id and order.user_id.id not in user_ids:
                     user_ids.append(order.user_id.id)
-                    
+
                 if user_ids:
                     order.activity_schedule(
                         'mail.mail_activity_data_warning',
@@ -411,5 +469,5 @@ class SaleOrder(models.Model):
                         ),
                         user_id=user_ids[0]
                     )
-                    
+
         return res

@@ -6,6 +6,7 @@ odoo.define('sale_delivery_address_inline.delivery_address', function (require) 
     var viewRegistry = require('web.view_registry');
     var core = require('web.core');
     var _t = core._t;
+    var _ = require('web.core')._; // Añadir la dependencia de underscore
 
     var SaleOrderFormController = FormController.extend({
         /**

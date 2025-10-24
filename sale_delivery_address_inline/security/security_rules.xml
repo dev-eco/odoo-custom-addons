@@ -1,18 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Reglas de seguridad -->
-    <record id="rule_sale_delivery_address_multicompany" model="ir.rule">
-        <field name="name">Direcciones de Entrega - Multicompañía</field>
-        <field name="model_id" ref="base.model_res_partner"/>
-        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
-        <field name="groups" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
-    </record>
-    
-    <!-- Grupo para gestión avanzada de distribuidores -->
-    <record id="group_distributor_management" model="res.groups">
-        <field name="name">Gestión de Distribuidores</field>
-        <field name="category_id" ref="base.module_category_sales_sales"/>
-        <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
-        <field name="comment">Usuarios con permisos para gestionar distribuidores y sus direcciones de entrega</field>
-    </record>
+    <data noupdate="1">
+        <!-- Reglas de seguridad -->
+        <record id="rule_sale_delivery_address_multicompany" model="ir.rule">
+            <field name="name">Direcciones de Entrega - Multicompañía</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
+        </record>
+        
+        <!-- Grupo para gestión avanzada de distribuidores -->
+        <record id="group_distributor_management" model="res.groups">
+            <field name="name">Gestión de Distribuidores</field>
+            <field name="category_id" ref="base.module_category_sales_sales"/>
+            <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
+            <field name="comment">Usuarios con permisos para gestionar distribuidores y sus direcciones de entrega</field>
+        </record>
+        
+        <!-- Regla para permitir a los vendedores modificar direcciones de entrega -->
+        <record id="rule_delivery_address_salesman" model="ir.rule">
+            <field name="name">Direcciones de entrega: vendedores pueden modificar sus propias direcciones</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">[('type','=','delivery')]</field>
+            <field name="groups" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Regla para restringir modificación de direcciones en pedidos confirmados -->
+        <record id="rule_sale_order_delivery_confirmed" model="ir.rule">
+            <field name="name">Direcciones en pedidos confirmados: solo gerentes</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="domain_force">['|', ('state', 'not in', ['sale', 'done']), (1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('sales_team.group_sale_salesman')), (4, ref('sales_team.group_sale_salesman_all_leads'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+    </data>
 </odoo>

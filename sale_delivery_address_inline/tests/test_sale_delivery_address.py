@@ -1,242 +1,252 @@
 # -*- coding: utf-8 -*-
 
 from odoo.tests.common import TransactionCase
-from odoo.exceptions import ValidationError, UserError
+from odoo.exceptions import AccessError
+from odoo.tools import mute_logger
 
 
 class TestSaleDeliveryAddress(TransactionCase):
 
     def setUp(self):
         super(TestSaleDeliveryAddress, self).setUp()
-        
+
         # Empresa de test
         self.company = self.env.ref('base.main_company')
-        
+
         # Cliente normal (no distribuidor)
         self.partner_normal = self.env['res.partner'].create({
             'name': 'Cliente Normal de Prueba',
             'street': 'Calle Test 123',
-            'city': 'Ciudad Test',
-            'zip': '12345',
+            'city': 'Madrid',
+            'zip': '28001',
             'country_id': self.env.ref('base.es').id,
-            'is_company': True,
+            'email': 'cliente@test.com',
+            'phone': '666777888',
             'is_distributor': False,
         })
-        
+
         # Cliente distribuidor
         self.partner_distributor = self.env['res.partner'].create({
             'name': 'Distribuidor de Prueba',
-            'street': 'Avenida Distribuidor 456',
-            'city': 'Ciudad Distribución',
-            'zip': '54321',
+            'street': 'Avenida Principal 456',
+            'city': 'Barcelona',
+            'zip': '08001',
             'country_id': self.env.ref('base.es').id,
-            'is_company': True,
+            'email': 'distribuidor@test.com',
+            'phone': '666999000',
             'is_distributor': True,
-            'distributor_type': 'regional',
         })
-        
-        # Direcciones de entrega para el distribuidor
+
+        # Dirección de entrega para el distribuidor
         self.delivery_address_1 = self.env['res.partner'].create({
             'name': 'Almacén Central',
-            'parent_id': self.partner_distributor.id,
             'type': 'delivery',
-            'street': 'Polígono Industrial 1, Nave 5',
-            'city': 'Población Logística',
-            'zip': '28000',
-            'country_id': self.env.ref('base.es').id,
-            'phone': '+34 666 555 444',
-        })
-        
-        self.delivery_address_2 = self.env['res.partner'].create({
-            'name': 'Punto de Venta Norte',
             'parent_id': self.partner_distributor.id,
-            'type': 'delivery',
-            'street': 'Calle Comercio 78',
-            'city': 'Ciudad Norte',
-            'zip': '08000',
+            'street': 'Polígono Industrial 1',
+            'city': 'Valencia',
+            'zip': '46001',
             'country_id': self.env.ref('base.es').id,
-            'phone': '+34 666 777 888',
+            'email': 'almacen@test.com',
+            'phone': '666111222',
         })
-        
+
+        # Usuario vendedor
+        self.user_salesman = self.env['res.users'].create({
+            'name': 'Vendedor Test',
+            'login': 'vendedor_test',
+            'email': 'vendedor@test.com',
+            'groups_id': [(6, 0, [self.env.ref('sales_team.group_sale_salesman').id])],
+        })
+
+        # Usuario gerente
+        self.user_manager = self.env['res.users'].create({
+            'name': 'Gerente Test',
+            'login': 'gerente_test',
+            'email': 'gerente@test.com',
+            'groups_id': [(6, 0, [self.env.ref('sales_team.group_sale_manager').id])],
+        })
+
         # Producto para los pedidos
         self.product = self.env['product.product'].create({
-            'name': 'Producto de Prueba',
+            'name': 'Producto Test',
             'type': 'product',
-            'list_price': 100.00,
+            'list_price': 100.0,
         })
 
-    def test_inline_delivery_address_creation(self):
-        """Test creación de dirección de entrega desde campos inline"""
-        
-        order = self.env['sale.order'].create({
+        # Crear pedido para cliente normal
+        self.order_normal = self.env['sale.order'].create({
             'partner_id': self.partner_normal.id,
-        })
-        
-        # Establecer datos de dirección inline
-        address_data = {
-            'name': 'Nueva Dirección Test',
-            'street': 'New Address Street 999',
-            'city': 'New City',
-            'zip': '99999',
-            'phone': '+34 999 888 777',
-            'email': 'test@newaddress.com',
-        }
-        
-        # Crear nueva dirección
-        new_address = order._create_new_delivery_address(address_data)
-        
-        # Verificar que se creó correctamente
-        self.assertEqual(new_address.name, 'Nueva Dirección Test')
-        self.assertEqual(new_address.parent_id, self.partner_normal)
-        self.assertEqual(new_address.type, 'delivery')
-        self.assertEqual(new_address.street, 'New Address Street 999')
-        self.assertEqual(new_address.city, 'New City')
-        
-        # Verificar que el pedido está vinculado a la nueva dirección
-        self.assertEqual(order.partner_shipping_id, new_address)
-
-    def test_delivery_address_update_and_logging(self):
-        """Test actualización de dirección y logging en chatter"""
-        
-        order = self.env['sale.order'].create({
-            'partner_id': self.partner_distributor.id,
-            'partner_shipping_id': self.delivery_address_1.id,
-        })
-        
-        # Contar mensajes iniciales
-        initial_message_count = len(order.message_ids)
-        
-        # Cambiar campos inline
-        order.delivery_street = 'Updated Warehouse Street'
-        order.delivery_phone = '+34 111 222 333'
-        
-        # Verificar que se actualizó la dirección
-        self.assertEqual(self.delivery_address_1.street, 'Updated Warehouse Street')
-        self.assertEqual(self.delivery_address_1.phone, '+34 111 222 333')
-        
-        # Verificar que no se registró cambio en chatter (porque el pedido está en borrador)
-        final_message_count = len(order.message_ids)
-        self.assertEqual(initial_message_count, final_message_count)
-        
-        # Confirmar pedido
-        order.write({
+            'user_id': self.user_salesman.id,
             'order_line': [(0, 0, {
                 'product_id': self.product.id,
                 'product_uom_qty': 1,
-                'price_unit': 100.00,
+                'price_unit': 100.0,
             })],
         })
-        order.action_confirm()
-        
-        # Cambiar dirección después de confirmar
-        order.delivery_city = 'Ciudad Actualizada'
-        
-        # Verificar que se registró el cambio en chatter
-        final_message_count = len(order.message_ids)
-        self.assertGreater(final_message_count, initial_message_count)
-        
-        # Verificar que se marcó como modificada
-        self.assertTrue(order.delivery_address_modified)
+
+        # Crear pedido para distribuidor
+        self.order_distributor = self.env['sale.order'].create({
+            'partner_id': self.partner_distributor.id,
+            'user_id': self.user_salesman.id,
+            'order_line': [(0, 0, {
+                'product_id': self.product.id,
+                'product_uom_qty': 1,
+                'price_unit': 100.0,
+            })],
+        })
+
+    def test_inline_delivery_address_creation(self):
+        """Probar la creación inline de una dirección de entrega desde el pedido"""
+        # Comprobar que el cliente normal no es distribuidor
+        self.assertFalse(self.order_normal.is_distributor_customer)
+
+        # Modificar los campos de dirección de entrega
+        self.order_normal.write({
+            'delivery_name': 'Contacto de Entrega Test',
+            'delivery_street': 'Calle Nueva 789',
+            'delivery_city': 'Sevilla',
+            'delivery_zip': '41001',
+            'delivery_country_id': self.env.ref('base.es').id,
+            'delivery_phone': '666333444',
+            'delivery_email': 'entrega@test.com',
+        })
+
+        # Crear una nueva dirección de entrega
+        result = self.order_normal.action_create_delivery_address()
+        self.assertEqual(result['params']['type'], 'success')
+
+        # Verificar que se ha creado la dirección
+        delivery_address = self.env['res.partner'].search([
+            ('parent_id', '=', self.partner_normal.id),
+            ('type', '=', 'delivery'),
+            ('street', '=', 'Calle Nueva 789')
+        ])
+        self.assertTrue(delivery_address)
+
+        # Verificar que se ha asignado al pedido
+        self.assertEqual(self.order_normal.partner_shipping_id, delivery_address)
+
+        # Verificar que se ha registrado en el historial
+        messages = self.order_normal.message_ids.filtered(lambda m: 'Nueva dirección de entrega creada' in m.body)
+        self.assertTrue(messages)
+
+    def test_delivery_address_update_and_logging(self):
+        """Probar la actualización de una dirección de entrega y el registro de cambios"""
+        # Confirmar el pedido
+        self.order_normal.action_confirm()
+
+        # Cambiar a usuario gerente para poder modificar después de confirmar
+        self.order_normal = self.order_normal.with_user(self.user_manager)
+
+        # Modificar la dirección de entrega
+        old_city = self.order_normal.delivery_city
+        new_city = 'Málaga'
+        self.order_normal.delivery_city = new_city
+
+        # Verificar que se ha actualizado
+        self.assertEqual(self.order_normal.partner_shipping_id.city, new_city)
+
+        # Verificar que se ha marcado como modificada
+        self.assertTrue(self.order_normal.delivery_address_modified)
+
+        # Verificar que se ha registrado en el historial
+        messages = self.order_normal.message_ids.filtered(lambda m: 'Dirección de entrega actualizada' in m.body)
+        self.assertTrue(messages)
+        self.assertTrue(old_city in messages[0].body and new_city in messages[0].body)
 
     def test_distributor_workflow(self):
-        """Test flujo de trabajo para distribuidores"""
-        
-        # Crear un pedido para distribuidor
-        order = self.env['sale.order'].create({
-            'partner_id': self.partner_distributor.id,
-        })
-        
-        # Verificar que se detecta como distribuidor
-        self.assertTrue(order.is_distributor_customer)
-        
-        # Activar dirección alternativa
-        order.use_alternative_delivery = True
-        
-        # Verificar que se sugiere una dirección por defecto
-        self.assertTrue(order.partner_shipping_id)
-        self.assertTrue(order.partner_shipping_id in [self.delivery_address_1, self.delivery_address_2])
-        
-        # Seleccionar otra dirección específica
-        order.selected_delivery_partner_id = self.delivery_address_2
-        
-        # Verificar que se actualizó la dirección de envío
-        self.assertEqual(order.partner_shipping_id, self.delivery_address_2)
-        
-        # Desactivar uso de dirección alternativa
-        order.use_alternative_delivery = False
-        
-        # Verificar que volvió a la dirección principal
-        self.assertEqual(order.partner_shipping_id, self.partner_distributor)
+        """Probar el flujo de trabajo con distribuidores"""
+        # Verificar que el cliente es distribuidor
+        self.assertTrue(self.order_distributor.is_distributor_customer)
 
-    def test_validation_constraints(self):
-        """Test restricciones y validaciones"""
-        
-        # Probar crear distribuidor como contacto (no debería permitirse)
-        with self.assertRaises(ValidationError):
-            self.env['res.partner'].create({
-                'name': 'Invalid Distributor',
-                'parent_id': self.partner_distributor.id,
-                'is_distributor': True,
-            })
-        
-        # Probar crear dirección sin datos mínimos
-        order = self.env['sale.order'].create({
-            'partner_id': self.partner_normal.id,
+        # Activar el uso de dirección alternativa
+        self.order_distributor.use_alternative_delivery = True
+
+        # Verificar que se ha seleccionado la primera dirección disponible
+        self.assertEqual(self.order_distributor.selected_delivery_partner_id, self.delivery_address_1)
+
+        # Crear una nueva dirección de entrega
+        self.order_distributor.write({
+            'delivery_name': 'Almacén Secundario',
+            'delivery_street': 'Polígono Industrial 2',
+            'delivery_city': 'Zaragoza',
+            'delivery_zip': '50001',
+            'delivery_country_id': self.env.ref('base.es').id,
         })
-        
-        with self.assertRaises(UserError):
-            order._create_new_delivery_address({
-                'name': '',  # Falta nombre
-                'street': 'Test Street',
-            })
-            
-        with self.assertRaises(UserError):
-            order._create_new_delivery_address({
-                'name': 'Test Name',
-                'street': '',  # Falta dirección
-            })
+
+        result = self.order_distributor.action_create_delivery_address()
+        self.assertEqual(result['params']['type'], 'success')
+
+        # Verificar que se ha creado la dirección
+        delivery_address = self.env['res.partner'].search([
+            ('parent_id', '=', self.partner_distributor.id),
+            ('type', '=', 'delivery'),
+            ('city', '=', 'Zaragoza')
+        ])
+        self.assertTrue(delivery_address)
+
+        # Verificar que ahora hay dos direcciones de entrega
+        delivery_addresses = self.partner_distributor.child_ids.filtered(lambda r: r.type == 'delivery')
+        self.assertEqual(len(delivery_addresses), 2)
+
+    @mute_logger('odoo.models.unlink')
+    def test_validation_constraints(self):
+        """Probar las restricciones de validación y permisos"""
+        # Confirmar el pedido
+        self.order_normal.action_confirm()
+
+        # Cambiar a usuario vendedor (sin permisos de gerente)
+        self.order_normal = self.order_normal.with_user(self.user_salesman)
+
+        # Intentar modificar la dirección de entrega (debería fallar)
+        with self.assertRaises(AccessError):
+            self.order_normal.delivery_city = 'Ciudad Prohibida'
+
+        # Intentar crear una dirección sin datos obligatorios
+        self.order_distributor = self.order_distributor.with_user(self.user_salesman)
+        self.order_distributor.delivery_name = ''
+        self.order_distributor.delivery_street = ''
+
+        result = self.order_distributor.action_create_delivery_address()
+        self.assertEqual(result['params']['type'], 'danger')
+        self.assertIn('obligatorios', result['params']['message'])
 
     def test_multicompany(self):
-        """Test funcionamiento multiempresa"""
-        
-        # Crear segunda empresa
+        """Probar el funcionamiento en entorno multiempresa"""
+        # Crear una segunda empresa
         company2 = self.env['res.company'].create({
-            'name': 'Test Company 2',
+            'name': 'Empresa Test 2',
+            'currency_id': self.env.ref('base.EUR').id,
         })
-        
-        # Crear cliente en segunda empresa
-        partner_company2 = self.env['res.partner'].with_context(company_id=company2.id).create({
-            'name': 'Partner Company 2',
+
+        # Crear un pedido para la segunda empresa
+        order_company2 = self.env['sale.order'].create({
+            'partner_id': self.partner_normal.id,
+            'user_id': self.user_manager.id,
             'company_id': company2.id,
-            'is_distributor': True,
+            'order_line': [(0, 0, {
+                'product_id': self.product.id,
+                'product_uom_qty': 1,
+                'price_unit': 100.0,
+            })],
         })
-        
-        # Dirección de entrega para segunda empresa
-        delivery_company2 = self.env['res.partner'].with_context(company_id=company2.id).create({
-            'name': 'Delivery Company 2',
-            'parent_id': partner_company2.id,
-            'type': 'delivery',
-            'company_id': company2.id,
+
+        # Modificar los campos de dirección de entrega
+        order_company2.write({
+            'delivery_name': 'Contacto Empresa 2',
+            'delivery_street': 'Calle Empresa 2',
+            'delivery_city': 'Ciudad Empresa 2',
         })
-        
-        # Comprobar que cada empresa ve solo sus datos
-        partners_company1 = self.env['res.partner'].with_context(company_id=self.company.id).search([
-            ('is_distributor', '=', True)
+
+        # Crear una nueva dirección de entrega
+        result = order_company2.action_create_delivery_address()
+        self.assertEqual(result['params']['type'], 'success')
+
+        # Verificar que se ha creado la dirección con la empresa correcta
+        delivery_address = self.env['res.partner'].search([
+            ('parent_id', '=', self.partner_normal.id),
+            ('type', '=', 'delivery'),
+            ('street', '=', 'Calle Empresa 2')
         ])
-        self.assertIn(self.partner_distributor, partners_company1)
-        self.assertNotIn(partner_company2, partners_company1)
-        
-        partners_company2 = self.env['res.partner'].with_context(company_id=company2.id).search([
-            ('is_distributor', '=', True)
-        ])
-        self.assertIn(partner_company2, partners_company2)
-        
-        # Comprobar que las direcciones son independientes
-        order_company2 = self.env['sale.order'].with_context(company_id=company2.id).create({
-            'partner_id': partner_company2.id,
-            'company_id': company2.id,
-        })
-        
-        self.assertTrue(order_company2.is_distributor_customer)
-        order_company2.use_alternative_delivery = True
-        self.assertEqual(order_company2.partner_shipping_id, delivery_company2)
+        self.assertTrue(delivery_address)
+        self.assertEqual(delivery_address.company_id, company2)
