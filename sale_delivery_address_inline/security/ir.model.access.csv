@@ -3,5 +3,3 @@ access_res_partner_delivery_salesman,res.partner.delivery.salesman,base.model_re
 access_res_partner_delivery_manager,res.partner.delivery.manager,base.model_res_partner,sales_team.group_sale_manager,1,1,1,1
 access_res_country_salesman,res.country.salesman,base.model_res_country,sales_team.group_sale_salesman,1,0,0,0
 access_res_country_state_salesman,res.country.state.salesman,base.model_res_country_state,sales_team.group_sale_salesman,1,0,0,0
-access_res_country_salesman,res.country.salesman,base.model_res_country,sales_team.group_sale_salesman,1,0,0,0
-access_res_country_state_salesman,res.country.state.salesman,base.model_res_country_state,sales_team.group_sale_salesman,1,0,0,0

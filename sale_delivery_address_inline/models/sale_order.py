@@ -32,12 +32,6 @@ class SaleOrder(models.Model):
     )
 
     # Campos de dirección inline con mejor diseño
-    delivery_name = fields.Char(
-        string='Nombre de Contacto de Entrega',
-        compute='_compute_delivery_fields',
-        inverse='_inverse_delivery_name',
-        tracking=True
-    )
 
     delivery_street = fields.Char(
         string='Dirección de Entrega',
@@ -154,7 +148,6 @@ class SaleOrder(models.Model):
         """Calcula los campos de dirección de entrega desde la dirección seleccionada"""
         for order in self:
             if order.partner_shipping_id:
-                order.delivery_name = order.partner_shipping_id.name or ''
                 order.delivery_street = order.partner_shipping_id.street or ''
                 order.delivery_street2 = order.partner_shipping_id.street2 or ''
                 order.delivery_city = order.partner_shipping_id.city or ''
@@ -165,7 +158,6 @@ class SaleOrder(models.Model):
                 order.delivery_email = order.partner_shipping_id.email or ''
             else:
                 # Valores por defecto si no hay dirección
-                order.delivery_name = ''
                 order.delivery_street = ''
                 order.delivery_street2 = ''
                 order.delivery_city = ''
