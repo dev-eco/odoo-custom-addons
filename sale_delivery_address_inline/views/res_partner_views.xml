@@ -22,13 +22,13 @@
             <!-- Añadir página de configuración de distribución -->
             <xpath expr="//notebook" position="inside">
                 <page string="🚛 Distribución" name="distribution_config" 
-                      invisible="parent_id or type != 'contact'">
+                      attrs="{'invisible': ['|', ('parent_id', '!=', False), ('type', '!=', 'contact')]}">
                     <group>
                         <group string="Configuración">
                             <field name="is_distributor"/>
-                            <field name="distributor_type" invisible="not is_distributor"/>
+                            <field name="distributor_type" attrs="{'invisible': [('is_distributor', '=', False)]}"/>
                         </group>
-                        <group string="Estadísticas" invisible="not is_distributor">
+                        <group string="Estadísticas" attrs="{'invisible': [('is_distributor', '=', False)]}">
                             <field name="delivery_address_count"/>
                         </group>
                     </group>
@@ -46,7 +46,7 @@
                     </group>
 
                     <div class="alert alert-info mt-3" role="alert" 
-                         invisible="not is_distributor">
+                         attrs="{'invisible': [('is_distributor', '=', False)]}">
                         <strong>ℹ️ Modo Distribuidor Activo</strong><br/>
                         Este cliente puede tener múltiples direcciones de entrega.
                         Use el botón superior para gestionarlas.
@@ -55,7 +55,7 @@
 
                 <!-- Página de Proyecto (solo para direcciones temporales) -->
                 <page string="📦 Proyecto" name="project_data" 
-                      invisible="not is_temporary_address or type != 'delivery'">
+                      attrs="{'invisible': ['|', ('is_temporary_address', '=', False), ('type', '!=', 'delivery')]}">
                     <group>
                         <group string="Identificación">
                             <field name="is_temporary_address"/>
@@ -84,7 +84,7 @@
                     <div class="alert alert-warning mt-3" role="alert">
                         <strong>⚠️ Dirección Temporal</strong><br/>
                         Esta dirección está marcada como temporal y asociada al proyecto 
-                        <strong><field name="project_reference" readonly="1"/></strong>.
+                        <strong><field name="project_reference" readonly="1" nolabel="1"/></strong>.
                         Se recomienda archivarla al finalizar el proyecto.
                     </div>
                 </page>
@@ -93,7 +93,7 @@
             <!-- Indicador visual en dirección si es temporal -->
             <xpath expr="//field[@name='type']" position="after">
                 <field name="is_temporary_address" 
-                       invisible="type != 'delivery'"/>
+                       attrs="{'invisible': [('type', '!=', 'delivery')]}"/>
             </xpath>
 
         </field>
