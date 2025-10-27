@@ -15,31 +15,35 @@
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
                 
                 <field name="selected_delivery_partner_id" 
-                       string="Otra dirección"
-                       invisible="not is_distributor_customer"/>
+                       string="Dirección alternativa"
+                       invisible="not is_distributor_customer"
+                       placeholder="Seleccionar otra dirección..."/>
 
-                <div>
+                <div class="mt-2">
                     <button name="action_create_delivery_address" 
-                            string="+ Nueva Dirección" 
+                            string="Nueva Dirección" 
                             type="object" 
-                            class="btn-link"
-                            invisible="not partner_id"/>
+                            class="btn btn-secondary btn-sm"
+                            invisible="not partner_id"
+                            icon="fa-plus"/>
                 </div>
 
-                <group string="Detalles de Entrega">
-                    <group>
-                        <field name="delivery_name"/>
-                        <field name="delivery_phone"/>
-                        <field name="delivery_email"/>
+                <group string="Detalles de Entrega" class="mt-3">
+                    <group string="Contacto">
+                        <field name="delivery_name" string="Nombre completo" placeholder="Nombre del contacto"/>
+                        <field name="delivery_phone" string="Teléfono" placeholder="+34 999 888 777" widget="phone"/>
+                        <field name="delivery_email" string="Email" placeholder="email@ejemplo.com" widget="email"/>
                     </group>
-                    <group>
-                        <field name="delivery_street"/>
-                        <field name="delivery_city"/>
-                        <field name="delivery_zip"/>
+                    <group string="Dirección">
+                        <field name="delivery_street" string="Calle" placeholder="Calle y número"/>
+                        <field name="delivery_city" string="Ciudad" placeholder="Ciudad"/>
+                        <field name="delivery_zip" string="Código Postal" placeholder="CP"/>
                         <field name="delivery_state_id" 
+                               string="Provincia"
+                               placeholder="Provincia"
                                context="{'default_country_id': delivery_country_id}"
                                domain="[('country_id', '=', delivery_country_id)]"/>
-                        <field name="delivery_country_id"/>
+                        <field name="delivery_country_id" string="País" placeholder="País"/>
                     </group>
                 </group>
 
