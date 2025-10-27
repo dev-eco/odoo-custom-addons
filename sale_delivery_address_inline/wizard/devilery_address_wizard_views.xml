@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario del wizard -->
+    <record id="view_delivery_address_wizard_form" model="ir.ui.view">
+        <field name="name">delivery.address.wizard.form</field>
+        <field name="model">delivery.address.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nueva Dirección de Entrega">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="sale_order_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="address_type" widget="radio"/>
+                            <field name="is_temporary" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Pestaña: Datos Básicos -->
+                        <page string="Datos Básicos" name="basic_data">
+                            <group>
+                                <group>
+                                    <field name="name" placeholder="Ej: Almacén Central, Obra Colegio X..."/>
+                                    <field name="street" placeholder="Calle y número"/>
+                                    <field name="street2" placeholder="Piso, puerta, edificio..."/>
+                                </group>
+                                <group>
+                                    <field name="city" placeholder="Ciudad"/>
+                                    <field name="zip" placeholder="Código Postal"/>
+                                    <field name="state_id" placeholder="Provincia"/>
+                                    <field name="country_id"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group>
+                                    <field name="phone" placeholder="+34 XXX XXX XXX"/>
+                                    <field name="mobile" placeholder="+34 XXX XXX XXX"/>
+                                </group>
+                                <group>
+                                    <field name="email" placeholder="email@ejemplo.com"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Pestaña: Datos de Proyecto (solo para temporales) -->
+                        <page string="Datos del Proyecto" name="project_data" invisible="not is_temporary">
+                            <group>
+                                <group>
+                                    <field name="project_reference" required="is_temporary"/>
+                                    <field name="project_status"/>
+                                </group>
+                                <group>
+                                    <field name="project_start_date"/>
+                                    <field name="project_end_date"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="project_description" placeholder="Descripción del proyecto, alcance, detalles técnicos..."/>
+                            </group>
+                        </page>
+
+                        <!-- Pestaña: Información Logística -->
+                        <page string="Info Logística" name="logistics">
+                            <group>
+                                <group string="Contacto en Obra">
+                                    <field name="site_contact_name" placeholder="Nombre del responsable"/>
+                                    <field name="site_contact_phone" placeholder="+34 XXX XXX XXX"/>
+                                </group>
+                                <group string="Condiciones de Acceso">
+                                    <field name="truck_access"/>
+                                    <field name="loading_equipment"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="delivery_schedule_notes" 
+                                       placeholder="Horarios permitidos, restricciones, observaciones especiales..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_create_address" string="Crear Dirección" 
+                            type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

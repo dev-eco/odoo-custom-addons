@@ -1,59 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Vista de formulario mejorada para sale.order -->
-    <record id="view_order_form_delivery_inline" model="ir.ui.view">
-        <field name="name">sale.order.form.delivery.inline</field>
+    <!-- Vista formulario mejorada para sale.order -->
+    <record id="view_order_form_delivery_inline_extended" model="ir.ui.view">
+        <field name="name">sale.order.form.delivery.inline.extended</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
 
-            <!-- Añadir campos invisibles necesarios -->
+            <!-- Campos invisibles necesarios -->
             <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="is_distributor_customer" invisible="1"/>
+                <field name="is_temporary_delivery" invisible="1"/>
                 <field name="delivery_address_modified" invisible="1"/>
+                <field name="delivery_project_reference" invisible="1"/>
             </xpath>
             
-            <!-- Modificar el campo partner_shipping_id -->
+            <!-- Modificar el campo partner_shipping_id existente -->
             <xpath expr="//field[@name='partner_shipping_id']" position="attributes">
                 <attribute name="invisible">use_alternative_delivery</attribute>
-                <attribute name="groups">sales_team.group_sale_salesman</attribute>
             </xpath>
 
-            <!-- Agregar sección de dirección de entrega mejorada -->
+            <!-- Agregar sección de dirección inline mejorada -->
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
-                <div class="oe_inline address_inline" invisible="not partner_id">
+                
+                <!-- Indicador si es dirección temporal -->
+                <div class="alert alert-info mt-2" role="alert" 
+                     invisible="not is_temporary_delivery">
+                    <strong>📦 Dirección Temporal de Proyecto</strong><br/>
+                    Proyecto: <field name="delivery_project_reference" readonly="1" class="o_form_field_text"/>
+                </div>
+
+                <!-- Advertencia si dirección modificada post-confirmación -->
+                <div class="alert alert-warning mt-2" role="alert" 
+                     invisible="not delivery_address_modified">
+                    <strong>⚠️ Dirección Modificada</strong><br/>
+                    La dirección de entrega fue modificada después de confirmar el pedido.
+                    Asegúrese de informar al departamento de logística.
+                </div>
+
+                <div class="oe_inline" invisible="not partner_id">
+                    
                     <!-- Opciones para distribuidores -->
-                    <div class="alert alert-info mb-2 mt-2 p-2"
-                         invisible="not is_distributor_customer"
-                         role="alert">
+                    <div class="alert alert-info mb-2 p-2" role="alert"
+                         invisible="not is_distributor_customer">
                         <div class="d-flex align-items-center">
                             <span class="mr-2">🚛</span>
                             <strong>Modo Distribuidor:</strong>
-                            <span class="ml-2">Puede seleccionar entre direcciones de entrega existentes o crear una nueva.</span>
+                            <span class="ml-2">Seleccione entre direcciones existentes o cree una nueva.</span>
                         </div>
-                        <div class="mt-1 d-flex align-items-center">
+                        <div class="mt-2 d-flex align-items-center">
                             <field name="use_alternative_delivery" class="mr-2"/>
-                            <label for="use_alternative_delivery" string="Usar Dirección de Entrega Alternativa"/>
+                            <label for="use_alternative_delivery" string="Usar Dirección Alternativa"/>
                         </div>
                         <div class="mt-1 text-muted">
-                            <small>Los cambios se guardan automáticamente y se registran en el historial.</small>
+                            <small>Los cambios se guardan automáticamente en el historial.</small>
                         </div>
+
                         <!-- Selector de direcciones existentes -->
                         <div class="mt-2" invisible="not use_alternative_delivery">
-                            <label for="selected_delivery_partner_id" string="Dirección de Entrega" class="oe_inline"/>
+                            <label for="selected_delivery_partner_id" string="Dirección" class="oe_inline"/>
                             <div class="d-flex align-items-center mt-1">
                                 <field name="selected_delivery_partner_id"
                                        options="{'no_create': True, 'no_create_edit': True}"
-                                       placeholder="Seleccionar dirección de entrega..."
+                                       placeholder="Seleccionar dirección..."
                                        class="w-75"/>
                                 <button name="action_create_delivery_address"
-                                        string="Nueva dirección" type="object"
+                                        string="Nueva" type="object"
                                         class="btn btn-sm btn-primary ml-2"
-                                        invisible="not partner_id"
-                                        groups="sales_team.group_sale_salesman"/>
+                                        invisible="not partner_id"/>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Bloque de edición de dirección con diseño mejorado -->
+                    <!-- Bloque de edición inline -->
                     <fieldset class="mt-3 p-3 border rounded delivery-address-fieldset"
                               invisible="not partner_id">
                         <legend class="text-primary w-auto">
@@ -61,28 +80,38 @@
                             <span>Detalles de Dirección de Entrega</span>
                         </legend>
 
-                        <!-- Primera fila: datos de contacto -->
+                        <!-- Fila 1: Datos de contacto -->
                         <div class="mb-3">
                             <h6 class="text-muted mb-2">
                                 <i class="fa fa-user mr-1"></i> Datos de Contacto
                             </h6>
                             <div class="row">
+                                <div class="col-12 mb-2">
+                                    <label for="delivery_name" string="Nombre"/>
+                                    <field name="delivery_name" 
+                                           placeholder="Nombre del contacto"
+                                           readonly="state in ('sale', 'done')"/>
+                                </div>
+                            </div>
+                            <div class="row">
                                 <div class="col-lg-6 col-md-12 mb-2">
-                                    <label for="delivery_phone" string="Teléfono de Contacto"/>
-                                    <field name="delivery_phone" placeholder="+34 999 888 777"
+                                    <label for="delivery_phone" string="Teléfono"/>
+                                    <field name="delivery_phone" 
+                                           placeholder="+34 999 888 777"
                                            widget="phone"
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                                 <div class="col-lg-6 col-md-12 mb-2">
-                                    <label for="delivery_email" string="Email de Contacto"/>
-                                    <field name="delivery_email" placeholder="contacto@ejemplo.com"
+                                    <label for="delivery_email" string="Email"/>
+                                    <field name="delivery_email" 
+                                           placeholder="contacto@ejemplo.com"
                                            widget="email"
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Segunda fila: dirección física -->
+                        <!-- Fila 2: Dirección física -->
                         <div>
                             <h6 class="text-muted mb-2">
                                 <i class="fa fa-map-marker mr-1"></i> Dirección Física
@@ -90,119 +119,103 @@
                             <div class="row">
                                 <div class="col-12 mb-2">
                                     <label for="delivery_street" string="Dirección"/>
-                                    <field name="delivery_street" placeholder="Calle y número"
+                                    <field name="delivery_street" 
+                                           placeholder="Calle y número"
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-12 mb-2">
-                                    <label for="delivery_street2" string="Información Adicional"/>
-                                    <field name="delivery_street2" placeholder="Edificio, piso, puerta..."
+                                    <label for="delivery_street2" string="Info Adicional"/>
+                                    <field name="delivery_street2" 
+                                           placeholder="Edificio, piso, puerta..."
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-lg-6 col-md-6 mb-2">
-                                    <label for="delivery_city" string="Ciudad/Localidad"/>
-                                    <field name="delivery_city" placeholder="Ciudad"
+                                    <label for="delivery_city" string="Ciudad"/>
+                                    <field name="delivery_city" 
+                                           placeholder="Ciudad"
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                                 <div class="col-lg-6 col-md-6 mb-2">
-                                    <label for="delivery_zip" string="Código Postal"/>
-                                    <field name="delivery_zip" placeholder="CP"
+                                    <label for="delivery_zip" string="C.P."/>
+                                    <field name="delivery_zip" 
+                                           placeholder="Código Postal"
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-lg-6 col-md-6 mb-2">
                                     <label for="delivery_state_id" string="Provincia"/>
-                                    <field name="delivery_state_id" placeholder="Provincia"
+                                    <field name="delivery_state_id" 
+                                           placeholder="Provincia"
                                            options="{'no_create': True}"
                                            context="{'country_id': delivery_country_id}"
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                                 <div class="col-lg-6 col-md-6 mb-2">
                                     <label for="delivery_country_id" string="País"/>
-                                    <field name="delivery_country_id" placeholder="País"
+                                    <field name="delivery_country_id" 
+                                           placeholder="País"
                                            options="{'no_create': True}"
                                            readonly="state in ('sale', 'done')"/>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Botón para crear dirección nueva -->
-                        <div class="text-right mt-3"
-                             invisible="not partner_id or not is_distributor_customer">
-                            <button name="action_create_delivery_address"
-                                    string="Guardar como nueva dirección"
-                                    type="object"
-                                    class="btn btn-sm btn-primary"
-                                    groups="sales_team.group_sale_salesman"/>
-                            <div class="text-muted mt-1">
-                                <small>Guarda esta dirección para usarla en futuros pedidos.</small>
-                            </div>
-                        </div>
-
-                        <!-- Botones para gerentes en pedidos confirmados -->
-                        <div class="text-right mt-3"
-                             invisible="state not in ('sale', 'done') or not partner_id"
-                             groups="sales_team.group_sale_manager">
-                            <button name="action_create_delivery_address"
-                                    string="Modificar dirección de entrega"
-                                    type="object"
-                                    class="btn btn-sm btn-warning"/>
-                            <div class="text-muted mt-1">
-                                <small>Como gerente, puede modificar la dirección incluso en pedidos confirmados.</small>
-                            </div>
-                        </div>
                     </fieldset>
-
-                    <!-- Advertencia de dirección modificada después de confirmación -->
-                    <div class="alert alert-warning mt-2"
-                         invisible="not delivery_address_modified"
-                         role="alert">
-                        <strong>Atención:</strong> Esta dirección ha sido modificada después de confirmar el pedido.
-                        Asegúrese de que el departamento de logística está informado de los cambios.
-                    </div>
                 </div>
             </xpath>
 
-            <!-- Añadir campos en la vista de árbol (lista) de pedidos -->
+            <!-- Añadir campos en vista de árbol -->
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="is_distributor_customer" optional="hide"/>
+                <field name="is_temporary_delivery" optional="show" string="Temporal"/>
             </xpath>
 
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
-                <field name="delivery_city" string="Ciudad Entrega" optional="show"/>
-                <field name="delivery_phone" string="Teléfono Entrega" optional="hide"/>
-                <field name="delivery_email" string="Email Entrega" optional="hide"/>
+                <field name="delivery_project_reference" optional="show" string="Ref. Proyecto"/>
+                <field name="delivery_city" optional="show" string="Ciudad"/>
+                <field name="delivery_phone" optional="hide"/>
             </xpath>
 
         </field>
     </record>
 
-    <!-- Mejoras en la vista de búsqueda de pedidos -->
-    <record id="view_sales_order_filter_delivery" model="ir.ui.view">
-        <field name="name">sale.order.filter.delivery</field>
+    <!-- Vista de búsqueda mejorada -->
+    <record id="view_sales_order_filter_delivery_extended" model="ir.ui.view">
+        <field name="name">sale.order.filter.delivery.extended</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_sales_order_filter"/>
         <field name="arch" type="xml">
+            
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="delivery_city"/>
+                <field name="delivery_project_reference"/>
+            </xpath>
+
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
                 <separator/>
-                <filter string="Solo Distribuidores" name="distributor_orders"
+                <filter string="Clientes Distribuidores" name="distributor_orders"
                         domain="[('is_distributor_customer', '=', True)]"/>
-                <filter string="Con Entrega Alternativa" name="alt_delivery"
+                <filter string="Con Dirección Alternativa" name="alt_delivery"
                         domain="[('use_alternative_delivery', '=', True)]"/>
-                <filter string="Dirección Modificada" name="modified_address"
+                <filter string="Direcciones Temporales" name="temporary_delivery"
+                        domain="[('is_temporary_delivery', '=', True)]"/>
+                <filter string="Direcciones Modificadas" name="modified_address"
                         domain="[('delivery_address_modified', '=', True)]"/>
             </xpath>
 
             <xpath expr="//group/filter[@name='customer']" position="after">
-                <filter string="Ciudad de Entrega" name="city_groupby" context="{'group_by': 'delivery_city'}"/>
-                <filter string="Tipo de Entrega" name="delivery_type_groupby"
-                        context="{'group_by': 'use_alternative_delivery'}"/>
+                <filter string="Ciudad Entrega" name="city_groupby" 
+                        context="{'group_by': 'delivery_city'}"/>
+                <filter string="Tipo Entrega" name="delivery_type_groupby"
+                        context="{'group_by': 'is_temporary_delivery'}"/>
+                <filter string="Compañía" name="company_groupby" 
+                        context="{'group_by': 'company_id'}"/>
             </xpath>
         </field>
     </record>
+
 </odoo>

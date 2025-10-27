@@ -1,25 +1,40 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Direcciones de Entrega Inline - Versión Básica',
-    'version': '17.0.1.0.0',
+    'name': 'Direcciones de Entrega Multi-Empresa con Proyectos',
+    'version': '17.0.2.0.1',
     'category': 'Sales',
-    'summary': 'Edición inline de direcciones de entrega en presupuestos',
+    'summary': 'Gestión avanzada de direcciones de entrega para multi-empresa',
     'description': """
-Direcciones de Entrega Inline - Versión Básica
-==============================================
+Direcciones de Entrega Multi-Empresa
+=====================================
 
-Permite editar direcciones de entrega directamente desde el presupuesto.
+Sistema completo de gestión de direcciones de entrega para configuraciones multi-empresa.
 
-Funcionalidades:
-- Campo "Es Distribuidor" en partners
-- Edición inline de direcciones en presupuestos
-- Detección automática de distribuidores
-- Campos adaptados a España
-- Registro de cambios en el historial
-- Gestión de permisos por grupos de usuario
+Funcionalidades Principales:
+----------------------------
+✓ Edición inline de direcciones en presupuestos
+✓ Soporte multi-empresa (aislamiento de datos)
+✓ Direcciones temporales para proyectos únicos
+✓ Direcciones permanentes para distribuidores
+✓ Campos logísticos especializados
+✓ Gestión de permisos por grupos
+✓ Registro completo de cambios
+✓ Validaciones avanzadas
 
-Versión minimalista sin errores de compatibilidad.
-""",
+Casos de Uso:
+-------------
+• Empresa A - Fabricación: Gestión de distribuidores y clientes directos
+• Empresa B - Obra Civil: Direcciones temporales por proyecto
+• Empresa C - Distribución: Mix de clientes recurrentes y ocasionales
+
+Características Técnicas:
+-------------------------
+• Compatible con Odoo 17.0 Community Edition
+• Sin modificaciones a core de Odoo
+• Completamente desinstalable
+• Localización España
+• Multi-empresa nativo
+    """,
     'author': 'EcoCaucho España',
     'website': 'https://www.ecocaucho.org',
     'license': 'LGPL-3',
@@ -33,6 +48,8 @@ Versión minimalista sin errores de compatibilidad.
         'security/ir.model.access.csv',
         'views/res_partner_views.xml',
         'views/sale_order_views.xml',
+        'wizard/delivery_address_wizard_views.xml',
+        'security/wizard_access.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -40,9 +57,6 @@ Versión minimalista sin errores de compatibilidad.
             'sale_delivery_address_inline/static/src/scss/delivery_address_inline.scss',
         ],
     },
-    'demo': [
-        'data/demo_data.xml',
-    ],
     'installable': True,
     'application': False,
     'auto_install': False,
