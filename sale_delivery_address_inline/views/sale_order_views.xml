@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <!-- Vista formulario mejorada para sale.order -->
     <record id="view_order_form_delivery_inline_extended" model="ir.ui.view">
@@ -9,15 +9,15 @@
 
             <!-- Campos invisibles necesarios -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="is_distributor_customer" invisible="1"/>
-                <field name="is_temporary_delivery" invisible="1"/>
-                <field name="delivery_address_modified" invisible="1"/>
+                <field name="is_distributor_customer" id="is_distributor_customer" invisible="1"/>
+                <field name="is_temporary_delivery" id="is_temporary_delivery" invisible="1"/>
+                <field name="delivery_address_modified" id="delivery_address_modified" invisible="1"/>
                 <field name="delivery_project_reference" invisible="1"/>
             </xpath>
             
             <!-- Modificar el campo partner_shipping_id existente -->
             <xpath expr="//field[@name='partner_shipping_id']" position="attributes">
-                <attribute name="invisible">eval: record.use_alternative_delivery</attribute>
+                <attribute name="invisible">use_alternative_delivery</attribute>
             </xpath>
 
             <!-- Agregar sección de dirección inline mejorada -->
@@ -25,31 +25,31 @@
                 
                 <!-- Indicador si es dirección temporal -->
                 <div class="alert alert-info mt-2" role="alert" 
-                     invisible="eval: not record.is_temporary_delivery">
+                     invisible="not is_temporary_delivery">
                     <strong>📦 Dirección Temporal de Proyecto</strong><br/>
                     Proyecto: <field name="delivery_project_reference" readonly="1" class="o_form_field_text"/>
                 </div>
 
                 <!-- Advertencia si dirección modificada post-confirmación -->
                 <div class="alert alert-warning mt-2" role="alert" 
-                     invisible="eval: not record.delivery_address_modified">
+                     invisible="not delivery_address_modified">
                     <strong>⚠️ Dirección Modificada</strong><br/>
                     La dirección de entrega fue modificada después de confirmar el pedido.
                     Asegúrese de informar al departamento de logística.
                 </div>
 
-                <div class="delivery_address_container w-100" invisible="eval: not record.partner_id">
+                <div class="delivery_address_container w-100" invisible="not partner_id">
                     
                     <!-- Opciones para distribuidores -->
                     <div class="alert alert-info mb-3 p-3" role="alert"
-                         invisible="eval: not record.is_distributor_customer">
+                         invisible="not is_distributor_customer">
                         <div class="d-flex align-items-center">
                             <span class="mr-2">🚛</span>
                             <strong>Modo Distribuidor:</strong>
                             <span class="ml-2">Seleccione entre direcciones existentes o cree una nueva.</span>
                         </div>
                         <div class="mt-2 d-flex align-items-center">
-                            <field name="use_alternative_delivery" class="mr-2"/>
+                            <field name="use_alternative_delivery" id="use_alternative_delivery" class="mr-2"/>
                             <label for="use_alternative_delivery" string="Usar Dirección Alternativa"/>
                         </div>
                         <div class="mt-1 text-muted">
@@ -57,7 +57,7 @@
                         </div>
 
                         <!-- Selector de direcciones existentes -->
-                        <div class="mt-2" invisible="eval: not record.use_alternative_delivery">
+                        <div class="mt-2" invisible="not use_alternative_delivery">
                             <label for="selected_delivery_partner_id" string="Dirección"/>
                             <div class="d-flex align-items-center mt-1">
                                 <field name="selected_delivery_partner_id"
@@ -67,14 +67,14 @@
                                 <button name="action_create_delivery_address"
                                         string="Nueva" type="object"
                                         class="btn btn-sm btn-primary ml-2"
-                                        invisible="eval: not record.partner_id"/>
+                                        invisible="not partner_id"/>
                             </div>
                         </div>
                     </div>
 
                     <!-- Bloque de edición inline -->
                     <fieldset class="mt-3 p-3 border rounded delivery-address-fieldset"
-                              invisible="eval: not record.partner_id">
+                              invisible="not partner_id">
                         <legend class="text-primary w-auto">
                             <span class="mr-1">📍</span>
                             <span>Detalles de Dirección de Entrega</span>
@@ -87,27 +87,33 @@
                             </h6>
                             <div class="row">
                                 <div class="col-12 mb-2">
-                                    <label for="delivery_name_0" string="Nombre"/>
+                                    <label for="delivery_name" string="Nombre"/>
                                     <field name="delivery_name" 
+                                           id="delivery_name"
+                                           name="delivery_name"
                                            placeholder="Nombre del contacto"
                                            invisible="0"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-lg-6 col-md-12 mb-2">
-                                    <label for="delivery_phone_1" string="Teléfono"/>
+                                    <label for="delivery_phone" string="Teléfono"/>
                                     <field name="delivery_phone" 
+                                           id="delivery_phone"
+                                           name="delivery_phone"
                                            placeholder="+34 999 888 777"
                                            widget="phone"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                                 <div class="col-lg-6 col-md-12 mb-2">
-                                    <label for="delivery_email_0" string="Email"/>
+                                    <label for="delivery_email" string="Email"/>
                                     <field name="delivery_email" 
+                                           id="delivery_email"
+                                           name="delivery_email"
                                            placeholder="contacto@ejemplo.com"
                                            widget="email"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                             </div>
                         </div>
@@ -119,49 +125,61 @@
                             </h6>
                             <div class="row">
                                 <div class="col-12 mb-2">
-                                    <label for="delivery_street_0" string="Dirección"/>
+                                    <label for="delivery_street" string="Dirección"/>
                                     <field name="delivery_street" 
+                                           id="delivery_street"
+                                           name="delivery_street"
                                            placeholder="Calle y número"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-12 mb-2">
-                                    <label for="delivery_street2_0" string="Info Adicional"/>
+                                    <label for="delivery_street2" string="Info Adicional"/>
                                     <field name="delivery_street2" 
+                                           id="delivery_street2"
+                                           name="delivery_street2"
                                            placeholder="Edificio, piso, puerta..."
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-lg-6 col-md-6 mb-2">
-                                    <label for="delivery_city_1" string="Ciudad"/>
+                                    <label for="delivery_city" string="Ciudad"/>
                                     <field name="delivery_city" 
+                                           id="delivery_city"
+                                           name="delivery_city"
                                            placeholder="Ciudad"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                                 <div class="col-lg-6 col-md-6 mb-2">
-                                    <label for="delivery_zip_0" string="C.P."/>
+                                    <label for="delivery_zip" string="C.P."/>
                                     <field name="delivery_zip" 
+                                           id="delivery_zip"
+                                           name="delivery_zip"
                                            placeholder="Código Postal"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-lg-6 col-md-6 mb-2">
-                                    <label for="delivery_state_id_0" string="Provincia"/>
+                                    <label for="delivery_state_id" string="Provincia"/>
                                     <field name="delivery_state_id" 
+                                           id="delivery_state_id"
+                                           name="delivery_state_id"
                                            placeholder="Provincia"
                                            options="{'no_create': True}"
                                            context="{'country_id': delivery_country_id}"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                                 <div class="col-lg-6 col-md-6 mb-2">
-                                    <label for="delivery_country_id_0" string="País"/>
+                                    <label for="delivery_country_id" string="País"/>
                                     <field name="delivery_country_id" 
+                                           id="delivery_country_id"
+                                           name="delivery_country_id"
                                            placeholder="País"
                                            options="{'no_create': True}"
-                                           readonly="eval: record.state in ['sale', 'done']"/>
+                                           readonly="state in ['sale', 'done']"/>
                                 </div>
                             </div>
                         </div>
