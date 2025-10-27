@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Direcciones de Entrega Multi-Empresa con Proyectos',
-    'version': '17.0.2.0.1',
+    'version': '17.0.2.1.1',
     'category': 'Sales',
     'summary': 'Gestión avanzada de direcciones de entrega para multi-empresa',
     'description': """
