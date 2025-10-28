@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Añadir entrada al menú del portal -->
+        <template id="portal_my_home_menu_delivery" name="Portal Menu Albaranes" inherit_id="portal.portal_breadcrumbs" priority="30">
+            <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+                <li t-if="page_name == 'delivery' or page_name == 'deliveries'" t-attf-class="breadcrumb-item #{'active ' if not delivery else ''}">
+                    <a t-if="delivery" t-attf-href="/my/deliveries?{{ keep_query() }}">Albaranes</a>
+                    <t t-else="">Albaranes</t>
+                </li>
+                <li t-if="delivery" class="breadcrumb-item active">
+                    <t t-esc="delivery.name"/>
+                </li>
+                <li t-if="page_name == 'create_delivery'" class="breadcrumb-item active">
+                    Crear Albarán
+                </li>
+            </xpath>
+        </template>
+
+        <!-- Añadir tarjeta al portal home -->
+        <template id="portal_my_home_delivery" name="Portal My Home : delivery entries" inherit_id="portal.portal_my_home" priority="30">
+            <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Albaranes</t>
+                    <t t-set="url" t-value="'/my/deliveries'"/>
+                    <t t-set="placeholder_count" t-value="'delivery_count'"/>
+                </t>
+            </xpath>
+        </template>
+
+        <!-- Página de lista de albaranes -->
+        <template id="portal_my_deliveries" name="My Deliveries">
+            <t t-call="portal.portal_layout">
+                <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+                <t t-call="portal.portal_searchbar">
+                    <t t-set="title">Albaranes</t>
+                </t>
+
+                <t t-if="not deliveries">
+                    <div class="alert alert-info">
+                        <p>No hay albaranes disponibles.</p>
+                    </div>
+                    <div class="text-center">
+                        <a t-attf-href="/my/delivery/create" class="btn btn-primary">
+                            <i class="fa fa-plus-circle"></i> Crear Albarán
+                        </a>
+                    </div>
+                </t>
+
+                <t t-if="deliveries">
+                    <div class="mb-3">
+                        <a t-attf-href="/my/delivery/create" class="btn btn-primary">
+                            <i class="fa fa-plus-circle"></i> Crear Albarán
+                        </a>
+                    </div>
+
+                    <table class="table table-striped table-hover o_portal_my_doc_table">
+                        <thead>
+                            <tr class="active">
+                                <th>Referencia</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Ref. Pedido</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="deliveries" t-as="delivery">
+                                <tr>
+                                    <td>
+                                        <a t-attf-href="/my/delivery/#{delivery.id}">
+                                            <t t-esc="delivery.name"/>
+                                        </a>
+                                    </td>
+                                    <td><t t-esc="delivery.partner_id.name"/></td>
+                                    <td><t t-esc="delivery.date"/></td>
+                                    <td><t t-esc="delivery.sale_order_reference or ''"/></td>
+                                    <td>
+                                        <t t-if="delivery.state == 'draft'">
+                                            <span class="badge badge-info">Borrador</span>
+                                        </t>
+                                        <t t-if="delivery.state == 'confirmed'">
+                                            <span class="badge badge-warning">Confirmado</span>
+                                        </t>
+                                        <t t-if="delivery.state == 'done'">
+                                            <span class="badge badge-success">Realizado</span>
+                                        </t>
+                                        <t t-if="delivery.state == 'cancelled'">
+                                            <span class="badge badge-danger">Cancelado</span>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div t-if="pager" class="o_portal_pager text-center">
+                        <t t-call="portal.pager"/>
+                    </div>
+                </t>
+            </t>
+        </template>
+
+        <!-- Página de detalle de albarán -->
+        <template id="portal_my_delivery" name="My Delivery">
+            <t t-call="portal.portal_layout">
+                <t t-set="o_portal_fullwidth_alert" groups="sales_team.group_sale_salesman">
+                    <t t-call="portal.portal_back_in_edit_mode">
+                        <t t-set="backend_url" t-value="'/web#model=distributor.delivery&amp;id=%s&amp;view_type=form' % (delivery.id)"/>
+                    </t>
+                </t>
+
+                <div class="row mt16 o_portal_sale_sidebar">
+                    <!-- Columna izquierda -->
+                    <div class="col-12 col-lg-auto order-lg-1 o_portal_sale_content">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <h3>Albarán <span t-esc="delivery.name"/></h3>
+                                    </div>
+                                    <div class="col-lg-6 text-right">
+                                        <span t-if="delivery.state == 'draft'" class="badge badge-info">
+                                            <i class="fa fa-fw fa-file-o" role="img" aria-label="Borrador" title="Borrador"></i>
+                                            Borrador
+                                        </span>
+                                        <span t-if="delivery.state == 'confirmed'" class="badge badge-warning">
+                                            <i class="fa fa-fw fa-check" role="img" aria-label="Confirmado" title="Confirmado"></i>
+                                            Confirmado
+                                        </span>
+                                        <span t-if="delivery.state == 'done'" class="badge badge-success">
+                                            <i class="fa fa-fw fa-check" role="img" aria-label="Realizado" title="Realizado"></i>
+                                            Realizado
+                                        </span>
+                                        <span t-if="delivery.state == 'cancelled'" class="badge badge-danger">
+                                            <i class="fa fa-fw fa-remove" role="img" aria-label="Cancelado" title="Cancelado"></i>
+                                            Cancelado
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <strong>Distribuidor:</strong> <span t-field="delivery.distributor_id.name"/><br/>
+                                        <strong>Cliente:</strong> <span t-field="delivery.partner_id.name"/><br/>
+                                        <strong>Fecha:</strong> <span t-field="delivery.date"/><br/>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div t-if="delivery.sale_order_reference">
+                                            <strong>Referencia de pedido:</strong> <span t-field="delivery.sale_order_reference"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4" t-if="delivery.notes">
+                                    <h4>Notas</h4>
+                                    <div t-field="delivery.notes"/>
+                                </div>
+
+                                <div class="mt-4" t-if="delivery.state == 'draft'">
+                                    <a t-att-href="'/my/deliveries'" class="btn btn-secondary">
+                                        <i class="fa fa-arrow-left"/> Volver
+                                    </a>
+                                    <a t-att-href="'/my/delivery/edit/%s' % delivery.id" class="btn btn-primary ml-2">
+                                        <i class="fa fa-pencil"/> Editar
+                                    </a>
+                                </div>
+                                <div class="mt-4" t-if="delivery.state != 'draft'">
+                                    <a t-att-href="'/my/deliveries'" class="btn btn-secondary">
+                                        <i class="fa fa-arrow-left"/> Volver
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha (sidebar) -->
+                    <div class="col-12 col-lg-3 o_portal_sale_sidebar">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Información</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <strong>Creado:</strong> <span t-field="delivery.create_date" t-options='{"widget": "datetime"}'/>
+                                </div>
+                                <div t-if="delivery.write_date != delivery.create_date" class="mb-2">
+                                    <strong>Última modificación:</strong> <span t-field="delivery.write_date" t-options='{"widget": "datetime"}'/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Formulario de creación de albarán -->
+        <template id="portal_create_delivery" name="Create Delivery">
+            <t t-call="portal.portal_layout">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h2>Crear Nuevo Albarán</h2>
+
+                            <form action="/my/delivery/submit" method="post" class="mt-4">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                                <div class="form-group">
+                                    <label for="distributor_id">Distribuidor</label>
+                                    <select name="distributor_id" class="form-control" required="required">
+                                        <option value="">Seleccione un distribuidor...</option>
+                                        <t t-foreach="distributors" t-as="distributor">
+                                            <option t-att-value="distributor.id">
+                                                <t t-esc="distributor.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="partner_id">Cliente</label>
+                                    <select name="partner_id" class="form-control" required="required">
+                                        <option value="">Seleccione un cliente...</option>
+                                        <t t-foreach="request.env['res.partner'].search([('customer_rank', '>', 0)])" t-as="partner">
+                                            <option t-att-value="partner.id">
+                                                <t t-esc="partner.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="date">Fecha</label>
+                                    <input type="date" name="date" class="form-control" required="required"
+                                           t-att-value="datetime.date.today()"/>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="sale_order_reference">Referencia de Pedido</label>
+                                    <input type="text" name="sale_order_reference" class="form-control"
+                                           placeholder="Referencia opcional del pedido relacionado"/>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="notes">Notas</label>
+                                    <textarea name="notes" class="form-control" rows="4"
+                                              placeholder="Añada cualquier nota o comentario sobre este albarán..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">Crear Albarán</button>
+                                    <a href="/my/deliveries" class="btn btn-secondary ml-2">Cancelar</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+    </data>
+</odoo>

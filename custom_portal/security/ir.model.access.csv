@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_distributor_distributor_user,distributor.distributor.user,model_distributor_distributor,group_distributor_user,1,0,0,0
+access_distributor_distributor_manager,distributor.distributor.manager,model_distributor_distributor,group_distributor_manager,1,1,1,1
+access_distributor_delivery_user,distributor.delivery.user,model_distributor_delivery,group_distributor_user,1,1,1,0
+access_distributor_delivery_manager,distributor.delivery.manager,model_distributor_delivery,group_distributor_manager,1,1,1,1
+access_distributor_delivery_portal,distributor.delivery.portal,model_distributor_delivery,base.group_portal,1,1,1,0

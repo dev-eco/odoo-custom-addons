@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Secuencia para albaranes de distribuidores -->
+        <record id="seq_distributor_delivery" model="ir.sequence">
+            <field name="name">Albarán de Distribuidor</field>
+            <field name="code">distributor.delivery</field>
+            <field name="prefix">ALB/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Configuración del sitio web para el portal -->
+        <record id="distributor_portal_website" model="website">
+            <field name="name">Portal de Distribuidores</field>
+            <field name="domain">portal.ecocaucho.org</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+    </data>
+</odoo>

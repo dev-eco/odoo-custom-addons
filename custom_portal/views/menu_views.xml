@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Menú principal -->
+        <menuitem id="menu_distributor_root"
+                  name="Portal Distribuidores"
+                  sequence="90"
+                  web_icon="custom_portal,static/description/icon.png"/>
+
+        <!-- Submenús -->
+        <menuitem id="menu_distributor_main"
+                  name="Distribuidores"
+                  parent="menu_distributor_root"
+                  sequence="10"/>
+
+        <menuitem id="menu_distributor_delivery"
+                  name="Albaranes"
+                  parent="menu_distributor_root"
+                  sequence="20"/>
+
+        <!-- Elementos de menú -->
+        <menuitem id="menu_distributor_list"
+                  name="Distribuidores"
+                  parent="menu_distributor_main"
+                  action="action_distributor"
+                  sequence="10"/>
+
+        <menuitem id="menu_distributor_delivery_list"
+                  name="Albaranes de Distribuidores"
+                  parent="menu_distributor_delivery"
+                  action="action_distributor_delivery"
+                  sequence="10"/>
+
+    </data>
+</odoo>
