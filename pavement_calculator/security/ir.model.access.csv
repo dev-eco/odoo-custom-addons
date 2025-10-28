@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pavement_material_user,pavement.material.user,model_pavement_material,group_pavement_user,1,0,0,0
+access_pavement_material_manager,pavement.material.manager,model_pavement_material,group_pavement_manager,1,1,1,1
+access_pavement_calculator_user,pavement.calculator.user,model_pavement_calculator,group_pavement_user,1,1,1,0
+access_pavement_calculator_manager,pavement.calculator.manager,model_pavement_calculator,group_pavement_manager,1,1,1,1
+access_pavement_calculator_wizard_user,pavement.calculator.wizard.user,model_pavement_calculator_wizard,group_pavement_user,1,1,1,0

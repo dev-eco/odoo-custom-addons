@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vista de formulario para materiales -->
+        <record id="view_pavement_material_form" model="ir.ui.view">
+            <field name="name">pavement.material.form</field>
+            <field name="model">pavement.material</field>
+            <field name="arch" type="xml">
+                <form string="Material de Pavimento">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Nombre del Material"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="material_type"/>
+                                <field name="density"/>
+                                <field name="pack_size"/>
+                                <field name="price_per_kg"/>
+                                <field name="active" invisible="1"/>
+                            </group>
+                            <group>
+                                <field name="resin_consumption"/>
+                                <field name="reference_thickness"/>
+                                <field name="resin_price_per_l"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                            </group>
+                        </group>
+                        <group string="Rango de Espesor Recomendado">
+                            <group>
+                                <field name="min_thickness"/>
+                            </group>
+                            <group>
+                                <field name="max_thickness"/>
+                            </group>
+                        </group>
+                        <group string="Productos">
+                            <group>
+                                <field name="product_id"/>
+                            </group>
+                            <group>
+                                <field name="resin_product_id"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Vista de lista para materiales -->
+        <record id="view_pavement_material_tree" model="ir.ui.view">
+            <field name="name">pavement.material.tree</field>
+            <field name="model">pavement.material</field>
+            <field name="arch" type="xml">
+                <tree string="Materiales de Pavimento">
+                    <field name="name"/>
+                    <field name="material_type"/>
+                    <field name="density"/>
+                    <field name="resin_consumption"/>
+                    <field name="pack_size"/>
+                    <field name="price_per_kg"/>
+                    <field name="resin_price_per_l"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </tree>
+            </field>
+        </record>
+        
+        <!-- Vista de búsqueda para materiales -->
+        <record id="view_pavement_material_search" model="ir.ui.view">
+            <field name="name">pavement.material.search</field>
+            <field name="model">pavement.material</field>
+            <field name="arch" type="xml">
+                <search string="Buscar Materiales">
+                    <field name="name"/>
+                    <field name="material_type"/>
+                    <separator/>
+                    <filter string="SBR" name="sbr" domain="[('material_type', '=', 'sbr')]"/>
+                    <filter string="EPDM" name="epdm" domain="[('material_type', '=', 'epdm')]"/>
+                    <filter string="Encapsulado" name="encapsulated" domain="[('material_type', '=', 'encapsulated')]"/>
+                    <group expand="0" string="Agrupar por">
+                        <filter string="Tipo de Material" name="groupby_type" context="{'group_by': 'material_type'}"/>
+                        <filter string="Compañía" name="groupby_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <!-- Acción para materiales -->
+        <record id="action_pavement_material" model="ir.actions.act_window">
+            <field name="name">Materiales de Pavimento</field>
+            <field name="res_model">pavement.material</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Crea tu primer material de pavimento
+                </p>
+                <p>
+                    Define los materiales que se utilizarán para las instalaciones de pavimento.
+                </p>
+            </field>
+        </record>
+        
+        <!-- Menú para configuración de materiales -->
+        <menuitem id="menu_pavement_root" name="Pavimento" parent="sale.sale_menu_root" sequence="15"/>
+        <menuitem id="menu_pavement_config" name="Configuración" parent="menu_pavement_root" sequence="100"/>
+        <menuitem id="menu_pavement_material" name="Materiales" parent="menu_pavement_config" action="action_pavement_material" sequence="10" groups="group_pavement_manager"/>
+    </data>
+</odoo>

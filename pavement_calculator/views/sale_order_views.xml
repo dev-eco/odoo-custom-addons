@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Añadir botón en vista de formulario de orden de venta -->
+        <record id="view_order_form_inherit_pavement_calculator" model="ir.ui.view">
+            <field name="name">sale.order.form.pavement.calculator</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <div name="button_box" position="inside">
+                    <button name="action_view_pavement_calculators" type="object"
+                            class="oe_stat_button" icon="fa-calculator"
+                            invisible="pavement_calculator_count == 0">
+                        <field name="pavement_calculator_count" widget="statinfo" string="Cálculos"/>
+                    </button>
+                </div>
+                <xpath expr="//header" position="inside">
+                    <button name="action_create_pavement_calculator" string="Calcular Pavimento" 
+                            type="object" class="btn-secondary"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

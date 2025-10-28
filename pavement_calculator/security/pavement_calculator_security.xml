@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Grupo para administración de materiales de pavimento -->
+        <record id="group_pavement_manager" model="res.groups">
+            <field name="name">Administrador de Pavimentos</field>
+            <field name="category_id" ref="base.module_category_sales_sales"/>
+            <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_manager'))]"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+        
+        <!-- Grupo para usuarios de la calculadora -->
+        <record id="group_pavement_user" model="res.groups">
+            <field name="name">Usuario de Calculadora de Pavimentos</field>
+            <field name="category_id" ref="base.module_category_sales_sales"/>
+            <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
+        </record>
+        
+        <!-- Reglas de registro para materiales de pavimento -->
+        <record id="pavement_material_comp_rule" model="ir.rule">
+            <field name="name">Materiales de Pavimento: regla multicompañía</field>
+            <field name="model_id" ref="model_pavement_material"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        
+        <!-- Reglas de registro para calculadora de pavimento -->
+        <record id="pavement_calculator_comp_rule" model="ir.rule">
+            <field name="name">Calculadora de Pavimento: regla multicompañía</field>
+            <field name="model_id" ref="model_pavement_calculator"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+        
+        <!-- Regla para limitar la edición de materiales solo a administradores -->
+        <record id="pavement_material_manager_rule" model="ir.rule">
+            <field name="name">Solo administradores pueden editar materiales</field>
+            <field name="model_id" ref="model_pavement_material"/>
+            <field name="groups" eval="[(4, ref('group_pavement_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+        </record>
+    </data>
+</odoo>

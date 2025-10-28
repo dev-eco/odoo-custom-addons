@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Secuencia para calculadora -->
+        <record id="seq_pavement_calculator" model="ir.sequence">
+            <field name="name">Calculadora de Pavimento</field>
+            <field name="code">pavement.calculator</field>
+            <field name="prefix">CALC/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Material SBR -->
+        <record id="pavement_material_sbr" model="pavement.material">
+            <field name="name">Granza SBR</field>
+            <field name="material_type">sbr</field>
+            <field name="density">600</field>
+            <field name="resin_consumption">0.5</field>
+            <field name="reference_thickness">10</field>
+            <field name="pack_size">25</field>
+            <field name="price_per_kg">0.5</field>
+            <field name="resin_price_per_l">2.0</field>
+            <field name="min_thickness">10</field>
+            <field name="max_thickness">100</field>
+        </record>
+        
+        <!-- Material EPDM -->
+        <record id="pavement_material_epdm" model="pavement.material">
+            <field name="name">Granza EPDM</field>
+            <field name="material_type">epdm</field>
+            <field name="density">800</field>
+            <field name="resin_consumption">0.6</field>
+            <field name="reference_thickness">10</field>
+            <field name="pack_size">20</field>
+            <field name="price_per_kg">0.7</field>
+            <field name="resin_price_per_l">2.0</field>
+            <field name="min_thickness">10</field>
+            <field name="max_thickness">100</field>
+        </record>
+        
+        <!-- Material Encapsulado -->
+        <record id="pavement_material_encapsulated" model="pavement.material">
+            <field name="name">Granza Encapsulado</field>
+            <field name="material_type">encapsulated</field>
+            <field name="density">1200</field>
+            <field name="resin_consumption">0.8</field>
+            <field name="reference_thickness">10</field>
+            <field name="pack_size">30</field>
+            <field name="price_per_kg">0.6</field>
+            <field name="resin_price_per_l">2.0</field>
+            <field name="min_thickness">10</field>
+            <field name="max_thickness">100</field>
+        </record>
+    </data>
+</odoo>

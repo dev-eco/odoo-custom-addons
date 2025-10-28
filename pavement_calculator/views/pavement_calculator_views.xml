@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vista de formulario para calculadora -->
+        <record id="view_pavement_calculator_form" model="ir.ui.view">
+            <field name="name">pavement.calculator.form</field>
+            <field name="model">pavement.calculator</field>
+            <field name="arch" type="xml">
+                <form string="Calculadora de Pavimento">
+                    <header>
+                        <button name="action_confirm" string="Confirmar" type="object" class="oe_highlight" 
+                                invisible="state != 'draft'"/>
+                        <button name="action_draft" string="Volver a Borrador" type="object"
+                                invisible="state != 'confirmed'"/>
+                        <button name="action_create_sale_order" string="Generar Presupuesto" type="object"
+                                class="oe_highlight" invisible="state == 'sale_order'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,sale_order"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_sale_order" type="object" class="oe_stat_button" icon="fa-usd"
+                                    invisible="not sale_order_id">
+                                <field name="sale_order_id" invisible="1"/>
+                                <span>Ver Presupuesto</span>
+                            </button>
+                        </div>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="partner_id" readonly="state != 'draft'"/>
+                                <field name="material_id" readonly="state != 'draft'"/>
+                                <field name="material_type" invisible="1"/>
+                                <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                            </group>
+                            <group>
+                                <field name="user_id" readonly="state != 'draft'"/>
+                                <field name="date" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+                        <group string="Parámetros de Cálculo">
+                            <group>
+                                <field name="area" readonly="state != 'draft'"/>
+                                <field name="thickness" readonly="state != 'draft'"/>
+                            </group>
+                            <group>
+                                <field name="waste_factor" readonly="state != 'draft'"/>
+                                <field name="round_to_packages" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+                        <group string="Resultados">
+                            <group>
+                                <field name="material_quantity_kg"/>
+                                <field name="resin_quantity_l"/>
+                                <field name="packages_count"/>
+                            </group>
+                            <group>
+                                <field name="material_cost"/>
+                                <field name="resin_cost"/>
+                                <field name="estimated_cost" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers"/>
+                        <field name="activity_ids" widget="mail_activity"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Vista de lista para calculadora -->
+        <record id="view_pavement_calculator_tree" model="ir.ui.view">
+            <field name="name">pavement.calculator.tree</field>
+            <field name="model">pavement.calculator</field>
+            <field name="arch" type="xml">
+                <tree string="Calculadoras de Pavimento">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="material_id"/>
+                    <field name="area"/>
+                    <field name="thickness"/>
+                    <field name="material_quantity_kg"/>
+                    <field name="resin_quantity_l"/>
+                    <field name="estimated_cost"/>
+                    <field name="state"/>
+                    <field name="date"/>
+                </tree>
+            </field>
+        </record>
+        
+        <!-- Vista de formulario para calculadora wizard -->
+        <record id="view_pavement_calculator_wizard_form" model="ir.ui.view">
+            <field name="name">pavement.calculator.wizard.form</field>
+            <field name="model">pavement.calculator.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Calculadora Rápida de Pavimento">
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="material_id"/>
+                            <field name="company_id" groups="base.group_multi_company" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="area"/>
+                            <field name="thickness"/>
+                            <field name="waste_factor"/>
+                            <field name="round_to_packages"/>
+                        </group>
+                    </group>
+                    <group string="Resultados">
+                        <group>
+                            <field name="material_quantity_kg"/>
+                            <field name="resin_quantity_l"/>
+                            <field name="packages_count"/>
+                        </group>
+                        <group>
+                            <field name="material_cost"/>
+                            <field name="resin_cost"/>
+                            <field name="estimated_cost" class="oe_subtotal_footer_separator"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="action_calculate" string="Calcular" type="object" class="btn-primary"/>
+                        <button name="action_save" string="Guardar" type="object" class="btn-secondary"/>
+                        <button name="action_create_sale_order" string="Crear Presupuesto" type="object" class="btn-secondary"/>
+                        <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Acción para calculadora -->
+        <record id="action_pavement_calculator" model="ir.actions.act_window">
+            <field name="name">Calculadoras de Pavimento</field>
+            <field name="res_model">pavement.calculator</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Crea tu primera calculadora de pavimento
+                </p>
+                <p>
+                    Calcula la cantidad de materiales necesarios para una instalación.
+                </p>
+            </field>
+        </record>
+        
+        <!-- Acción para calculadora wizard -->
+        <record id="action_pavement_calculator_wizard" model="ir.actions.act_window">
+            <field name="name">Calculadora Rápida</field>
+            <field name="res_model">pavement.calculator.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        
+        <!-- Menús -->
+        <menuitem id="menu_pavement_root" name="Pavimento" sequence="100"/>
+        <menuitem id="menu_pavement_calculator" name="Calculadoras" parent="menu_pavement_root" action="action_pavement_calculator" sequence="10"/>
+        <menuitem id="menu_pavement_calculator_wizard" name="Calculadora Rápida" parent="menu_pavement_root" action="action_pavement_calculator_wizard" sequence="1"/>
+    </data>
+</odoo>
