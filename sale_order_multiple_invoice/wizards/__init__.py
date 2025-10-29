@@ -1,0 +1,1 @@
+from . import sale_order_multiple_invoice_wizard

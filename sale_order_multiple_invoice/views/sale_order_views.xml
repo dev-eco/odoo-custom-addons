@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_sale_order_multiple_invoice" model="ir.actions.act_window">
+        <field name="name">Crear Factura Consolidada</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sale.order.multiple.invoice.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list</field>
+    </record>
+</odoo>
