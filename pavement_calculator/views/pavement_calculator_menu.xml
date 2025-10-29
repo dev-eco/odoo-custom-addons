@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Acción para la calculadora web -->
+        <record id="action_pavement_calculator_web" model="ir.actions.client">
+            <field name="name">Calculadora Web</field>
+            <field name="tag">pavement_calculator.calculator</field>
+        </record>
+
+        <!-- Menú para la calculadora web -->
+        <menuitem id="menu_pavement_calculator_web"
+                  name="Calculadora Web"
+                  parent="menu_pavement_root"
+                  action="action_pavement_calculator_web"
+                  sequence="5"/>
+    </data>
+</odoo>

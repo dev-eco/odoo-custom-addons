@@ -25,6 +25,7 @@ Además, permite generar presupuestos directamente desde la calculadora.
         'views/pavement_calculator_views.xml',
         'views/pavement_material_views.xml',
         'views/sale_order_views.xml',
+        'views/pavement_calculator_menu.xml',
         'wizard/pavement_calculator_wizard_views.xml',
         'data/pavement_material_data.xml',
     ],
@@ -36,6 +37,9 @@ Además, permite generar presupuestos directamente desde la calculadora.
             'pavement_calculator/static/src/xml/pavement_calculator_templates.xml',
         ],
     },
+    'qweb': [
+        'static/src/xml/pavement_calculator_templates.xml',
+    ],
     'installable': True,
     'application': True,
     'auto_install': False,

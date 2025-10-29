@@ -1,4 +1,4 @@
-odoo.define('pavement_calculator.calculator', function (require) {
+odoo.define('pavement_calculator.calculator', ['web.core', 'web.Widget', 'web.Dialog', 'web.rpc'], function (require) {
     "use strict";
 
     var core = require('web.core');
