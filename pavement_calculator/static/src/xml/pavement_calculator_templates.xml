@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="PavementCalculatorWidget">
+        <div class="o_pavement_calculator">
+            <div class="container">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2>Calculadora de Pavimento de Caucho</h2>
+                        <p class="text-muted">Calcule la cantidad de materiales necesarios para su instalación</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Parámetros</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="material_id">Material</label>
+                                    <select id="material_id" class="form-control calculator-input"></select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="area">Área (m²)</label>
+                                    <input type="number" id="area" class="form-control calculator-input" min="0.1" step="0.1"/>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="thickness">Espesor (mm)</label>
+                                    <input type="number" id="thickness" class="form-control calculator-input" min="1" step="1"/>
+                                    <small id="thickness_range" class="form-text text-muted"></small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="waste_factor">Factor de Pérdida (%)</label>
+                                    <input type="number" id="waste_factor" class="form-control calculator-input" min="0" step="1"/>
+                                </div>
+
+                                <div class="form-group form-check">
+                                    <input type="checkbox" id="round_to_packages" class="form-check-input calculator-input"/>
+                                    <label class="form-check-label" for="round_to_packages">Redondear a Paquetes Completos</label>
+                                </div>
+
+                                <button class="btn btn-primary calculate-button">Calcular</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card calculator-results d-none">
+                            <div class="card-header">
+                                <h4>Resultados</h4>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>Cantidad de Material:</th>
+                                            <td id="result_material"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Cantidad de Resina:</th>
+                                            <td id="result_resin"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Número de Paquetes:</th>
+                                            <td id="result_packages"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Coste Material:</th>
+                                            <td id="result_material_cost"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Coste Resina:</th>
+                                            <td id="result_resin_cost"></td>
+                                        </tr>
+                                        <tr class="table-active">
+                                            <th>Coste Total Estimado:</th>
+                                            <td id="result_total_cost" class="font-weight-bold"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="mt-3">
+                                    <button class="btn btn-secondary save-calculation">Guardar Cálculo</button>
+                                    <button class="btn btn-success create-quotation ml-2">Crear Presupuesto</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

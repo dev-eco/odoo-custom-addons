@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vista de formulario para calculadora wizard -->
+        <record id="view_pavement_calculator_wizard_form" model="ir.ui.view">
+            <field name="name">pavement.calculator.wizard.form</field>
+            <field name="model">pavement.calculator.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Calculadora Rápida de Pavimento">
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="material_id"/>
+                            <field name="company_id" groups="base.group_multi_company" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="area"/>
+                            <field name="thickness"/>
+                            <field name="waste_factor"/>
+                            <field name="round_to_packages"/>
+                        </group>
+                    </group>
+                    <group string="Resultados">
+                        <group>
+                            <field name="material_quantity_kg"/>
+                            <field name="resin_quantity_l"/>
+                            <field name="packages_count"/>
+                        </group>
+                        <group>
+                            <field name="material_cost"/>
+                            <field name="resin_cost"/>
+                            <field name="estimated_cost" class="oe_subtotal_footer_separator"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="action_calculate" string="Calcular" type="object" class="btn-primary"/>
+                        <button name="action_save" string="Guardar" type="object" class="btn-secondary"/>
+                        <button name="action_create_sale_order" string="Crear Presupuesto" type="object" class="btn-secondary"/>
+                        <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción para calculadora wizard -->
+        <record id="action_pavement_calculator_wizard" model="ir.actions.act_window">
+            <field name="name">Calculadora Rápida</field>
+            <field name="res_model">pavement.calculator.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+    </data>
+</odoo>

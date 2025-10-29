@@ -4,3 +4,4 @@ access_pavement_material_manager,pavement.material.manager,model_pavement_materi
 access_pavement_calculator_user,pavement.calculator.user,model_pavement_calculator,group_pavement_user,1,1,1,0
 access_pavement_calculator_manager,pavement.calculator.manager,model_pavement_calculator,group_pavement_manager,1,1,1,1
 access_pavement_calculator_wizard_user,pavement.calculator.wizard.user,model_pavement_calculator_wizard,group_pavement_user,1,1,1,0
+access_pavement_calculator_wizard_manager,pavement.calculator.wizard.manager,model_pavement_calculator_wizard,group_pavement_manager,1,1,1,1
