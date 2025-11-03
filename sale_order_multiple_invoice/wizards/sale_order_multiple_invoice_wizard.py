@@ -65,6 +65,18 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
         copy=False,
     )
     
+    use_existing_invoice = fields.Boolean(
+        string='Añadir a factura existente',
+        default=False
+    )
+    
+    existing_invoice_id = fields.Many2one(
+        'account.move',
+        string='Factura existente',
+        domain="[('move_type', '=', 'out_invoice'), ('state', '=', 'draft')]",
+        help='Seleccione una factura existente para añadir estos pedidos'
+    )
+    
     @api.model
     def default_get(self, fields_list):
         """Precarga información basada en los pedidos seleccionados"""
@@ -180,6 +192,7 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
                             'discount': line.discount,
                             'sale_order_id': order.id,
                             'sale_order_line_id': line.id,
+                            'sale_line_ids': [(4, line.id)],  # Enlace con la línea de venta
                             'account_id': line.product_id.property_account_income_id.id or 
                                         line.product_id.categ_id.property_account_income_categ_id.id,
                         })
@@ -208,6 +221,7 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
                             'discount': line.discount,
                             'sale_order_ids': [],
                             'sale_order_line_ids': [],
+                            'sale_line_ids': [],  # Para enlazar con las líneas de venta
                             'account_id': line.product_id.property_account_income_id.id or 
                                         line.product_id.categ_id.property_account_income_categ_id.id,
                         }
@@ -215,6 +229,7 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
                     product_lines[key]['quantity'] += line.qty_to_invoice
                     product_lines[key]['sale_order_ids'].append(order.id)
                     product_lines[key]['sale_order_line_ids'].append(line.id)
+                    product_lines[key]['sale_line_ids'].append((4, line.id))  # Enlace con la línea de venta
                     
             # Convertir a lista y ajustar nombres
             result = []
@@ -222,6 +237,7 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
                 # Obtener pedidos únicos para este producto
                 sale_order_ids = list(set(line.pop('sale_order_ids')))
                 sale_order_line_ids = list(set(line.pop('sale_order_line_ids')))
+                sale_line_ids = line.pop('sale_line_ids')  # No eliminar los enlaces con las líneas de venta
                 
                 orders = self.env['sale.order'].browse(sale_order_ids)
                 order_names = ', '.join(orders.mapped('name'))
@@ -229,6 +245,7 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
                 line['name'] = '%s - %s: %s' % (line['name'], _('Pedidos'), order_names)
                 line['sale_order_id'] = sale_order_ids[0] if sale_order_ids else False
                 line['sale_order_line_id'] = sale_order_line_ids[0] if sale_order_line_ids else False
+                line['sale_line_ids'] = sale_line_ids  # Mantener los enlaces con las líneas de venta
                 
                 result.append(line)
                 
@@ -241,23 +258,13 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
         if existing_invoice:
             return existing_invoice
 
-        existing_invoice_id = fields.Many2one(
-           'account.move',
-           string='Factura existente',
-           domain="[('move_type', '=', 'out_invoice'), ('state', '=', 'draft')]",
-           help='Seleccione una factura existente para añadir estos pedidos'
-        )
-
-        use_existing_invoice = fields.Boolean(
-           string='Añadir a factura existente',
-           default=False
-        )
+        # Estas definiciones se han movido al nivel de clase
             
         # Preparar valores de la factura
         invoice_vals = self._prepare_invoice_vals()
         
         # Crear factura
-        invoice = self.env['account.move'].create(invoice_vals)
+        invoice = self.env['account.move'].with_context(default_move_type='out_invoice').create(invoice_vals)
         
         # Obtener líneas de factura agrupadas
         invoice_lines = self._get_grouped_lines()
@@ -266,6 +273,11 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
         for line in invoice_lines:
             line['move_id'] = invoice.id
             self.env['account.move.line'].create(line)
+            
+        # Actualizar el estado de facturación de los pedidos
+        # En Odoo 17.0 no es necesario llamar a _post_validate, 
+        # la actualización de cantidades facturadas se hace automáticamente
+        # gracias al campo sale_line_ids
         
         # Crear registros de relación para cada pedido
         group_vals = []
@@ -281,32 +293,32 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
         return invoice
     
     def action_create_invoice(self):
-       """Acción para crear o modificar la factura consolidada"""
-       self.ensure_one()
-       
-       # Verificar que haya pedidos seleccionados
-       if not self.sale_order_ids:
-           raise UserError(_('Debe seleccionar al menos un pedido para facturar'))
-       
-       # Crear factura o añadir a existente
-       if self.use_existing_invoice:
-           invoice = self._add_to_existing_invoice()
-       else:
-           invoice = self._create_invoice()
-           
-       self.invoice_id = invoice.id
-       
-       # Retornar acción para ver la factura
-       action = {
-           'name': _('Factura Consolidada'),
-           'type': 'ir.actions.act_window',
-           'res_model': 'account.move',
-           'view_mode': 'form',
-           'res_id': invoice.id,
-           'context': {'create': False},
-       }
-       
-       return action
+        """Acción para crear o modificar la factura consolidada"""
+        self.ensure_one()
+        
+        # Verificar que haya pedidos seleccionados
+        if not self.sale_order_ids:
+            raise UserError(_('Debe seleccionar al menos un pedido para facturar'))
+        
+        # Crear factura o añadir a existente
+        if self.use_existing_invoice:
+            invoice = self._add_to_existing_invoice()
+        else:
+            invoice = self._create_invoice()
+            
+        self.invoice_id = invoice.id
+        
+        # Retornar acción para ver la factura
+        action = {
+            'name': _('Factura Consolidada'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'view_mode': 'form',
+            'res_id': invoice.id,
+            'context': {'create': False},
+        }
+        
+        return action
 
     def check_and_fix_duplicates(self):
         """
@@ -339,44 +351,49 @@ class SaleOrderMultipleInvoiceWizard(models.TransientModel):
     def _add_to_existing_invoice(self):
         """Añade los pedidos seleccionados a una factura existente"""
         self.ensure_one()
-       
+        
         if not self.existing_invoice_id:
             raise UserError(_('Debe seleccionar una factura existente'))
-           
+            
         if self.existing_invoice_id.state != 'draft':
             raise UserError(_('Solo se pueden modificar facturas en estado borrador'))
-           
-       # Verificar que la factura es del mismo cliente
+            
+        # Verificar que la factura es del mismo cliente
         if self.existing_invoice_id.partner_id != self.partner_id:
             raise UserError(_('La factura seleccionada debe ser del mismo cliente'))
-           
-       # Obtener líneas a añadir
+            
+        # Obtener líneas a añadir
         invoice_lines = self._get_grouped_lines()
-       
-       # Añadir líneas a la factura existente
+        
+        # Añadir líneas a la factura existente
         for line in invoice_lines:
             line['move_id'] = self.existing_invoice_id.id
             self.env['account.move.line'].create(line)
-       
-       # Crear registros de relación para cada pedido
+            
+        # Actualizar el estado de facturación de los pedidos
+        # En Odoo 17.0 no es necesario llamar a _post_validate, 
+        # la actualización de cantidades facturadas se hace automáticamente
+        # gracias al campo sale_line_ids
+        
+        # Crear registros de relación para cada pedido
         for order in self.sale_order_ids:
             self.env['sale.order.invoice.group'].create({
                 'sale_order_id': order.id,
                 'invoice_id': self.existing_invoice_id.id,
                 'consolidation_mode': self.consolidation_mode,
             })
-           
-           # Registrar en el chatter del pedido
+            
+            # Registrar en el chatter del pedido
             order.message_post(
                 body=_("Este pedido ha sido añadido a la factura existente: %s") % 
                       self.existing_invoice_id.name
             )
-       
-       # Registrar en el chatter de la factura
+        
+        # Registrar en el chatter de la factura
         order_names = ', '.join(self.sale_order_ids.mapped('name'))
         self.existing_invoice_id.message_post(
             body=_("Se han añadido los siguientes pedidos a esta factura: %s") % 
                   order_names
         )
-           
+            
         return self.existing_invoice_id

@@ -6,11 +6,12 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
-                <button name="action_view_source_orders" 
-                        type="object" 
-                        class="oe_stat_button" 
-                        icon="fa-shopping-cart" 
-                        attrs="{'invisible': [('is_consolidated_invoice', '=', False)]}">
+                <field name="is_consolidated_invoice" invisible="1"/>
+                <button name="action_view_source_orders"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-shopping-cart"
+                        invisible="not is_consolidated_invoice">
                     <field name="sale_order_ids" widget="statinfo" string="Pedidos origen"/>
                 </button>
             </xpath>

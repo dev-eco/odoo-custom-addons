@@ -19,8 +19,8 @@
                            <field name="group_taxes"/>
                            <field name="use_existing_invoice"/>
                            <field name="existing_invoice_id" 
-                                  attrs="{'invisible': [('use_existing_invoice', '=', False)],
-                                         'required': [('use_existing_invoice', '=', True)]}"
+                                  invisible="not use_existing_invoice"
+                                  required="use_existing_invoice"
                                   options="{'no_create': True}"/>
                     </group>
                 </group>
@@ -37,12 +37,12 @@
                             string="Crear Factura" 
                             type="object" 
                             class="btn-primary"
-                            attrs="{'invisible': [('invoice_id', '!=', False)]}"/>
+                            invisible="invoice_id != False"/>
                     <button name="action_create_invoice" 
                             string="Ver Factura" 
                             type="object" 
                             class="btn-primary"
-                            attrs="{'invisible': [('invoice_id', '=', False)]}"/>
+                            invisible="invoice_id == False"/>
                     <button string="Cancelar" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

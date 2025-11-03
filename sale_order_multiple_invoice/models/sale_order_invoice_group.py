@@ -54,9 +54,9 @@ class SaleOrderInvoiceGroup(models.Model):
         invoice_to_orders = {}
         for record in records:
             if record.invoice_id not in invoice_to_orders:
-                invoice_to_orders[record.invoice_id] = []
-            invoice_to_orders[record.invoice_id].append(record.sale_order_id)
-        
+                invoice_to_orders[record.invoice_id] = self.env['sale.order']
+            invoice_to_orders[record.invoice_id] |= record.sale_order_id
+
         # Registrar en el chatter de facturas
         for invoice, orders in invoice_to_orders.items():
             order_names = ', '.join(orders.mapped('name'))
