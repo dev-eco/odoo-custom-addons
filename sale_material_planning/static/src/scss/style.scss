@@ -1,0 +1,31 @@
+/* Estilos para el módulo de Planificación de Material */
+
+/* Colores para las tarjetas Kanban */
+.bg-danger-light {
+    background-color: #ffdddd !important;
+}
+.bg-warning-light {
+    background-color: #fff3cd !important;
+}
+.bg-success-light {
+    background-color: #d4edda !important;
+}
+
+/* Mejoras en la visualización de las tarjetas */
+.oe_kanban_card {
+    transition: all 0.3s ease;
+}
+.oe_kanban_card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Estilos para los badges */
+.badge-danger {
+    font-weight: bold !important;
+}
+
+/* Estilos para la vista de lista */
+.o_data_row.text-danger {
+    font-weight: bold;
+}
