@@ -55,23 +55,51 @@ class SaleOrder(models.Model):
     # Color para la vista kanban
     color = fields.Integer(string='Color', compute='_compute_color', store=True)
     
+    # Campo para marcar si el pedido ha salido
+    is_shipped = fields.Boolean(
+        string='Salido',
+        help='Marcar si el pedido ha salido físicamente del almacén',
+        default=False,
+        tracking=True
+    )
+    
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):
         for order in self:
-            summary_lines = []
-            product_dict = {}
+            # Líneas de detalle individuales
+            detail_lines = []
             
+            # Diccionario para acumular cantidades por producto
+            product_totals = {}
+            
+            # Procesar cada línea de pedido
             for line in order.order_line:
                 product = line.product_id
-                if product in product_dict:
-                    product_dict[product] += line.product_uom_qty
+                
+                # Excluir productos de tipo servicio
+                if product.type == 'service':
+                    continue
+                
+                # Añadir línea individual
+                detail_lines.append(f"{product.default_code or ''} - {product.name}: {line.product_uom_qty} {product.uom_id.name}")
+                
+                # Acumular para el sumatorio
+                if product in product_totals:
+                    product_totals[product] += line.product_uom_qty
                 else:
-                    product_dict[product] = line.product_uom_qty
+                    product_totals[product] = line.product_uom_qty
             
-            for product, qty in product_dict.items():
-                summary_lines.append(f"{product.default_code or ''} - {product.name}: {qty} {product.uom_id.name}")
+            # Añadir línea en blanco como separador si hay productos
+            if detail_lines and product_totals:
+                detail_lines.append("")
+                detail_lines.append("RESUMEN TOTAL POR PRODUCTO:")
+                
+                # Añadir sumatorio por producto
+                for product, qty in product_totals.items():
+                    detail_lines.append(f"TOTAL {product.default_code or ''} - {product.name}: {qty} {product.uom_id.name}")
             
-            order.product_summary = "\n".join(summary_lines)
+            # Asignar el resumen completo
+            order.product_summary = "\n".join(detail_lines)
     
     @api.depends('commitment_date', 'expected_date')
     def _compute_delivery_date(self):
@@ -79,10 +107,12 @@ class SaleOrder(models.Model):
             # Usamos la fecha de compromiso si está disponible, de lo contrario la fecha esperada
             order.delivery_date = order.commitment_date or order.expected_date or False
     
-    @api.depends('order_line.product_uom_qty')
+    @api.depends('order_line.product_uom_qty', 'order_line.product_id')
     def _compute_total_qty(self):
         for order in self:
-            order.total_product_qty = sum(order.order_line.mapped('product_uom_qty'))
+            # Filtrar líneas excluyendo productos de tipo servicio
+            product_lines = order.order_line.filtered(lambda l: l.product_id.type != 'service')
+            order.total_product_qty = sum(product_lines.mapped('product_uom_qty'))
     
     @api.depends('picking_ids', 'picking_ids.state')
     def _compute_picking_status(self):
@@ -113,16 +143,30 @@ class SaleOrder(models.Model):
             else:
                 order.days_to_delivery = 999  # Valor alto para pedidos sin fecha
     
-    @api.depends('is_urgent', 'days_to_delivery', 'picking_status')
+    @api.depends('is_urgent', 'days_to_delivery', 'picking_status', 'is_shipped')
     def _compute_color(self):
         for order in self:
-            if order.is_urgent:
+            if order.is_shipped:
+                order.color = 10  # Verde (prioridad máxima)
+            elif order.is_urgent:
                 order.color = 1  # Rojo
             elif order.picking_status == 'done':
-                order.color = 10  # Verde
+                order.color = 5  # Verde claro
             elif order.days_to_delivery <= 0 and order.picking_status != 'done':
                 order.color = 2  # Naranja
             elif order.days_to_delivery <= 3 and order.picking_status != 'done':
                 order.color = 3  # Amarillo
             else:
                 order.color = 0  # Blanco/Sin color
+                
+    def action_mark_as_shipped(self):
+        """Marcar el pedido como salido"""
+        for order in self:
+            order.write({'is_shipped': True})
+        return True
+        
+    def action_mark_as_not_shipped(self):
+        """Marcar el pedido como no salido"""
+        for order in self:
+            order.write({'is_shipped': False})
+        return True
