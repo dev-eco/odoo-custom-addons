@@ -67,4 +67,6 @@ desktop.ini
 # no deben versionarse, solo los archivos fuente
 docs/_build/
 *.pdf
-
+.aider.chat.history.md
+.aider.input.history
+.aider.tags.cache.v4/
