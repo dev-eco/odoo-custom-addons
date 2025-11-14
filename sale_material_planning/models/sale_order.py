@@ -59,7 +59,7 @@ class SaleOrder(models.Model):
     order_status = fields.Selection([
         ('warehouse', 'Almacén'),
         ('manufacturing', 'Fabricación'),
-        ('shipped', 'Salido')
+        ('shipped', 'Salida')
     ], string='Estado de Pedido', default='warehouse', tracking=True,
        help='Estado actual del pedido: en almacén, en fabricación o ya salido')
     
@@ -162,7 +162,7 @@ class SaleOrder(models.Model):
                 order.color = 0  # Blanco/Sin color
                 
     def action_mark_as_shipped(self):
-        """Marcar el pedido como salido"""
+        """Marcar el pedido como salida"""
         for order in self:
             order.write({'order_status': 'shipped'})
         return True

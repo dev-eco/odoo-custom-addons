@@ -12,6 +12,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/sale_material_planning_views.xml',
+        'views/product_summary_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

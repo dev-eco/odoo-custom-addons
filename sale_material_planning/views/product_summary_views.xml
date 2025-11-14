@@ -53,7 +53,7 @@ datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter string="Pedidos Confirmados" name="confirmed_orders" domain="[('state', '=', 'sale')]"/>
                 <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
-                <filter string="Salidos" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
+                <filter string="Salida" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
                 <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
                 <filter string="En Almacén" name="warehouse_orders" domain="[('order_status', '=', 'warehouse')]"/>
                 <filter string="Entrega Atrasada" name="late_delivery" domain="[('days_to_delivery', '&lt;=', 0), ('picking_status', '!=',
