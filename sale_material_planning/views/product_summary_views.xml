@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de árbol para el resumen de productos -->
+    <record id="view_product_summary_tree" model="ir.ui.view">
+        <field name="name">sale.product.summary.tree</field>
+        <field name="model">sale.product.summary</field>
+        <field name="arch" type="xml">
+            <tree string="Resumen de Productos" create="false" edit="false" delete="false">
+                <field name="product_id"/>
+                <field name="product_code"/>
+                <field name="qty" sum="Total"/>
+                <field name="uom_id"/>
+                <field name="partner_id"/>
+                <field name="order_id"/>
+                <field name="delivery_date"/>
+                <field name="days_to_delivery"/>
+                <field name="picking_status" widget="badge"
+                       decoration-success="picking_status == 'done'"
+                       decoration-info="picking_status == 'assigned'"
+                       decoration-warning="picking_status == 'partially_available'"
+                       decoration-danger="picking_status in ['not_created', 'waiting']"/>
+                <field name="is_urgent" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
+                <field name="order_status" decoration-success="order_status == 'shipped'" 
+                       decoration-info="order_status == 'manufacturing'" 
+                       decoration-warning="order_status == 'warehouse'"/>
+                <field name="state" invisible="1"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda para el resumen de productos -->
+    <record id="view_product_summary_search" model="ir.ui.view">
+        <field name="name">sale.product.summary.search</field>
+        <field name="model">sale.product.summary</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Resumen de Productos">
+                <field name="product_id"/>
+                <field name="product_code"/>
+                <field name="product_name"/>
+                <field name="partner_id"/>
+                <field name="order_id"/>
+                <separator/>
+                <filter string="Mi Empresa" name="my_company" domain="[('company_id', '=', allowed_company_ids[0])]"/>
+                <separator/>
+                <filter string="Entrega Hoy" name="delivery_today" domain="[('delivery_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Entrega Mañana" name="delivery_tomorrow" domain="[('delivery_date', '=', (context_today() +
+datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Entrega Esta Semana" name="delivery_this_week" domain="[
+                    ('delivery_date', '&gt;=', context_today().strftime('%Y-%m-%d')),
+                    ('delivery_date', '&lt;=', (context_today() + relativedelta(days=7)).strftime('%Y-%m-%d'))
+                ]"/>
+                <separator/>
+                <filter string="Pedidos Confirmados" name="confirmed_orders" domain="[('state', '=', 'sale')]"/>
+                <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
+                <filter string="Salida" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
+                <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
+                <filter string="En Almacén" name="warehouse_orders" domain="[('order_status', '=', 'warehouse')]"/>
+                <filter string="Entrega Atrasada" name="late_delivery" domain="[('days_to_delivery', '&lt;=', 0), ('picking_status', '!=',
+'done')]"/>
+                <separator/>
+                <filter string="Albarán No Creado" name="picking_not_created" domain="[('picking_status', '=', 'not_created')]"/>
+                <filter string="Albarán Esperando" name="picking_waiting" domain="[('picking_status', '=', 'waiting')]"/>
+                <filter string="Albarán Parcialmente Disponible" name="picking_partially" domain="[('picking_status', '=',
+'partially_available')]"/>
+                <filter string="Albarán Reservado" name="picking_assigned" domain="[('picking_status', '=', 'assigned')]"/>
+                <filter string="Albarán Realizado" name="picking_done" domain="[('picking_status', '=', 'done')]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Producto" name="group_by_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Cliente" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Pedido" name="group_by_order" context="{'group_by': 'order_id'}"/>
+                    <filter string="Fecha de Entrega (Día)" name="group_by_delivery_date_day" context="{'group_by': 'delivery_date:day'}"/>
+                    <filter string="Fecha de Entrega (Mes)" name="group_by_delivery_date_month" context="{'group_by': 'delivery_date:month'}"/>
+                    <filter string="Estado del Albarán" name="group_by_picking_status" context="{'group_by': 'picking_status'}"/>
+                    <filter string="Estado de Pedido" name="group_by_order_status" context="{'group_by': 'order_status'}"/>
+                    <filter string="Empresa" name="group_by_company" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista pivot para análisis de productos -->
+    <record id="view_product_summary_pivot" model="ir.ui.view">
+        <field name="name">sale.product.summary.pivot</field>
+        <field name="model">sale.product.summary</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Productos" display_quantity="true">
+                <field name="product_id" type="row"/>
+                <field name="delivery_date" type="col"/>
+                <field name="qty" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista gráfica para análisis de productos -->
+    <record id="view_product_summary_graph" model="ir.ui.view">
+        <field name="name">sale.product.summary.graph</field>
+        <field name="model">sale.product.summary</field>
+        <field name="arch" type="xml">
+            <graph string="Análisis de Productos" type="bar">
+                <field name="product_id"/>
+                <field name="qty" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción para abrir la vista de resumen de productos -->
+    <record id="action_product_summary" model="ir.actions.act_window">
+        <field name="name">Resumen de Productos</field>
+        <field name="res_model">sale.product.summary</field>
+        <field name="view_mode">tree,pivot,graph</field>
+        <field name="context">{
+            'search_default_confirmed_orders': 1,
+            'search_default_group_by_product': 1,
+            'search_default_my_company': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay productos en pedidos de venta para mostrar.
+            </p>
+        </field>
+    </record>
+
+    <!-- Elemento de menú para el resumen de productos -->
+    <menuitem id="menu_product_summary"
+              name="Resumen de Productos"
+              parent="sale.sale_menu_root"
+              sequence="6"
+              action="action_product_summary"
+              groups="sales_team.group_sale_salesman"/>
+</odoo>
