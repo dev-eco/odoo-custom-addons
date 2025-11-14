@@ -57,11 +57,12 @@ class SaleOrder(models.Model):
     
     # Campo para marcar el estado del pedido
     order_status = fields.Selection([
+        ('none', 'Sin estado'),
         ('warehouse', 'Almacén'),
         ('manufacturing', 'Fabricación'),
         ('shipped', 'Salida')
-    ], string='Estado de Pedido', default='warehouse', tracking=True,
-       help='Estado actual del pedido: en almacén, en fabricación o ya salido')
+    ], string='Estado de Pedido', default='none', tracking=True,
+       help='Estado actual del pedido: sin estado, en almacén, en fabricación o ya salido')
     
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):
