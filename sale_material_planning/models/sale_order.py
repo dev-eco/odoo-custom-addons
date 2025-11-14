@@ -55,13 +55,13 @@ class SaleOrder(models.Model):
     # Color para la vista kanban
     color = fields.Integer(string='Color', compute='_compute_color', store=True)
     
-    # Campo para marcar si el pedido ha salido
-    is_shipped = fields.Boolean(
-        string='Salido',
-        help='Marcar si el pedido ha salido físicamente del almacén',
-        default=False,
-        tracking=True
-    )
+    # Campo para marcar el estado del pedido
+    order_status = fields.Selection([
+        ('warehouse', 'Almacén'),
+        ('manufacturing', 'Fabricación'),
+        ('shipped', 'Salida')
+    ], string='Estado de Pedido', default='warehouse', tracking=True,
+       help='Estado actual del pedido: en almacén, en fabricación o ya salido')
     
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):
@@ -143,11 +143,13 @@ class SaleOrder(models.Model):
             else:
                 order.days_to_delivery = 999  # Valor alto para pedidos sin fecha
     
-    @api.depends('is_urgent', 'days_to_delivery', 'picking_status', 'is_shipped')
+    @api.depends('is_urgent', 'days_to_delivery', 'picking_status', 'order_status')
     def _compute_color(self):
         for order in self:
-            if order.is_shipped:
+            if order.order_status == 'shipped':
                 order.color = 10  # Verde (prioridad máxima)
+            elif order.order_status == 'manufacturing':
+                order.color = 4  # Azul claro
             elif order.is_urgent:
                 order.color = 1  # Rojo
             elif order.picking_status == 'done':
@@ -160,13 +162,19 @@ class SaleOrder(models.Model):
                 order.color = 0  # Blanco/Sin color
                 
     def action_mark_as_shipped(self):
-        """Marcar el pedido como salido"""
+        """Marcar el pedido como salida"""
         for order in self:
-            order.write({'is_shipped': True})
+            order.write({'order_status': 'shipped'})
         return True
-        
-    def action_mark_as_not_shipped(self):
-        """Marcar el pedido como no salido"""
+    
+    def action_mark_as_warehouse(self):
+        """Marcar el pedido como en almacén"""
         for order in self:
-            order.write({'is_shipped': False})
+            order.write({'order_status': 'warehouse'})
+        return True
+    
+    def action_mark_as_manufacturing(self):
+        """Marcar el pedido como en fabricación"""
+        for order in self:
+            order.write({'order_status': 'manufacturing'})
         return True
