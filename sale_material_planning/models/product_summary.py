@@ -35,7 +35,11 @@ class ProductSummary(models.Model):
         ('cancelled', 'Cancelado')
     ], string='Estado Albarán', readonly=True)
     is_urgent = fields.Boolean(string='Urgente', readonly=True)
-    is_shipped = fields.Boolean(string='Salido', readonly=True)
+    order_status = fields.Selection([
+        ('warehouse', 'Almacén'),
+        ('manufacturing', 'Fabricación'),
+        ('shipped', 'Salido')
+    ], string='Estado de Pedido', readonly=True)
     days_to_delivery = fields.Integer(string='Días para Entrega', readonly=True)
 
     def init(self):
@@ -66,7 +70,7 @@ THEN 'cancelled'
                         ELSE 'waiting'
                     END as picking_status,
                     so.is_urgent,
-                    so.is_shipped,
+                    so.order_status,
                     CASE
                         WHEN so.commitment_date IS NULL THEN 999
                         ELSE EXTRACT(DAY FROM so.commitment_date::date - CURRENT_DATE)::integer

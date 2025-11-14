@@ -20,7 +20,9 @@
                        decoration-warning="picking_status == 'partially_available'"
                        decoration-danger="picking_status in ['not_created', 'waiting']"/>
                 <field name="is_urgent" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
-                <field name="is_shipped" widget="boolean_toggle"/>
+                <field name="order_status" decoration-success="order_status == 'shipped'" 
+                       decoration-info="order_status == 'manufacturing'" 
+                       decoration-warning="order_status == 'warehouse'"/>
                 <field name="state" invisible="1"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </tree>
@@ -51,8 +53,9 @@ datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter string="Pedidos Confirmados" name="confirmed_orders" domain="[('state', '=', 'sale')]"/>
                 <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
-                <filter string="Salidos" name="shipped_orders" domain="[('is_shipped', '=', True)]"/>
-                <filter string="Pendientes de Salir" name="not_shipped_orders" domain="[('is_shipped', '=', False)]"/>
+                <filter string="Salidos" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
+                <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
+                <filter string="En Almacén" name="warehouse_orders" domain="[('order_status', '=', 'warehouse')]"/>
                 <filter string="Entrega Atrasada" name="late_delivery" domain="[('days_to_delivery', '&lt;=', 0), ('picking_status', '!=',
 'done')]"/>
                 <separator/>
@@ -69,7 +72,7 @@ datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
                     <filter string="Fecha de Entrega (Día)" name="group_by_delivery_date_day" context="{'group_by': 'delivery_date:day'}"/>
                     <filter string="Fecha de Entrega (Mes)" name="group_by_delivery_date_month" context="{'group_by': 'delivery_date:month'}"/>
                     <filter string="Estado del Albarán" name="group_by_picking_status" context="{'group_by': 'picking_status'}"/>
-                    <filter string="Salido" name="group_by_shipped" context="{'group_by': 'is_shipped'}"/>
+                    <filter string="Estado de Pedido" name="group_by_order_status" context="{'group_by': 'order_status'}"/>
                     <filter string="Empresa" name="group_by_company" context="{'group_by': 'company_id'}"/>
                 </group>
             </search>
