@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Heredar y extender la vista de árbol estándar de pedidos de venta -->
+    <record id="view_order_tree_inherit_material_planning" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.material.planning</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="order_status" optional="show"
+                       decoration-success="order_status == 'shipped'"
+                       decoration-info="order_status == 'manufacturing'"
+                       decoration-warning="order_status == 'warehouse'"/>
+                <field name="picking_status" optional="show" widget="badge"
+                       decoration-success="picking_status == 'done'"
+                       decoration-info="picking_status == 'assigned'"
+                       decoration-warning="picking_status == 'partially_available'"
+                       decoration-danger="picking_status in ['not_created', 'waiting']"/>
+                <field name="is_urgent" optional="show" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
+                <field name="days_to_delivery" optional="show"
+                       decoration-warning="days_to_delivery &lt;= 3 and days_to_delivery &gt; 0 and picking_status !=
+'done'"
+                       decoration-danger="days_to_delivery &lt;= 0 and picking_status != 'done'"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Heredar y extender la vista de árbol estándar de pedidos de venta (no solo presupuestos) -->
+    <record id="view_order_tree_inherit_material_planning_sale" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.material.planning.sale</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="order_status" optional="show"
+                       decoration-success="order_status == 'shipped'"
+                       decoration-info="order_status == 'manufacturing'"
+                       decoration-warning="order_status == 'warehouse'"/>
+                <field name="picking_status" optional="show" widget="badge"
+                       decoration-success="picking_status == 'done'"
+                       decoration-info="picking_status == 'assigned'"
+                       decoration-warning="picking_status == 'partially_available'"
+                       decoration-danger="picking_status in ['not_created', 'waiting']"/>
+                <field name="is_urgent" optional="show" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
+                <field name="days_to_delivery" optional="show"
+                       decoration-warning="days_to_delivery &lt;= 3 and days_to_delivery &gt; 0 and picking_status !=
+'done'"
+                       decoration-danger="days_to_delivery &lt;= 0 and picking_status != 'done'"/>
+            </field>
+        </field>
+    </record>
+</odoo>
