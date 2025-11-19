@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Modificación de vista de formulario de contacto -->
+    <record id="view_partner_form_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">res.partner.form.delivery.alternative</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales_purchases']//group[@name='sale']" position="inside">
+                <field name="is_public_delivery_address"/>
+            </xpath>
+            <xpath expr="//page[@name='sales_purchases']" position="after">
+                <page string="Direcciones de entrega alternativas"
+                      invisible="is_company == False and parent_id != False">
+                    <field name="alternative_delivery_for_partner_ids" widget="many2many_tags"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Modificación de vista de búsqueda de contactos -->
+    <record id="view_res_partner_filter_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">res.partner.select.delivery.alternative</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <filter name="type_company" position="after">
+                <filter string="Direcciones públicas" name="public_address" domain="[('is_public_delivery_address', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

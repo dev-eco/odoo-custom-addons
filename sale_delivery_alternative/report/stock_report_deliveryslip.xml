@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Modificación del informe de albarán -->
+    <template id="report_delivery_document_inherit_alternative" inherit_id="stock.report_delivery_document">
+        <xpath expr="//div[@name='partner_header']" position="replace">
+            <div class="row" name="partner_header">
+                <div class="col-6" name="left_address">
+                    <div>
+                        <span><strong>Cliente:</strong></span>
+                        <t t-if="o.original_partner_id and o.is_alternative_delivery">
+                            <div t-field="o.original_partner_id"
+                                 t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True}'/>
+                        </t>
+                        <t t-else="">
+                            <div t-field="o.partner_id"
+                                 t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True}'/>
+                        </t>
+                    </div>
+                </div>
+                <div class="col-6" name="right_address">
+                    <div t-if="o.is_alternative_delivery" class="alert alert-info mb-0 p-2">
+                        <strong>DIRECCIÓN DE ENTREGA ALTERNATIVA</strong>
+                    </div>
+                    <div>
+                        <span><strong>Dirección de entrega:</strong></span>
+                        <div t-field="o.partner_id"
+                             t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True}'/>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Modificación de vista de formulario de albarán -->
+    <record id="view_picking_form_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">stock.picking.form.delivery.alternative</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="is_alternative_delivery" invisible="1"/>
+                <field name="original_partner_id" readonly="1"
+                       invisible="is_alternative_delivery == False"/>
+                <div class="alert alert-info" role="alert"
+                     invisible="is_alternative_delivery == False">
+                    <strong>Atención:</strong> Este albarán utiliza una dirección de entrega alternativa
+                    diferente del cliente de facturación.
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Modificación de vista de lista de albaranes -->
+    <record id="view_picking_tree_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">stock.picking.tree.delivery.alternative</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="original_partner_id" optional="show"
+                       invisible="is_alternative_delivery == False"/>
+                <field name="is_alternative_delivery" optional="hide" widget="boolean_toggle"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Modificación de vista de búsqueda de albaranes -->
+    <record id="view_picking_search_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">stock.picking.search.delivery.alternative</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+        <field name="arch" type="xml">
+            <filter name="picking_type" position="after">
+                <filter string="Con dirección alternativa" name="alternative_delivery" domain="[('is_alternative_delivery', '=', True)]"/>
+            </filter>
+            <xpath expr="//group[1]" position="inside">
+                <filter string="Cliente facturación" name="original_partner" context="{'group_by': 'original_partner_id'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

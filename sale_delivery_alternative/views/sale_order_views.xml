@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Modificación de formulario de pedido -->
+    <record id="view_order_form_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">sale.order.form.delivery.alternative</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_shipping_id']" position="after">
+                <field name="use_alternative_delivery"/>
+                <field name="alternative_delivery_partner_id"
+                       options="{'no_create': True}"
+                       context="{'show_address': 1}"
+                       invisible="use_alternative_delivery == False"
+                       required="use_alternative_delivery == True"/>
+                <field name="effective_delivery_partner_id" invisible="1"/>
+                <div invisible="use_alternative_delivery == False">
+                    <button name="action_save_as_usual_address"
+                            string="Guardar como habitual"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="alternative_delivery_partner_id == False"/>
+                    <button name="action_create_alternative_address"
+                            string="Crear nueva dirección"
+                            type="object"
+                            class="btn-secondary ml-2"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Modificación de vista de lista de pedidos -->
+    <record id="view_order_tree_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">sale.order.tree.delivery.alternative</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="effective_delivery_partner_id" optional="hide"/>
+                <field name="use_alternative_delivery" optional="hide" widget="boolean_toggle"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Modificación de vista de búsqueda de pedidos -->
+    <record id="view_sales_order_filter_inherit_delivery_alternative" model="ir.ui.view">
+        <field name="name">sale.order.list.select.delivery.alternative</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <filter name="my_sale_orders_filter" position="after">
+                <filter string="Con dirección alternativa" name="alternative_delivery" domain="[('use_alternative_delivery', '=', True)]"/>
+            </filter>
+            <filter name="customer" position="after">
+                <filter string="Dirección de entrega" name="delivery_address" context="{'group_by': 'effective_delivery_partner_id'}"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

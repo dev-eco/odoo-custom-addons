@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="migrate_existing_orders_delivery_address" model="ir.actions.server">
+        <field name="name">Migrar direcciones de entrega existentes</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="state">code</field>
+        <field name="code">
+env['sale.order'].search([
+    ('state', 'not in', ['cancel']),
+    ('partner_shipping_id', '!=', False),
+    ('partner_id', '!=', False),
+    ('partner_shipping_id', '!=', 'partner_id')
+]).write({
+    'use_alternative_delivery': True,
+    'alternative_delivery_partner_id': lambda r: r.partner_shipping_id.id
+})
+        </field>
+    </record>
+
+    <!-- Menú para ejecutar la migración manualmente -->
+    <record id="action_menu_migrate_delivery_addresses" model="ir.actions.act_window">
+        <field name="name">Migrar direcciones de entrega</field>
+        <field name="res_model">ir.actions.server</field>
+        <field name="view_mode">tree</field>
+        <field name="domain">[('id', '=', ref('migrate_existing_orders_delivery_address'))]</field>
+    </record>
+
+    <menuitem id="menu_migrate_delivery_addresses"
+              name="Migrar direcciones de entrega"
+              parent="sale.menu_sale_config"
+              action="action_menu_migrate_delivery_addresses"
+              groups="base.group_system"
+              sequence="100"/>
+</odoo>
