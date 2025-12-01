@@ -306,13 +306,74 @@ class BulkExportWizard(models.TransientModel):
 
     @api.depends('export_file')
     def _compute_file_size(self):
-        """Calcula el tamaño del archivo exportado en MB."""
+        """Calcula el tamaño del archivo exportado en MB con manejo robusto de errores."""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
         for record in self:
-            if record.export_file:
-                # El archivo está en base64, convertir a bytes
-                file_bytes = base64.b64decode(record.export_file)
-                record.file_size_mb = len(file_bytes) / (1024 * 1024)
-            else:
+            try:
+                # Validación inicial: verificar que el campo existe y no está vacío
+                if not record.export_file:
+                    record.file_size_mb = 0.0
+                    continue
+                    
+                # Obtener el contenido como string
+                file_content = record.export_file
+                
+                # Validación: verificar que es string/bytes válido
+                if not isinstance(file_content, (str, bytes)):
+                    _logger.warning(f"export_file contiene tipo inválido: {type(file_content)}")
+                    record.file_size_mb = 0.0
+                    continue
+                    
+                # Convertir a string si es necesario
+                if isinstance(file_content, bytes):
+                    file_content = file_content.decode('utf-8')
+                    
+                # Limpiar contenido: remover caracteres de nueva línea y espacios
+                file_content = file_content.strip().replace('\n', '').replace('\r', '')
+                
+                # Validación: verificar que el contenido no está vacío después de limpiar
+                if not file_content:
+                    record.file_size_mb = 0.0
+                    continue
+                    
+                # Validación de longitud base64: debe ser múltiplo de 4
+                if len(file_content) % 4 != 0:
+                    # Agregar padding faltante
+                    padding_needed = 4 - (len(file_content) % 4)
+                    file_content += '=' * padding_needed
+                    _logger.info(f"Agregado padding base64: {padding_needed} caracteres")
+                
+                # Validación: verificar caracteres base64 válidos
+                import re
+                if not re.match(r'^[A-Za-z0-9+/]*={0,2}$', file_content):
+                    _logger.error("export_file contiene caracteres no base64 válidos")
+                    record.file_size_mb = 0.0
+                    continue
+                    
+                # Decodificar con manejo de errores
+                try:
+                    file_bytes = base64.b64decode(file_content, validate=True)
+                    file_size_bytes = len(file_bytes)
+                    record.file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
+                    
+                    # Log informativo para debugging
+                    _logger.info(
+                        f"Archivo calculado correctamente: {file_size_bytes} bytes "
+                        f"({record.file_size_mb} MB)"
+                    )
+                    
+                except Exception as decode_error:
+                    _logger.error(
+                        f"Error decodificando base64: {str(decode_error)}. "
+                        f"Contenido length: {len(file_content)}, "
+                        f"Primeros 50 chars: {file_content[:50]}"
+                    )
+                    record.file_size_mb = 0.0
+                    
+            except Exception as e:
+                _logger.error(f"Error en _compute_file_size: {str(e)}", exc_info=True)
                 record.file_size_mb = 0.0
 
     @api.depends('date_from', 'date_to', 'partner_ids', 'include_out_invoice',
@@ -481,10 +542,25 @@ class BulkExportWizard(models.TransientModel):
             extension = format_ext[self.compression_format]
             filename = f'facturas_exportacion_{timestamp}.{extension}'
 
-            # Actualizar wizard con resultados
+        try:
+            # Validar que export_data no esté vacío
+            if not export_data:
+                raise UserError(_('No se pudo generar contenido para exportar.'))
+            
+            # Validar tipo de datos
+            if not isinstance(export_data, bytes):
+                export_data = export_data.encode('utf-8') if isinstance(export_data, str) else bytes(export_data)
+            
+            # Codificar en base64 de forma segura
+            encoded_file = base64.b64encode(export_data).decode('ascii')
+            
+            # Verificar que la codificación fue exitosa
+            if not encoded_file:
+                raise UserError(_('Error al codificar el archivo para almacenamiento.'))
+                
             self.write({
                 'state': 'done',
-                'export_file': base64.b64encode(export_data),
+                'export_file': encoded_file,  # Guardar como string ASCII
                 'export_filename': filename,
                 'export_count': len(invoices) - failed_count,
                 'failed_count': failed_count,
@@ -492,6 +568,14 @@ class BulkExportWizard(models.TransientModel):
                 'progress_percentage': 100.0,
                 'progress_message': _('Exportación completada'),
             })
+            
+        except Exception as e:
+            _logger.error(f"Error almacenando archivo exportado: {str(e)}")
+            self.write({
+                'state': 'error',
+                'error_message': f'Error almacenando archivo: {str(e)}',
+            })
+            raise
             
             # Crear registro en el historial
             self._create_export_history(invoices)

@@ -1,48 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-
-        <!-- Heredar vista de configuración de contabilidad -->
         <record id="res_config_settings_view_form_inherit" model="ir.ui.view">
             <field name="name">res.config.settings.view.form.inherit.bulk.export</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+            <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[hasclass('settings')]" position="inside">
-                    <div class="app_settings_block" data-string="Exportación Masiva de Facturas" string="Exportación Masiva de Facturas" data-key="account_invoice_bulk_export">
+                <!-- PATRÓN COMPROBADO: Igual que website_dist_checkout -->
+                <xpath expr="//form[1]" position="inside">
+                    <div class="app_settings_block" string="Exportación Masiva de Facturas" data-key="account_invoice_bulk_export">
                         <h2>Exportación Masiva de Facturas</h2>
                         <div class="row mt16 o_settings_container">
+                            <!-- Configuración de Formato -->
                             <div class="col-12 col-lg-6 o_setting_box">
                                 <div class="o_setting_left_pane"/>
                                 <div class="o_setting_right_pane">
-                                    <span class="o_form_label">Configuración de Exportación</span>
+                                    <label for="bulk_export_default_format" string="Formato por Defecto"/>
                                     <div class="text-muted">
-                                        Configure las opciones por defecto para la exportación masiva de facturas
+                                        Formato de compresión predeterminado para exportaciones masivas
                                     </div>
-                                    <div class="content-group mt16">
-                                        <div class="row">
-                                            <label for="bulk_export_default_format" class="col-3 col-lg-3 o_light_label"/>
-                                            <field name="bulk_export_default_format" class="col-9 col-lg-9"/>
-                                        </div>
-                                        <div class="row">
-                                            <label for="bulk_export_default_pattern" class="col-3 col-lg-3 o_light_label"/>
-                                            <field name="bulk_export_default_pattern" class="col-9 col-lg-9"/>
-                                        </div>
-                                        <div class="row">
-                                            <label for="bulk_export_default_batch_size" class="col-3 col-lg-3 o_light_label"/>
-                                            <field name="bulk_export_default_batch_size" class="col-9 col-lg-9"/>
-                                        </div>
-                                    </div>
+                                    <field name="bulk_export_default_format" class="oe_inline"/>
                                 </div>
                             </div>
+
+                            <!-- Configuración de Patrón -->
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="bulk_export_default_pattern" string="Patrón de Nombres"/>
+                                    <div class="text-muted">
+                                        Esquema de nomenclatura para archivos exportados
+                                    </div>
+                                    <field name="bulk_export_default_pattern" class="oe_inline"/>
+                                </div>
+                            </div>
+
+                            <!-- Configuración de Lote -->
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="bulk_export_default_batch_size" string="Tamaño de Lote por Defecto"/>
+                                    <div class="text-muted">
+                                        Número de facturas procesadas simultáneamente (1-500)
+                                    </div>
+                                    <field name="bulk_export_default_batch_size" class="oe_inline"/>
+                                </div>
+                            </div>
+
+                            <!-- Configuración XML -->
                             <div class="col-12 col-lg-6 o_setting_box">
                                 <div class="o_setting_left_pane">
                                     <field name="bulk_export_include_xml"/>
                                 </div>
                                 <div class="o_setting_right_pane">
-                                    <label for="bulk_export_include_xml"/>
+                                    <label for="bulk_export_include_xml" string="Incluir XML por Defecto"/>
                                     <div class="text-muted">
-                                        Incluir XML de factura electrónica por defecto
+                                        Incluir archivos XML de factura electrónica en exportaciones
                                     </div>
                                 </div>
                             </div>
@@ -51,6 +64,5 @@
                 </xpath>
             </field>
         </record>
-
     </data>
 </odoo>
