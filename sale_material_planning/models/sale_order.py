@@ -62,13 +62,8 @@ class SaleOrder(models.Model):
         ('manufacturing', 'Fabricación'),
         ('prepared', 'Preparado'),  # Nuevo estado
         ('shipped', 'Salida')
-<<<<<<< HEAD
     ], string='Estado de Pedido', default='none', tracking=True,
        help='Estado actual del pedido: sin estado, en almacén, en fabricación o ya salido')
-=======
-    ], string='Estado de Pedido', default='warehouse', tracking=True,
-       help='Estado actual del pedido: en almacén, en fabricación, preparado o ya salido')
->>>>>>> staging
     
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):
