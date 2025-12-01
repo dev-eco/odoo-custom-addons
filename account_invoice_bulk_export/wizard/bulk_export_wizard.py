@@ -140,8 +140,10 @@ class BulkExportWizard(models.TransientModel):
         ('zip_password', 'ZIP con Contraseña'),
         ('tar_gz', 'TAR.GZ'),
         ('tar_bz2', 'TAR.BZ2'),
-    ], string='Formato de Compresión', default='zip', required=True,
-       help='Formato del archivo comprimido a generar')
+    ], string='Formato de Compresión', required=True,
+       help='Formato del archivo comprimido a generar',
+       default=lambda self: self.env['ir.config_parameter'].sudo().get_param(
+           'account_invoice_bulk_export.default_format', 'zip'))
 
     archive_password = fields.Char(
         string='Contraseña del Archivo',
@@ -157,8 +159,10 @@ class BulkExportWizard(models.TransientModel):
         ('date_first', 'Fecha_Tipo_Número_Partner'),
         ('partner_first', 'Partner_Tipo_Número_Fecha'),
         ('simple', 'Tipo_Número_Fecha'),
-    ], string='Patrón de Nombres', default='standard',
-       help='Patrón para generar nombres de archivos PDF')
+    ], string='Patrón de Nombres',
+       help='Patrón para generar nombres de archivos PDF',
+       default=lambda self: self.env['ir.config_parameter'].sudo().get_param(
+           'account_invoice_bulk_export.default_pattern', 'standard'))
 
     # ==========================================
     # OPCIONES AVANZADAS
@@ -170,9 +174,16 @@ class BulkExportWizard(models.TransientModel):
         help='Crea carpetas separadas para facturas, notas de crédito, etc.'
     )
     
+    include_attachments = fields.Boolean(
+        string='Incluir Adjuntos',
+        default=False,
+        help='Incluir archivos adjuntos a las facturas'
+    )
+    
     batch_size = fields.Integer(
         string='Tamaño del Lote',
-        default=50,
+        default=lambda self: int(self.env['ir.config_parameter'].sudo().get_param(
+            'account_invoice_bulk_export.default_batch_size', '50')),
         help='Número de facturas a procesar simultáneamente (1-500)'
     )
 
@@ -276,6 +287,11 @@ class BulkExportWizard(models.TransientModel):
         string='Registro de Exportación',
         readonly=True,
         help='Registro en el historial de exportaciones',
+    )
+    
+    attachments_count = fields.Integer(
+        string='Archivos Adjuntos',
+        readonly=True,
     )
 
     # ==========================================
@@ -668,6 +684,25 @@ class BulkExportWizard(models.TransientModel):
                         )
                     else:
                         zip_file.writestr(filename, pdf_content)
+                    
+                    # Agregar adjuntos si está habilitado
+                    if self.include_attachments:
+                        attachments = self._get_invoice_attachments(invoice)
+                        attachments_count += len(attachments)
+                        
+                        for att_filename, att_content in attachments:
+                            # Crear subcarpeta de adjuntos
+                            att_path = folder + 'adjuntos/' + invoice.name + '/'
+                            full_path = att_path + att_filename
+                            
+                            if self.compression_format == 'zip_password':
+                                zip_file.writestr(
+                                    full_path,
+                                    att_content,
+                                    pwd=self.archive_password.encode('utf-8')
+                                )
+                            else:
+                                zip_file.writestr(full_path, att_content)
                         
                 except Exception as e:
                     _logger.warning(
@@ -724,6 +759,22 @@ class BulkExportWizard(models.TransientModel):
                     tarinfo.size = len(pdf_content)
                     tarinfo.mtime = datetime.now().timestamp()
                     tar_file.addfile(tarinfo, io.BytesIO(pdf_content))
+                    
+                    # Agregar adjuntos si está habilitado
+                    if self.include_attachments:
+                        attachments = self._get_invoice_attachments(invoice)
+                        attachments_count += len(attachments)
+                        
+                        for att_filename, att_content in attachments:
+                            # Crear subcarpeta de adjuntos
+                            att_path = folder + 'adjuntos/' + invoice.name + '/'
+                            full_path = att_path + att_filename
+                            
+                            # Crear tarinfo para el adjunto
+                            att_tarinfo = tarfile.TarInfo(name=full_path)
+                            att_tarinfo.size = len(att_content)
+                            att_tarinfo.mtime = datetime.now().timestamp()
+                            tar_file.addfile(att_tarinfo, io.BytesIO(att_content))
                     
                 except Exception as e:
                     _logger.warning(
@@ -834,7 +885,33 @@ class BulkExportWizard(models.TransientModel):
         
         return pdf_content
 
-    # Estos métodos se eliminan ya que no queremos exportar archivos adjuntos
+    def _get_invoice_attachments(self, invoice):
+        """
+        Obtiene los archivos adjuntos de una factura.
+        
+        Args:
+            invoice: registro de factura
+            
+        Returns:
+            list: lista de tuplas (nombre_archivo, contenido)
+        """
+        if not self.include_attachments:
+            return []
+            
+        attachments = []
+        for attachment in invoice.attachment_ids:
+            try:
+                # Obtener contenido binario del adjunto
+                content = base64.b64decode(attachment.datas)
+                filename = self._sanitize_filename(attachment.name)
+                attachments.append((filename, content))
+            except Exception as e:
+                _logger.warning(
+                    f"Error al procesar adjunto {attachment.name}: {e}",
+                    exc_info=True
+                )
+                
+        return attachments
 
     def _create_export_history(self, invoices):
         """
@@ -866,7 +943,7 @@ class BulkExportWizard(models.TransientModel):
             'failed_count': self.failed_count,
             'processing_time': self.processing_time,
             'file_size': self.file_size_mb,
-            'include_attachments': False,
+            'include_attachments': self.include_attachments,
             'organized_by_type': self.organize_by_type,
             'date_from': self.date_from,
             'date_to': self.date_to,

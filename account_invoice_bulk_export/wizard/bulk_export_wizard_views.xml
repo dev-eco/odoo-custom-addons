@@ -54,6 +54,8 @@
                                 invisible="state != 'done' or not export_history_id"
                                 icon="fa-history"/>
                         
+                        <field name="export_history_id" invisible="1"/>
+                        
                         <!-- Botón: Nueva Exportación -->
                         <button name="action_restart" 
                                 type="object" 
@@ -396,6 +398,16 @@
             <field name="binding_model_id" ref="account.model_account_move"/>
             <field name="binding_view_types">list</field>
             <field name="context">{'default_invoice_ids': active_ids}</field>
+        </record>
+        
+        <!-- Acción para el menú principal -->
+        <record id="action_bulk_export_wizard_menu" model="ir.actions.act_window">
+            <field name="name">Exportación Masiva de Facturas</field>
+            <field name="res_model">account.bulk.export.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_bulk_export_wizard_form"/>
+            <field name="context">{}</field>
         </record>
 
     </data>
