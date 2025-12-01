@@ -60,10 +60,10 @@ class SaleOrder(models.Model):
         ('none', 'Sin estado'),
         ('warehouse', 'Almacén'),
         ('manufacturing', 'Fabricación'),
-        ('prepared', 'Preparado'),  # Nuevo estado
+        ('prepared', 'Preparado'),
         ('shipped', 'Salida')
     ], string='Estado de Pedido', default='none', tracking=True,
-       help='Estado actual del pedido: sin estado, en almacén, en fabricación o ya salido')
+       help='Estado actual del pedido: sin estado, en almacén, en fabricación, preparado o ya salido')
     
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):

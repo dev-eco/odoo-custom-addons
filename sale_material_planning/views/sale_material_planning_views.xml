@@ -103,8 +103,9 @@
                                     </strong>
                                     <span t-if="record.order_status.raw_value == 'shipped'" class="badge badge-success">SALIDA</span>
 <<<<<<< HEAD
-                                    <span t-elif="record.order_status.raw_value == 'manufacturing'" class="badge badge-info">FABRICACIÓN</span>
-                                    <span t-elif="record.order_status.raw_value == 'none'" class="badge badge-secondary">SIN ESTADO</span>
+                                    <span t-elif="record.order_status.raw_value == 'prepared'" class="badge badge-info">PREPARADO</span>
+                                    <span t-elif="record.order_status.raw_value == 'manufacturing'" class="badge badge-primary">FABRICACIÓN</span>
+>>>>>>> staging
 =======
                                     <span t-elif="record.order_status.raw_value == 'prepared'" class="badge badge-info">PREPARADO</span>
                                     <span t-elif="record.order_status.raw_value == 'manufacturing'" class="badge badge-primary">FABRICACIÓN</span>

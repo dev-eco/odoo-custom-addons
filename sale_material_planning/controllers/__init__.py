@@ -1,3 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from . import controllers
+# Importamos el módulo controllers si existe
+try:
+    from . import controllers
+except ImportError:
+    pass
