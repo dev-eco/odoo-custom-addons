@@ -1,0 +1,226 @@
+/* Estilos personalizados para Exportación Masiva de Facturas */
+
+.o_bulk_export_wizard {
+    
+    /* Mejorar alertas informativas */
+    .alert {
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        
+        &.alert-info {
+            background-color: #d9edf7;
+            border-color: #bce8f1;
+            color: #31708f;
+            
+            i.fa {
+                font-size: 1.2em;
+                margin-right: 8px;
+            }
+        }
+        
+        &.alert-success {
+            background-color: #dff0d8;
+            border-color: #d6e9c6;
+            color: #3c763d;
+            
+            i.fa {
+                font-size: 1.3em;
+                margin-right: 8px;
+                color: #5cb85c;
+            }
+        }
+        
+        &.alert-warning {
+            background-color: #fcf8e3;
+            border-color: #faebcc;
+            color: #8a6d3b;
+            
+            i.fa {
+                font-size: 1.2em;
+                margin-right: 8px;
+                color: #f0ad4e;
+            }
+        }
+        
+        &.alert-danger {
+            background-color: #f2dede;
+            border-color: #ebccd1;
+            color: #a94442;
+            
+            i.fa {
+                font-size: 1.3em;
+                margin-right: 8px;
+                color: #d9534f;
+            }
+        }
+        
+        h3, h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        p {
+            margin-bottom: 5px;
+            
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+    
+    /* Mejorar títulos de grupos */
+    .o_group {
+        .o_group_title {
+            font-weight: 600;
+            font-size: 1.05em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ecf0f1;
+            
+            &::before {
+                content: '';
+                display: inline-block;
+                width: 4px;
+                height: 18px;
+                background-color: #3498db;
+                margin-right: 8px;
+                vertical-align: middle;
+            }
+        }
+    }
+    
+    /* Mejorar campos de formulario */
+    .o_form_view {
+        .o_field_widget {
+            &.o_field_boolean_toggle {
+                .custom-switch {
+                    padding-left: 2.5rem;
+                    
+                    .custom-control-label {
+                        padding-top: 0.1rem;
+                        padding-left: 0.5rem;
+                    }
+                }
+            }
+        }
+    }
+    
+    /* Mejorar botones */
+    button {
+        &.btn-primary {
+            background-color: #3498db;
+            border-color: #2980b9;
+            
+            &:hover {
+                background-color: #2980b9;
+                border-color: #21618c;
+            }
+        }
+        
+        &.btn-success {
+            background-color: #27ae60;
+            border-color: #229954;
+            
+            &:hover {
+                background-color: #229954;
+                border-color: #1e8449;
+            }
+        }
+        
+        &.btn-secondary {
+            background-color: #95a5a6;
+            border-color: #7f8c8d;
+            
+            &:hover {
+                background-color: #7f8c8d;
+                border-color: #566869;
+            }
+        }
+        
+        i.fa {
+            margin-right: 5px;
+        }
+    }
+    
+    /* Estilo para el statusbar */
+    .o_statusbar_status {
+        .o_arrow_button {
+            &.btn-primary {
+                background-color: #27ae60;
+                border-color: #229954;
+            }
+            
+            &.disabled {
+                background-color: #ecf0f1;
+                border-color: #bdc3c7;
+                color: #95a5a6;
+            }
+        }
+    }
+    
+    /* Animación de spinner */
+    .fa-spinner {
+        &.fa-spin {
+            animation: fa-spin 1s infinite linear;
+        }
+    }
+    
+    @keyframes fa-spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+    
+    /* Mejorar etiquetas */
+    .o_field_many2many_tags {
+        .badge {
+            font-size: 0.9em;
+            padding: 0.35em 0.65em;
+            border-radius: 4px;
+        }
+    }
+    
+    /* Estilo para campos monetarios */
+    .o_field_monetary {
+        font-weight: 600;
+        color: #27ae60;
+        font-size: 1.1em;
+    }
+    
+    /* Mejorar campos de texto en modo lectura */
+    .o_field_text {
+        &[readonly] {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .o_bulk_export_wizard {
+        .alert {
+            padding: 10px 15px;
+            
+            h3, h4 {
+                font-size: 1.1em;
+            }
+        }
+        
+        .o_group {
+            .o_group_title {
+                font-size: 1em;
+            }
+        }
+    }
+}
