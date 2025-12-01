@@ -307,73 +307,28 @@ class BulkExportWizard(models.TransientModel):
     @api.depends('export_file')
     def _compute_file_size(self):
         """Calcula el tamaño del archivo exportado en MB con manejo robusto de errores."""
-        import logging
-        _logger = logging.getLogger(__name__)
-        
         for record in self:
             try:
-                # Validación inicial: verificar que el campo existe y no está vacío
+                # Validación inicial
                 if not record.export_file:
                     record.file_size_mb = 0.0
                     continue
-                    
-                # Obtener el contenido como string
-                file_content = record.export_file
                 
-                # Validación: verificar que es string/bytes válido
-                if not isinstance(file_content, (str, bytes)):
-                    _logger.warning(f"export_file contiene tipo inválido: {type(file_content)}")
-                    record.file_size_mb = 0.0
-                    continue
-                    
-                # Convertir a string si es necesario
-                if isinstance(file_content, bytes):
-                    file_content = file_content.decode('utf-8')
-                    
-                # Limpiar contenido: remover caracteres de nueva línea y espacios
-                file_content = file_content.strip().replace('\n', '').replace('\r', '')
-                
-                # Validación: verificar que el contenido no está vacío después de limpiar
-                if not file_content:
-                    record.file_size_mb = 0.0
-                    continue
-                    
-                # Validación de longitud base64: debe ser múltiplo de 4
-                if len(file_content) % 4 != 0:
-                    # Agregar padding faltante
-                    padding_needed = 4 - (len(file_content) % 4)
-                    file_content += '=' * padding_needed
-                    _logger.info(f"Agregado padding base64: {padding_needed} caracteres")
-                
-                # Validación: verificar caracteres base64 válidos
-                import re
-                if not re.match(r'^[A-Za-z0-9+/]*={0,2}$', file_content):
-                    _logger.error("export_file contiene caracteres no base64 válidos")
-                    record.file_size_mb = 0.0
-                    continue
-                    
-                # Decodificar con manejo de errores
-                try:
-                    file_bytes = base64.b64decode(file_content, validate=True)
-                    file_size_bytes = len(file_bytes)
-                    record.file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
-                    
-                    # Log informativo para debugging
-                    _logger.info(
-                        f"Archivo calculado correctamente: {file_size_bytes} bytes "
-                        f"({record.file_size_mb} MB)"
-                    )
-                    
-                except Exception as decode_error:
-                    _logger.error(
-                        f"Error decodificando base64: {str(decode_error)}. "
-                        f"Contenido length: {len(file_content)}, "
-                        f"Primeros 50 chars: {file_content[:50]}"
-                    )
+                # Obtener tamaño aproximado del campo Binary
+                # Los campos Binary en Odoo ya están en base64, así que estimamos el tamaño
+                # El tamaño real es aproximadamente 3/4 del tamaño en base64
+                if record.export_file:
+                    # Longitud del string base64
+                    base64_length = len(record.export_file) if isinstance(record.export_file, str) else 0
+                    # Estimación del tamaño real (3/4 del tamaño base64)
+                    estimated_size = base64_length * 3 / 4
+                    # Convertir a MB
+                    record.file_size_mb = round(estimated_size / (1024 * 1024), 2)
+                else:
                     record.file_size_mb = 0.0
                     
             except Exception as e:
-                _logger.error(f"Error en _compute_file_size: {str(e)}", exc_info=True)
+                _logger.error(f"Error en _compute_file_size para registro {record.id}: {str(e)}")
                 record.file_size_mb = 0.0
 
     @api.depends('date_from', 'date_to', 'partner_ids', 'include_out_invoice',
@@ -542,40 +497,30 @@ class BulkExportWizard(models.TransientModel):
             extension = format_ext[self.compression_format]
             filename = f'facturas_exportacion_{timestamp}.{extension}'
 
-        try:
-            # Validar que export_data no esté vacío
+            # Validar export_data antes de codificar
             if not export_data:
                 raise UserError(_('No se pudo generar contenido para exportar.'))
             
-            # Validar tipo de datos
+            # Asegurar que export_data sea bytes
             if not isinstance(export_data, bytes):
                 export_data = export_data.encode('utf-8') if isinstance(export_data, str) else bytes(export_data)
             
             # Codificar en base64 de forma segura
             encoded_file = base64.b64encode(export_data).decode('ascii')
             
-            # Verificar que la codificación fue exitosa
-            if not encoded_file:
-                raise UserError(_('Error al codificar el archivo para almacenamiento.'))
-                
-            self.write({
+            # Actualizar con validación
+            update_vals = {
                 'state': 'done',
-                'export_file': encoded_file,  # Guardar como string ASCII
+                'export_file': encoded_file,
                 'export_filename': filename,
                 'export_count': len(invoices) - failed_count,
                 'failed_count': failed_count,
                 'processing_time': round(processing_time, 2),
                 'progress_percentage': 100.0,
                 'progress_message': _('Exportación completada'),
-            })
+            }
             
-        except Exception as e:
-            _logger.error(f"Error almacenando archivo exportado: {str(e)}")
-            self.write({
-                'state': 'error',
-                'error_message': f'Error almacenando archivo: {str(e)}',
-            })
-            raise
+            self.write(update_vals)
             
             # Crear registro en el historial
             self._create_export_history(invoices)
@@ -759,12 +704,21 @@ class BulkExportWizard(models.TransientModel):
                     filename = folder + self._generate_filename(invoice)
                     pdf_content = self._get_invoice_pdf(invoice)
                     
+                    if not pdf_content:
+                        _logger.warning(f"PDF vacío para factura {invoice.name}")
+                        failed_count += 1
+                        continue
+                        
+                    # Asegurar que pdf_content sea bytes
+                    if isinstance(pdf_content, str):
+                        pdf_content = pdf_content.encode('utf-8')
+                    
                     # Agregar PDF al ZIP
                     if self.compression_format == 'zip_password':
                         zip_file.writestr(
                             filename,
                             pdf_content,
-                            pwd=self.archive_password.encode('utf-8')
+                            pwd=self.archive_password.encode('utf-8') if self.archive_password else None
                         )
                     else:
                         zip_file.writestr(filename, pdf_content)
@@ -837,6 +791,15 @@ class BulkExportWizard(models.TransientModel):
                     # Generar archivo
                     filename = folder + self._generate_filename(invoice)
                     pdf_content = self._get_invoice_pdf(invoice)
+                    
+                    if not pdf_content:
+                        _logger.warning(f"PDF vacío para factura {invoice.name}")
+                        failed_count += 1
+                        continue
+                        
+                    # Asegurar que pdf_content sea bytes
+                    if isinstance(pdf_content, str):
+                        pdf_content = pdf_content.encode('utf-8')
                     
                     # Crear tarinfo y agregar al TAR
                     tarinfo = tarfile.TarInfo(name=filename)
@@ -961,14 +924,60 @@ class BulkExportWizard(models.TransientModel):
         Returns:
             bytes: contenido del PDF
         """
-        # Obtener el reporte de factura estándar de Odoo
-        report = self.env.ref('account.account_invoices')
-        
-        # Generar PDF usando el motor de reportes
-        pdf_content, _ = report._render_qweb_pdf([invoice.id])
-        
-        return pdf_content
+        try:
+            # Obtener el reporte de factura estándar de Odoo
+            report = self.env.ref('account.account_invoices')
+            
+            # Generar PDF usando el motor de reportes
+            pdf_content, _ = report._render_qweb_pdf(invoice.id)
+            
+            return pdf_content
+        except Exception as e:
+            _logger.error(f"Error al generar PDF para factura {invoice.name}: {str(e)}")
+            # Generar un PDF básico con mensaje de error
+            return self._generate_error_pdf(invoice)
 
+    def _generate_error_pdf(self, invoice):
+        """
+        Genera un PDF básico con mensaje de error cuando no se puede generar el PDF real.
+        
+        Args:
+            invoice: registro de factura
+            
+        Returns:
+            bytes: contenido del PDF básico
+        """
+        try:
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
+            
+            buffer = io.BytesIO()
+            c = canvas.Canvas(buffer, pagesize=letter)
+            
+            # Título
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(100, 750, f"ERROR AL GENERAR PDF")
+            
+            # Información de la factura
+            c.setFont("Helvetica", 12)
+            c.drawString(100, 700, f"Factura: {invoice.name}")
+            c.drawString(100, 680, f"Cliente/Proveedor: {invoice.partner_id.name}")
+            c.drawString(100, 660, f"Fecha: {invoice.invoice_date or 'N/A'}")
+            c.drawString(100, 640, f"Importe: {invoice.amount_total} {invoice.currency_id.name}")
+            
+            # Mensaje de error
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(100, 600, "No se pudo generar el PDF original de esta factura.")
+            c.drawString(100, 580, "Por favor, acceda a la factura directamente en el sistema.")
+            
+            c.save()
+            return buffer.getvalue()
+            
+        except Exception as pdf_error:
+            _logger.error(f"Error al generar PDF de error: {str(pdf_error)}")
+            # Si falla incluso el PDF de error, devolver un PDF mínimo
+            return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF"
+    
     def _get_invoice_attachments(self, invoice):
         """
         Obtiene los archivos adjuntos de una factura.
