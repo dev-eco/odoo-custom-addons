@@ -14,6 +14,7 @@
         'views/sale_material_planning_views.xml',
         'views/product_summary_views.xml',
         'views/sale_order_views.xml',
+        'views/logistics_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
