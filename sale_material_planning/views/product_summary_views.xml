@@ -21,7 +21,8 @@
                        decoration-danger="picking_status in ['not_created', 'waiting']"/>
                 <field name="is_urgent" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
                 <field name="order_status" decoration-success="order_status == 'shipped'" 
-                       decoration-info="order_status == 'manufacturing'" 
+                       decoration-info="order_status == 'prepared'"
+                       decoration-primary="order_status == 'manufacturing'" 
                        decoration-warning="order_status == 'warehouse'"/>
                 <field name="state" invisible="1"/>
                 <field name="company_id" groups="base.group_multi_company"/>
@@ -54,6 +55,7 @@ datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
                 <filter string="Pedidos Confirmados" name="confirmed_orders" domain="[('state', '=', 'sale')]"/>
                 <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
                 <filter string="Salida" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
+                <filter string="Preparado" name="prepared_orders" domain="[('order_status', '=', 'prepared')]"/>
                 <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
                 <filter string="En Almacén" name="warehouse_orders" domain="[('order_status', '=', 'warehouse')]"/>
                 <filter string="Entrega Atrasada" name="late_delivery" domain="[('days_to_delivery', '&lt;=', 0), ('picking_status', '!=',

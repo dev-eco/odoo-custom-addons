@@ -128,7 +128,8 @@ class ProductSummary(models.Model):
     order_status = fields.Selection([
         ('warehouse', 'Almacén'),
         ('manufacturing', 'Fabricación'),
-        ('shipped', 'Salido')
+        ('prepared', 'Preparado'),
+        ('shipped', 'Salida')
     ], string='Estado de Pedido', readonly=True)
     days_to_delivery = fields.Integer(string='Días para Entrega', readonly=True)
 
