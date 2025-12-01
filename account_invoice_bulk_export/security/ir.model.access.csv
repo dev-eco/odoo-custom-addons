@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bulk_export_wizard_user,Wizard Exportación Usuario,model_account_bulk_export_wizard,account.group_account_user,1,1,1,1
+access_bulk_export_wizard_manager,Wizard Exportación Gestor,model_account_bulk_export_wizard,account.group_account_manager,1,1,1,1
+access_bulk_export_wizard_readonly,Wizard Exportación Solo Lectura,model_account_bulk_export_wizard,account.group_account_readonly,1,0,0,0
+access_bulk_export_wizard_invoice,Wizard Exportación Usuario Facturas,model_account_bulk_export_wizard,account.group_account_invoice,1,1,1,1
+access_export_history_user,Historial Exportación Usuario,model_account_invoice_export_history,account.group_account_user,1,1,1,0
+access_export_history_manager,Historial Exportación Gestor,model_account_invoice_export_history,account.group_account_manager,1,1,1,1
+access_export_history_readonly,Historial Exportación Solo Lectura,model_account_invoice_export_history,account.group_account_readonly,1,0,0,0
