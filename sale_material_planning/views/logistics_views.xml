@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de árbol específica para logística -->
+    <record id="view_order_tree_logistics" model="ir.ui.view">
+        <field name="name">sale.order.tree.logistics</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <tree string="Pedidos para Logística">
+                <field name="name" string="Pedido"/>
+                <field name="partner_id"/>
+                <field name="delivery_date"/>
+                <field name="days_to_delivery"
+                       decoration-warning="days_to_delivery &lt;= 3 and days_to_delivery &gt; 0"
+                       decoration-danger="days_to_delivery &lt;= 0"/>
+                <field name="is_urgent" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
+                <field name="order_status"
+                       decoration-success="order_status == 'shipped'"
+                       decoration-info="order_status == 'prepared'"
+                       decoration-primary="order_status == 'manufacturing'"
+                       decoration-warning="order_status == 'warehouse'"/>
+                <field name="total_product_qty" sum="Total"/>
+                <field name="picking_status" widget="badge"
+                       decoration-success="picking_status == 'done'"
+                       decoration-info="picking_status == 'assigned'"
+                       decoration-warning="picking_status == 'partially_available'"
+                       decoration-danger="picking_status in ['not_created', 'waiting']"/>
+                <field name="product_summary"/>
+                <field name="amount_total" sum="Total" widget="monetary"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Filtros específicos para logística -->
+    <record id="view_sales_order_filter_logistics" model="ir.ui.view">
+        <field name="name">sale.order.list.select.logistics</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Pedidos para Logística">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="product_summary"/>
+                <separator/>
+                <filter string="Preparados para Salida" name="prepared_orders" domain="[('order_status', '=', 'prepared')]"/>
+                <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
+                <filter string="Entrega Hoy" name="delivery_today" domain="[('delivery_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Entrega Mañana" name="delivery_tomorrow" domain="[('delivery_date', '=', (context_today() +
+datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Cliente" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Estado de Pedido" name="group_by_order_status" context="{'group_by': 'order_status'}"/>
+                    <filter string="Fecha de Entrega" name="group_by_delivery_date" context="{'group_by': 'delivery_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción para abrir la vista de logística -->
+    <record id="action_sale_order_logistics" model="ir.actions.act_window">
+        <field name="name">Pedidos para Logística</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'sale')]</field>
+        <field name="context">{
+            'search_default_prepared_orders': 1
+        }</field>
+        <field name="view_id" ref="view_order_tree_logistics"/>
+        <field name="search_view_id" ref="view_sales_order_filter_logistics"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay pedidos preparados para logística.
+            </p>
+        </field>
+    </record>
+
+    <!-- Elemento de menú para logística -->
+    <menuitem id="menu_sale_logistics"
+              name="Pedidos para Logística"
+              parent="stock.menu_stock_root"
+              sequence="5"
+              action="action_sale_order_logistics"
+              groups="stock.group_stock_user"/>
+</odoo>

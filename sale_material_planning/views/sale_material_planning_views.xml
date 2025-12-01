@@ -12,6 +12,8 @@
                     <header>
                         <button name="action_mark_as_shipped" string="Marcar como Salida" type="object" 
                                 class="oe_highlight" invisible="order_status == 'shipped'"/>
+                        <button name="action_mark_as_prepared" string="Marcar como Preparado" type="object" 
+                                class="oe_highlight" invisible="order_status == 'prepared'"/>
                         <button name="action_mark_as_manufacturing" string="Marcar como En Fabricación" type="object" 
                                 invisible="order_status == 'manufacturing'"/>
                         <button name="action_mark_as_warehouse" string="Marcar como En Almacén" type="object" 
@@ -22,7 +24,7 @@
                             <field name="delivery_date"/>
                             <field name="days_to_delivery"/>
                             <field name="is_urgent"/>
-                            <field name="order_status" widget="radio" options="{'horizontal': true}"/>
+                            <field name="order_status" widget="radio"/>
                         </group>
                         <group>
                             <field name="total_product_qty"/>
@@ -55,7 +57,8 @@
                        decoration-danger="days_to_delivery &lt;= 0 and picking_status != 'done'"/>
                 <field name="is_urgent" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
                 <field name="order_status" decoration-success="order_status == 'shipped'" 
-                       decoration-info="order_status == 'manufacturing'" 
+                       decoration-info="order_status == 'prepared'"
+                       decoration-primary="order_status == 'manufacturing'" 
                        decoration-warning="order_status == 'warehouse'"/>
                 <field name="total_product_qty" sum="Total"/>
                 <field name="picking_status" widget="badge" 
@@ -99,7 +102,8 @@
                                         <field name="name"/> - <field name="partner_id"/>
                                     </strong>
                                     <span t-if="record.order_status.raw_value == 'shipped'" class="badge badge-success">SALIDA</span>
-                                    <span t-elif="record.order_status.raw_value == 'manufacturing'" class="badge badge-info">FABRICACIÓN</span>
+                                    <span t-elif="record.order_status.raw_value == 'prepared'" class="badge badge-info">PREPARADO</span>
+                                    <span t-elif="record.order_status.raw_value == 'manufacturing'" class="badge badge-primary">FABRICACIÓN</span>
                                     <span t-elif="record.is_urgent.raw_value" class="badge badge-danger">URGENTE</span>
                                 </div>
                                 <div class="o_kanban_record_subtitle">
@@ -167,6 +171,7 @@
                 <separator/>
                 <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
                 <filter string="Salida" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
+                <filter string="Preparado" name="prepared_orders" domain="[('order_status', '=', 'prepared')]"/>
                 <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
                 <filter string="En Almacén" name="warehouse_orders" domain="[('order_status', '=', 'warehouse')]"/>
                 <filter string="Entrega Atrasada" name="late_delivery" domain="[('days_to_delivery', '&lt;=', 0), ('picking_status', '!=', 'done')]"/>
