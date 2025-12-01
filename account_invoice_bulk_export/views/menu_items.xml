@@ -17,6 +17,14 @@
                   action="action_bulk_export_wizard_menu"
                   sequence="100"
                   groups="account.group_account_manager"/>
+                  
+        <!-- Menú para historial de exportaciones -->
+        <menuitem id="menu_export_history"
+                  name="Historial de Exportaciones"
+                  parent="account.menu_finance_reports"
+                  action="action_invoice_export_history"
+                  sequence="91"
+                  groups="account.group_account_user"/>
 
     </data>
 </odoo>

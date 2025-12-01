@@ -67,6 +67,7 @@ Requisitos:
         'views/export_history_views.xml',
         'wizard/bulk_export_wizard_views.xml',
         'views/menu_items.xml',
+        'views/res_config_settings_views.xml',
         'data/export_data.xml',
     ],
     'demo': [

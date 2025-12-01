@@ -115,9 +115,6 @@
                             <group string="⚙️ Opciones Avanzadas">
                                 <field name="organize_by_type" 
                                        string="📁 Organizar en carpetas por tipo de documento"/>
-                                
-                                <field name="include_attachments" 
-                                       string="📎 Incluir archivos adjuntos de las facturas"/>
                             </group>
 
                             <!-- Selección de Facturas -->
@@ -227,7 +224,6 @@
                                     <field name="organize_by_type" readonly="1"/>
                                 </group>
                                 <group>
-                                    <field name="include_attachments" readonly="1"/>
                                     <field name="batch_size" readonly="1"/>
                                     <field name="company_id" readonly="1"/>
                                 </group>
@@ -308,11 +304,6 @@
                                            invisible="failed_count == 0"
                                            widget="integer"/>
                                     
-                                    <field name="attachments_count" 
-                                           readonly="1" 
-                                           string="📎 Adjuntos Incluidos"
-                                           invisible="attachments_count == 0"
-                                           widget="integer"/>
                                 </group>
                                 
                                 <group>

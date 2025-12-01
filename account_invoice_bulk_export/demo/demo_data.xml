@@ -15,7 +15,6 @@
             <field name="failed_count">1</field>
             <field name="processing_time">12.5</field>
             <field name="file_size">15.3</field>
-            <field name="include_attachments" eval="False"/>
             <field name="organized_by_type" eval="True"/>
             <field name="move_types">Facturas Cliente, Facturas Proveedor</field>
             <field name="state_filter">posted</field>

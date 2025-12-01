@@ -170,12 +170,6 @@ class BulkExportWizard(models.TransientModel):
         help='Crea carpetas separadas para facturas, notas de crédito, etc.'
     )
     
-    include_attachments = fields.Boolean(
-        string='Incluir Archivos Adjuntos',
-        default=False,
-        help='Incluye todos los archivos adjuntos a las facturas'
-    )
-    
     batch_size = fields.Integer(
         string='Tamaño del Lote',
         default=50,
@@ -259,12 +253,6 @@ class BulkExportWizard(models.TransientModel):
     failed_count = fields.Integer(
         string='Facturas Fallidas',
         readonly=True,
-    )
-    
-    attachments_count = fields.Integer(
-        string='Adjuntos Incluidos',
-        readonly=True,
-        default=0,
     )
     
     processing_time = fields.Float(
@@ -484,7 +472,6 @@ class BulkExportWizard(models.TransientModel):
                 'export_filename': filename,
                 'export_count': len(invoices) - failed_count,
                 'failed_count': failed_count,
-                'attachments_count': attachments_count,
                 'processing_time': round(processing_time, 2),
                 'progress_percentage': 100.0,
                 'progress_message': _('Exportación completada'),
@@ -681,13 +668,6 @@ class BulkExportWizard(models.TransientModel):
                         )
                     else:
                         zip_file.writestr(filename, pdf_content)
-                    
-                    # Incluir adjuntos si está habilitado
-                    if self.include_attachments:
-                        attachment_count = self._add_invoice_attachments(
-                            zip_file, invoice, folder
-                        )
-                        attachments_count += attachment_count
                         
                 except Exception as e:
                     _logger.warning(
@@ -744,13 +724,6 @@ class BulkExportWizard(models.TransientModel):
                     tarinfo.size = len(pdf_content)
                     tarinfo.mtime = datetime.now().timestamp()
                     tar_file.addfile(tarinfo, io.BytesIO(pdf_content))
-                    
-                    # Adjuntos
-                    if self.include_attachments:
-                        attachment_count = self._add_invoice_attachments_tar(
-                            tar_file, invoice, folder
-                        )
-                        attachments_count += attachment_count
                     
                 except Exception as e:
                     _logger.warning(
@@ -861,75 +834,7 @@ class BulkExportWizard(models.TransientModel):
         
         return pdf_content
 
-    def _add_invoice_attachments(self, zip_file, invoice, base_folder=''):
-        """
-        Agrega archivos adjuntos de la factura al ZIP.
-        
-        Args:
-            zip_file: objeto ZipFile
-            invoice: registro de factura
-            base_folder: carpeta base donde agregar adjuntos
-            
-        Returns:
-            int: cantidad de adjuntos agregados
-        """
-        attachments = self.env['ir.attachment'].search([
-            ('res_model', '=', 'account.move'),
-            ('res_id', '=', invoice.id),
-        ])
-        
-        attachment_folder = base_folder + 'Adjuntos/'
-        count = 0
-        
-        for attachment in attachments:
-            try:
-                filename = attachment_folder + self._sanitize_filename(attachment.name)
-                content = base64.b64decode(attachment.datas)
-                zip_file.writestr(filename, content)
-                count += 1
-            except Exception as e:
-                _logger.warning(
-                    f"Error al agregar adjunto {attachment.name}: {e}"
-                )
-        
-        return count
-
-    def _add_invoice_attachments_tar(self, tar_file, invoice, base_folder=''):
-        """
-        Agrega archivos adjuntos de la factura al TAR.
-        
-        Args:
-            tar_file: objeto TarFile
-            invoice: registro de factura
-            base_folder: carpeta base
-            
-        Returns:
-            int: cantidad de adjuntos agregados
-        """
-        attachments = self.env['ir.attachment'].search([
-            ('res_model', '=', 'account.move'),
-            ('res_id', '=', invoice.id),
-        ])
-        
-        attachment_folder = base_folder + 'Adjuntos/'
-        count = 0
-        
-        for attachment in attachments:
-            try:
-                filename = attachment_folder + self._sanitize_filename(attachment.name)
-                content = base64.b64decode(attachment.datas)
-                
-                tarinfo = tarfile.TarInfo(name=filename)
-                tarinfo.size = len(content)
-                tarinfo.mtime = datetime.now().timestamp()
-                tar_file.addfile(tarinfo, io.BytesIO(content))
-                count += 1
-            except Exception as e:
-                _logger.warning(
-                    f"Error al agregar adjunto {attachment.name}: {e}"
-                )
-        
-        return count
+    # Estos métodos se eliminan ya que no queremos exportar archivos adjuntos
 
     def _create_export_history(self, invoices):
         """
@@ -961,7 +866,7 @@ class BulkExportWizard(models.TransientModel):
             'failed_count': self.failed_count,
             'processing_time': self.processing_time,
             'file_size': self.file_size_mb,
-            'include_attachments': self.include_attachments,
+            'include_attachments': False,
             'organized_by_type': self.organize_by_type,
             'date_from': self.date_from,
             'date_to': self.date_to,
