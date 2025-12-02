@@ -925,13 +925,47 @@ class BulkExportWizard(models.TransientModel):
             bytes: contenido del PDF
         """
         try:
-            # Obtener el reporte de factura estándar de Odoo
-            report = self.env.ref('account.account_invoices')
+            # Buscar el reporte de facturas de forma más robusta
+            report = None
+            
+            # Intentar diferentes referencias de reportes de facturas
+            report_refs = [
+                'account.account_invoices',
+                'account.report_invoice',
+                'account.account_invoice_report_duplicate_main',
+            ]
+            
+            for ref in report_refs:
+                try:
+                    report = self.env.ref(ref, raise_if_not_found=False)
+                    if report:
+                        break
+                except:
+                    continue
+            
+            # Si no encontramos por referencia, buscar por modelo
+            if not report:
+                report = self.env['ir.actions.report'].search([
+                    ('model', '=', 'account.move'),
+                    ('report_type', '=', 'qweb-pdf'),
+                    ('report_name', 'ilike', 'invoice')
+                ], limit=1)
+            
+            # Si aún no hay reporte, buscar cualquier reporte para account.move
+            if not report:
+                report = self.env['ir.actions.report'].search([
+                    ('model', '=', 'account.move'),
+                    ('report_type', '=', 'qweb-pdf')
+                ], limit=1)
+            
+            if not report:
+                raise UserError(_('No se encontró ningún reporte PDF configurado para facturas.'))
             
             # Generar PDF usando el motor de reportes
-            pdf_content, _ = report._render_qweb_pdf(invoice.id)
+            pdf_content, _ = report._render_qweb_pdf([invoice.id])
             
             return pdf_content
+            
         except Exception as e:
             _logger.error(f"Error al generar PDF para factura {invoice.name}: {str(e)}")
             # Generar un PDF básico con mensaje de error
