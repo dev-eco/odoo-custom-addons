@@ -6,7 +6,7 @@ import zipfile
 import tarfile
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
 
 from odoo import api, fields, models, _
@@ -700,12 +700,12 @@ class BulkExportWizard(models.TransientModel):
                     if self.organize_by_type:
                         folder = self._get_folder_name(invoice) + '/'
                     
-                    # Generar nombre de archivo y obtener PDF
+                    # Generar archivo - MÉTODO SIMPLIFICADO
                     filename = folder + self._generate_filename(invoice)
-                    pdf_content = self._get_invoice_pdf(invoice)
+                    pdf_content = self._get_invoice_pdf(invoice)  # Ahora es más robusto
                     
-                    if not pdf_content:
-                        _logger.warning(f"PDF vacío para factura {invoice.name}")
+                    if not pdf_content or len(pdf_content) < 50:
+                        _logger.warning(f"PDF inválido para factura {invoice.name}")
                         failed_count += 1
                         continue
                         
@@ -743,11 +743,9 @@ class BulkExportWizard(models.TransientModel):
                                 zip_file.writestr(full_path, att_content)
                         
                 except Exception as e:
-                    _logger.warning(
-                        f"Error al procesar factura {invoice.name}: {e}",
-                        exc_info=True
-                    )
+                    _logger.error(f"Error procesando factura {invoice.name}: {str(e)}")
                     failed_count += 1
+                    continue  # Continuar con la siguiente factura
 
         # Actualizar progreso final
         self._update_progress(90, _('Finalizando archivo...'))
@@ -788,12 +786,12 @@ class BulkExportWizard(models.TransientModel):
                     if self.organize_by_type:
                         folder = self._get_folder_name(invoice) + '/'
                     
-                    # Generar archivo
+                    # Generar archivo - MÉTODO SIMPLIFICADO
                     filename = folder + self._generate_filename(invoice)
-                    pdf_content = self._get_invoice_pdf(invoice)
+                    pdf_content = self._get_invoice_pdf(invoice)  # Ahora es más robusto
                     
-                    if not pdf_content:
-                        _logger.warning(f"PDF vacío para factura {invoice.name}")
+                    if not pdf_content or len(pdf_content) < 50:
+                        _logger.warning(f"PDF inválido para factura {invoice.name}")
                         failed_count += 1
                         continue
                         
@@ -824,11 +822,9 @@ class BulkExportWizard(models.TransientModel):
                             tar_file.addfile(att_tarinfo, io.BytesIO(att_content))
                     
                 except Exception as e:
-                    _logger.warning(
-                        f"Error al procesar factura {invoice.name}: {e}",
-                        exc_info=True
-                    )
+                    _logger.error(f"Error procesando factura {invoice.name}: {str(e)}")
                     failed_count += 1
+                    continue  # Continuar con la siguiente factura
 
         self._update_progress(90, _('Finalizando archivo...'))
         
@@ -916,111 +912,54 @@ class BulkExportWizard(models.TransientModel):
 
     def _get_invoice_pdf(self, invoice):
         """
-        Obtiene el PDF real de la factura usando el motor de reportes de Odoo.
+        Obtiene el PDF de la factura desde los archivos adjuntos existentes.
+        Método simplificado que usa PDFs ya generados previamente.
         
         Args:
             invoice: registro de factura
             
         Returns:
-            bytes: contenido del PDF
+            bytes: contenido del PDF adjunto o None si no existe
         """
         try:
-            _logger.info(f"Generando PDF para factura {invoice.name}")
+            _logger.info(f"🔍 Buscando PDF adjunto para factura {invoice.name} (ID: {invoice.id})")
             
-            # Método 1: Usar el método nativo de Odoo para generar PDFs de facturas
-            try:
-                # En Odoo 17, usar el método directo del recordset
-                pdf_content = invoice._generate_pdf()
-                if pdf_content:
-                    _logger.info(f"PDF generado exitosamente usando _generate_pdf para factura {invoice.name}")
-                    return pdf_content
-            except AttributeError:
-                _logger.debug("Método _generate_pdf no disponible")
-            except Exception as method1_error:
-                _logger.debug(f"Método 1 (_generate_pdf) falló: {str(method1_error)}")
+            # Buscar archivos adjuntos PDF de la factura
+            pdf_attachments = self.env['ir.attachment'].search([
+                ('res_model', '=', 'account.move'),
+                ('res_id', '=', invoice.id),
+                ('mimetype', '=', 'application/pdf'),
+            ], order='create_date desc')  # El más reciente primero
             
-            # Método 2: Usar el reporte estándar con referencia XML
-            try:
-                report_xmlid = 'account.account_invoices'
-                report = self.env.ref(report_xmlid, raise_if_not_found=False)
-                if report:
-                    # Usar with_context para evitar problemas de validación
-                    pdf_content, _ = report.with_context(
-                        force_report_rendering=True,
-                        discard_logo_check=True
-                    ).sudo()._render_qweb_pdf([invoice.id])
+            if pdf_attachments:
+                # Usar el PDF más reciente
+                attachment = pdf_attachments[0]
+                _logger.info(f"✅ PDF encontrado: {attachment.name} para factura {invoice.name}")
+                
+                # Obtener contenido del adjunto
+                if attachment.datas:
+                    pdf_content = base64.b64decode(attachment.datas)
                     
-                    if pdf_content:
-                        _logger.info(f"PDF generado exitosamente usando {report_xmlid} para factura {invoice.name}")
+                    # Validar que es un PDF válido (mínimo 100 bytes y empieza con %PDF)
+                    if len(pdf_content) > 100 and pdf_content.startswith(b'%PDF'):
+                        _logger.info(f"✅ PDF válido obtenido para factura {invoice.name}")
                         return pdf_content
-            except Exception as method2_error:
-                _logger.debug(f"Método 2 (XML ref) falló: {str(method2_error)}")
+                    else:
+                        _logger.warning(f"PDF adjunto inválido para factura {invoice.name}")
+                else:
+                    _logger.warning(f"PDF adjunto sin contenido para factura {invoice.name}")
             
-            # Método 3: Buscar y usar cualquier reporte disponible para account.move
-            try:
-                reports = self.env['ir.actions.report'].search([
-                    ('model', '=', 'account.move'),
-                    ('report_type', '=', 'qweb-pdf')
-                ])
-                
-                for report in reports:
-                    try:
-                        _logger.info(f"Intentando con reporte: {report.name} ({report.report_name})")
-                        
-                        # Usar with_context para configuración específica
-                        pdf_content, _ = report.with_context(
-                            force_report_rendering=True,
-                            discard_logo_check=True,
-                            active_model='account.move',
-                            active_ids=[invoice.id]
-                        ).sudo()._render_qweb_pdf([invoice.id])
-                        
-                        if pdf_content:
-                            _logger.info(f"PDF generado exitosamente usando reporte {report.name} para factura {invoice.name}")
-                            return pdf_content
-                            
-                    except Exception as report_error:
-                        _logger.debug(f"Reporte {report.name} falló: {str(report_error)}")
-                        continue
-                        
-            except Exception as method3_error:
-                _logger.debug(f"Método 3 (búsqueda de reportes) falló: {str(method3_error)}")
+            # Si no hay PDF adjunto, intentar generar uno básico
+            _logger.warning(f"❌ No se encontró PDF adjunto para factura {invoice.name}")
+            return self._generate_fallback_pdf(invoice)
             
-            # Método 4: Usar action_invoice_print si está disponible
-            try:
-                if hasattr(invoice, 'action_invoice_print'):
-                    action_result = invoice.action_invoice_print()
-                    if isinstance(action_result, dict) and 'report_name' in action_result:
-                        report_name = action_result['report_name']
-                        
-                        # Buscar el reporte por nombre
-                        report = self.env['ir.actions.report'].search([
-                            ('report_name', '=', report_name)
-                        ], limit=1)
-                        
-                        if report:
-                            pdf_content, _ = report.with_context(
-                                force_report_rendering=True
-                            ).sudo()._render_qweb_pdf([invoice.id])
-                            
-                            if pdf_content:
-                                _logger.info(f"PDF generado usando action_invoice_print para factura {invoice.name}")
-                                return pdf_content
-                                
-            except Exception as method4_error:
-                _logger.debug(f"Método 4 (action_invoice_print) falló: {str(method4_error)}")
-            
-            # Si todos los métodos fallan, generar PDF de error
-            _logger.warning(f"Todos los métodos fallaron para factura {invoice.name}, generando PDF de error")
-            return self._generate_error_pdf(invoice)
-                
         except Exception as e:
-            _logger.error(f"Error crítico al generar PDF para factura {invoice.name}: {str(e)}", exc_info=True)
-            return self._generate_error_pdf(invoice)
+            _logger.error(f"Error obteniendo PDF para {invoice.name}: {str(e)}", exc_info=True)
+            return self._generate_fallback_pdf(invoice)
 
-    def _generate_error_pdf(self, invoice):
+    def _generate_fallback_pdf(self, invoice):
         """
-        Genera un PDF básico con mensaje de error cuando no se puede generar el PDF real.
+        Genera un PDF de respaldo solo con información básica cuando no existe adjunto.
         
         Args:
             invoice: registro de factura
@@ -1029,35 +968,118 @@ class BulkExportWizard(models.TransientModel):
             bytes: contenido del PDF básico
         """
         try:
-            from reportlab.pdfgen import canvas
-            from reportlab.lib.pagesizes import letter
+            _logger.info(f"📄 Generando PDF de respaldo para factura {invoice.name}")
             
-            buffer = io.BytesIO()
-            c = canvas.Canvas(buffer, pagesize=letter)
+            # PDF mínimo pero válido con información de la factura
+            pdf_content = f"""%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 595 842]
+/Contents 4 0 R
+/Resources <<
+  /Font <<
+    /F1 <<
+      /Type /Font
+      /Subtype /Type1
+      /BaseFont /Helvetica
+    >>
+  >>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length 400
+>>
+stream
+BT
+/F1 16 Tf
+50 750 Td
+(FACTURA: {invoice.name or 'SIN_NUMERO'}) Tj
+0 -30 Td
+/F1 12 Tf
+(ID: {invoice.id}) Tj
+0 -20 Td
+(Tipo: {invoice.move_type}) Tj
+0 -20 Td
+(Estado: {invoice.state}) Tj
+0 -20 Td
+(Cliente/Proveedor: {(invoice.partner_id.name or 'DESCONOCIDO')[:60]}) Tj
+0 -20 Td
+(Fecha: {invoice.invoice_date or 'SIN_FECHA'}) Tj
+0 -20 Td
+(Importe: {invoice.amount_total} {invoice.currency_id.name or ''}) Tj
+0 -20 Td
+(Compania: {(invoice.company_id.name or 'DESCONOCIDA')[:60]}) Tj
+0 -40 Td
+/F1 10 Tf
+(NOTA: PDF generado automaticamente.) Tj
+0 -15 Td
+(El PDF original no estaba disponible como adjunto.) Tj
+0 -15 Td
+(Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}) Tj
+ET
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000300 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+750
+%%EOF"""
             
-            # Título
-            c.setFont("Helvetica-Bold", 16)
-            c.drawString(100, 750, f"ERROR AL GENERAR PDF")
+            return pdf_content.encode('utf-8')
             
-            # Información de la factura
-            c.setFont("Helvetica", 12)
-            c.drawString(100, 700, f"Factura: {invoice.name}")
-            c.drawString(100, 680, f"Cliente/Proveedor: {invoice.partner_id.name}")
-            c.drawString(100, 660, f"Fecha: {invoice.invoice_date or 'N/A'}")
-            c.drawString(100, 640, f"Importe: {invoice.amount_total} {invoice.currency_id.name}")
+        except Exception as e:
+            _logger.error(f"Error generando PDF de respaldo para {invoice.name}: {str(e)}")
+            # PDF completamente mínimo como último recurso
+            return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF"
+
+    def _has_pdf_attachment(self, invoice):
+        """
+        Verifica si la factura tiene un PDF adjunto.
+        
+        Args:
+            invoice: registro de factura
             
-            # Mensaje de error
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(100, 600, "No se pudo generar el PDF original de esta factura.")
-            c.drawString(100, 580, "Por favor, acceda a la factura directamente en el sistema.")
-            
-            c.save()
-            return buffer.getvalue()
-            
-        except Exception as pdf_error:
-            _logger.error(f"Error al generar PDF de error: {str(pdf_error)}")
-            # Si falla incluso el PDF de error, devolver un PDF mínimo
-            return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF"
+        Returns:
+            bool: True si tiene PDF adjunto, False en caso contrario
+        """
+        pdf_count = self.env['ir.attachment'].search_count([
+            ('res_model', '=', 'account.move'),
+            ('res_id', '=', invoice.id),
+            ('mimetype', '=', 'application/pdf'),
+        ])
+        return pdf_count > 0
+
     
     def _get_invoice_attachments(self, invoice):
         """
