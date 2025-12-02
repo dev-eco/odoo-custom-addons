@@ -76,7 +76,7 @@
                         <!-- Título del wizard -->
                         <div class="oe_title">
                             <h1>
-                                <i class="fa fa-file-archive-o"/> Exportación Masiva de Facturas
+                                <i class="fa fa-file-archive-o" title="Archivo comprimido"/> Exportación Masiva de Facturas
                             </h1>
                             <p class="text-muted">
                                 Exporta múltiples facturas a un archivo comprimido con PDFs reales
@@ -122,7 +122,7 @@
                             <!-- Selección de Facturas -->
                             <group string="📄 Selección de Facturas" invisible="selected_count > 0">
                                 <p class="alert alert-info" role="alert" colspan="2">
-                                    <i class="fa fa-info-circle"/> 
+                                    <i class="fa fa-info-circle" title="Información"/> 
                                     <b>Modo de Selección:</b> No hay facturas pre-seleccionadas. 
                                     Use los filtros abajo para definir qué facturas exportar.
                                 </p>
@@ -133,7 +133,7 @@
                                 <group string="✅ Facturas Pre-seleccionadas">
                                     <div class="alert alert-success" role="alert" colspan="2">
                                         <h4>
-                                            <i class="fa fa-check-circle"/> 
+                                            <i class="fa fa-check-circle" title="Éxito"/> 
                                             <field name="selected_count"/> facturas pre-seleccionadas
                                         </h4>
                                         <p>Las facturas han sido seleccionadas desde la vista de lista. 
@@ -185,7 +185,7 @@
                         <div invisible="state != 'preview'">
 
                             <div class="alert alert-info" role="alert">
-                                <h3><i class="fa fa-search"/> Vista Previa de Exportación</h3>
+                                <h3><i class="fa fa-search" title="Buscar"/> Vista Previa de Exportación</h3>
                                 <p>Revise los detalles de las facturas que se exportarán antes de continuar.</p>
                             </div>
 
@@ -235,7 +235,7 @@
                             <div class="alert alert-warning" role="alert"
                                  invisible="preview_invoice_count &lt; 200">
                                 <p>
-                                    <i class="fa fa-exclamation-triangle"/> 
+                                    <i class="fa fa-exclamation-triangle" title="Advertencia"/> 
                                     <b>Nota:</b> Está a punto de exportar más de 200 facturas. 
                                     El proceso puede tardar varios minutos. 
                                     Considere filtrar por fechas si es necesario.
@@ -251,7 +251,7 @@
                             
                             <div class="alert alert-warning" role="status">
                                 <h3>
-                                    <i class="fa fa-spinner fa-spin"/> Procesando Exportación
+                                    <i class="fa fa-spinner fa-spin" title="Procesando"/> Procesando Exportación
                                 </h3>
                                 <p>Por favor espere mientras se generan los PDFs y se crea el archivo comprimido...</p>
                             </div>
@@ -270,7 +270,7 @@
 
                             <div class="text-center">
                                 <p class="text-muted">
-                                    <i class="fa fa-clock-o"/> 
+                                    <i class="fa fa-clock-o" title="Tiempo"/> 
                                     Este proceso puede tardar dependiendo de la cantidad de facturas.
                                 </p>
                             </div>
@@ -284,7 +284,7 @@
                             
                             <div class="alert alert-success" role="alert">
                                 <h3>
-                                    <i class="fa fa-check-circle"/> ¡Exportación Completada!
+                                    <i class="fa fa-check-circle" title="Completado"/> ¡Exportación Completada!
                                 </h3>
                                 <p>
                                     Se han exportado <strong><field name="export_count"/> facturas</strong> 
@@ -338,7 +338,7 @@
                             <div class="alert alert-warning" role="alert"
                                  invisible="failed_count == 0">
                                 <p>
-                                    <i class="fa fa-exclamation-triangle"/> 
+                                    <i class="fa fa-exclamation-triangle" title="Advertencia"/> 
                                     <b>Atención:</b> 
                                     <field name="failed_count"/> facturas no pudieron ser exportadas.
                                     Revise los logs del sistema para más detalles.
@@ -354,7 +354,7 @@
                             
                             <div class="alert alert-danger" role="alert">
                                 <h3>
-                                    <i class="fa fa-times-circle"/> Error en la Exportación
+                                    <i class="fa fa-times-circle" title="Error"/> Error en la Exportación
                                 </h3>
                                 <p>Se produjo un error durante el proceso de exportación.</p>
                             </div>

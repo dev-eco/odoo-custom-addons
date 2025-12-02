@@ -925,50 +925,97 @@ class BulkExportWizard(models.TransientModel):
             bytes: contenido del PDF
         """
         try:
-            # Buscar el reporte de facturas de forma más robusta
-            report = None
+            _logger.info(f"Generando PDF para factura {invoice.name}")
             
-            # Intentar diferentes referencias de reportes de facturas
-            report_refs = [
-                'account.account_invoices',
-                'account.report_invoice',
-                'account.account_invoice_report_duplicate_main',
-            ]
+            # Método 1: Usar el método nativo de Odoo para generar PDFs de facturas
+            try:
+                # En Odoo 17, usar el método directo del recordset
+                pdf_content = invoice._generate_pdf()
+                if pdf_content:
+                    _logger.info(f"PDF generado exitosamente usando _generate_pdf para factura {invoice.name}")
+                    return pdf_content
+            except AttributeError:
+                _logger.debug("Método _generate_pdf no disponible")
+            except Exception as method1_error:
+                _logger.debug(f"Método 1 (_generate_pdf) falló: {str(method1_error)}")
             
-            for ref in report_refs:
-                try:
-                    report = self.env.ref(ref, raise_if_not_found=False)
-                    if report:
-                        break
-                except:
-                    continue
+            # Método 2: Usar el reporte estándar con referencia XML
+            try:
+                report_xmlid = 'account.account_invoices'
+                report = self.env.ref(report_xmlid, raise_if_not_found=False)
+                if report:
+                    # Usar with_context para evitar problemas de validación
+                    pdf_content, _ = report.with_context(
+                        force_report_rendering=True,
+                        discard_logo_check=True
+                    ).sudo()._render_qweb_pdf([invoice.id])
+                    
+                    if pdf_content:
+                        _logger.info(f"PDF generado exitosamente usando {report_xmlid} para factura {invoice.name}")
+                        return pdf_content
+            except Exception as method2_error:
+                _logger.debug(f"Método 2 (XML ref) falló: {str(method2_error)}")
             
-            # Si no encontramos por referencia, buscar por modelo
-            if not report:
-                report = self.env['ir.actions.report'].search([
-                    ('model', '=', 'account.move'),
-                    ('report_type', '=', 'qweb-pdf'),
-                    ('report_name', 'ilike', 'invoice')
-                ], limit=1)
-            
-            # Si aún no hay reporte, buscar cualquier reporte para account.move
-            if not report:
-                report = self.env['ir.actions.report'].search([
+            # Método 3: Buscar y usar cualquier reporte disponible para account.move
+            try:
+                reports = self.env['ir.actions.report'].search([
                     ('model', '=', 'account.move'),
                     ('report_type', '=', 'qweb-pdf')
-                ], limit=1)
+                ])
+                
+                for report in reports:
+                    try:
+                        _logger.info(f"Intentando con reporte: {report.name} ({report.report_name})")
+                        
+                        # Usar with_context para configuración específica
+                        pdf_content, _ = report.with_context(
+                            force_report_rendering=True,
+                            discard_logo_check=True,
+                            active_model='account.move',
+                            active_ids=[invoice.id]
+                        ).sudo()._render_qweb_pdf([invoice.id])
+                        
+                        if pdf_content:
+                            _logger.info(f"PDF generado exitosamente usando reporte {report.name} para factura {invoice.name}")
+                            return pdf_content
+                            
+                    except Exception as report_error:
+                        _logger.debug(f"Reporte {report.name} falló: {str(report_error)}")
+                        continue
+                        
+            except Exception as method3_error:
+                _logger.debug(f"Método 3 (búsqueda de reportes) falló: {str(method3_error)}")
             
-            if not report:
-                raise UserError(_('No se encontró ningún reporte PDF configurado para facturas.'))
+            # Método 4: Usar action_invoice_print si está disponible
+            try:
+                if hasattr(invoice, 'action_invoice_print'):
+                    action_result = invoice.action_invoice_print()
+                    if isinstance(action_result, dict) and 'report_name' in action_result:
+                        report_name = action_result['report_name']
+                        
+                        # Buscar el reporte por nombre
+                        report = self.env['ir.actions.report'].search([
+                            ('report_name', '=', report_name)
+                        ], limit=1)
+                        
+                        if report:
+                            pdf_content, _ = report.with_context(
+                                force_report_rendering=True
+                            ).sudo()._render_qweb_pdf([invoice.id])
+                            
+                            if pdf_content:
+                                _logger.info(f"PDF generado usando action_invoice_print para factura {invoice.name}")
+                                return pdf_content
+                                
+            except Exception as method4_error:
+                _logger.debug(f"Método 4 (action_invoice_print) falló: {str(method4_error)}")
             
-            # Generar PDF usando el motor de reportes
-            pdf_content, _ = report._render_qweb_pdf([invoice.id])
-            
-            return pdf_content
-            
+            # Si todos los métodos fallan, generar PDF de error
+            _logger.warning(f"Todos los métodos fallaron para factura {invoice.name}, generando PDF de error")
+            return self._generate_error_pdf(invoice)
+                
         except Exception as e:
-            _logger.error(f"Error al generar PDF para factura {invoice.name}: {str(e)}")
-            # Generar un PDF básico con mensaje de error
+            _logger.error(f"Error crítico al generar PDF para factura {invoice.name}: {str(e)}", exc_info=True)
             return self._generate_error_pdf(invoice)
 
     def _generate_error_pdf(self, invoice):
