@@ -121,7 +121,7 @@
 
                             <!-- Selección de Facturas -->
                             <group string="📄 Selección de Facturas" invisible="selected_count > 0">
-                                <p class="alert alert-info" colspan="2">
+                                <p class="alert alert-info" role="alert" colspan="2">
                                     <i class="fa fa-info-circle"/> 
                                     <b>Modo de Selección:</b> No hay facturas pre-seleccionadas. 
                                     Use los filtros abajo para definir qué facturas exportar.
@@ -131,7 +131,7 @@
                             <!-- Facturas Pre-seleccionadas -->
                             <div invisible="selected_count == 0">
                                 <group string="✅ Facturas Pre-seleccionadas">
-                                    <div class="alert alert-success" colspan="2">
+                                    <div class="alert alert-success" role="alert" colspan="2">
                                         <h4>
                                             <i class="fa fa-check-circle"/> 
                                             <field name="selected_count"/> facturas pre-seleccionadas
@@ -184,7 +184,7 @@
                         <!-- ============================================ -->
                         <div invisible="state != 'preview'">
 
-                            <div class="alert alert-info">
+                            <div class="alert alert-info" role="alert">
                                 <h3><i class="fa fa-search"/> Vista Previa de Exportación</h3>
                                 <p>Revise los detalles de las facturas que se exportarán antes de continuar.</p>
                             </div>
@@ -232,7 +232,7 @@
                             </group>
 
                             <!-- Advertencia si hay muchas facturas -->
-                            <div class="alert alert-warning" 
+                            <div class="alert alert-warning" role="alert"
                                  invisible="preview_invoice_count &lt; 200">
                                 <p>
                                     <i class="fa fa-exclamation-triangle"/> 
@@ -249,7 +249,7 @@
                         <!-- ============================================ -->
                         <div invisible="state != 'processing'">
                             
-                            <div class="alert alert-warning">
+                            <div class="alert alert-warning" role="status">
                                 <h3>
                                     <i class="fa fa-spinner fa-spin"/> Procesando Exportación
                                 </h3>
@@ -282,7 +282,7 @@
                         <!-- ============================================ -->
                         <div invisible="state != 'done'">
                             
-                            <div class="alert alert-success">
+                            <div class="alert alert-success" role="alert">
                                 <h3>
                                     <i class="fa fa-check-circle"/> ¡Exportación Completada!
                                 </h3>
@@ -335,7 +335,7 @@
                             </group>
 
                             <!-- Advertencia sobre Facturas Fallidas -->
-                            <div class="alert alert-warning" 
+                            <div class="alert alert-warning" role="alert"
                                  invisible="failed_count == 0">
                                 <p>
                                     <i class="fa fa-exclamation-triangle"/> 
@@ -352,7 +352,7 @@
                         <!-- ============================================ -->
                         <div invisible="state != 'error'">
                             
-                            <div class="alert alert-danger">
+                            <div class="alert alert-danger" role="alert">
                                 <h3>
                                     <i class="fa fa-times-circle"/> Error en la Exportación
                                 </h3>
