@@ -13,6 +13,9 @@
 .bg-info-light {
     background-color: #d1ecf1 !important;
 }
+.bg-muted-light {
+    background-color: #f8f9fa !important;
+}
 
 /* Mejoras en la visualización de las tarjetas */
 .oe_kanban_card {
@@ -26,6 +29,11 @@
 /* Estilos para los badges */
 .badge-danger {
     font-weight: bold !important;
+}
+
+/* Estilo para badges de estado nuevo */
+.badge-secondary {
+    background-color: #6c757d !important;
 }
 
 /* Estilos para la vista de lista */

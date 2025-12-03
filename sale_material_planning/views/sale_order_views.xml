@@ -11,7 +11,8 @@
                        decoration-success="order_status == 'shipped'"
                        decoration-info="order_status == 'prepared'"
                        decoration-primary="order_status == 'manufacturing'"
-                       decoration-warning="order_status == 'warehouse'"/>
+                       decoration-warning="order_status == 'warehouse'"
+                       decoration-muted="order_status == 'new'"/>
                 <field name="picking_status" optional="show" widget="badge"
                        decoration-success="picking_status == 'done'"
                        decoration-info="picking_status == 'assigned'"
@@ -37,7 +38,8 @@
                        decoration-success="order_status == 'shipped'"
                        decoration-info="order_status == 'prepared'"
                        decoration-primary="order_status == 'manufacturing'"
-                       decoration-warning="order_status == 'warehouse'"/>
+                       decoration-warning="order_status == 'warehouse'"
+                       decoration-muted="order_status == 'new'"/>
                 <field name="picking_status" optional="show" widget="badge"
                        decoration-success="picking_status == 'done'"
                        decoration-info="picking_status == 'assigned'"

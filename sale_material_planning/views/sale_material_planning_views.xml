@@ -18,6 +18,8 @@
                                 invisible="order_status == 'manufacturing'"/>
                         <button name="action_mark_as_warehouse" string="Marcar como En Almacén" type="object" 
                                 invisible="order_status == 'warehouse'"/>
+                        <button name="action_mark_as_new" string="Marcar como Nuevo" type="object" 
+                                invisible="order_status == 'new'"/>
                     </header>
                     <group>
                         <group>
@@ -59,7 +61,8 @@
                 <field name="order_status" decoration-success="order_status == 'shipped'" 
                        decoration-info="order_status == 'prepared'"
                        decoration-primary="order_status == 'manufacturing'" 
-                       decoration-warning="order_status == 'warehouse'"/>
+                       decoration-warning="order_status == 'warehouse'"
+                       decoration-muted="order_status == 'new'"/>
                 <field name="total_product_qty" sum="Total"/>
                 <field name="picking_status" widget="badge" 
                        decoration-success="picking_status == 'done'" 
@@ -170,6 +173,7 @@
                 ]"/>
                 <separator/>
                 <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
+                <filter string="Nuevos" name="new_orders" domain="[('order_status', '=', 'new')]"/>
                 <filter string="Salida" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
                 <filter string="Preparado" name="prepared_orders" domain="[('order_status', '=', 'prepared')]"/>
                 <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
