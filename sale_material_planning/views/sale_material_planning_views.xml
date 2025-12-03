@@ -180,7 +180,6 @@
                 <filter string="Preparado" name="prepared_orders" domain="[('order_status', '=', 'prepared')]"/>
                 <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
                 <filter string="En Almacén" name="warehouse_orders" domain="[('order_status', '=', 'warehouse')]"/>
-                <filter string="Sin estado" name="none_status_orders" domain="[('order_status', '=', 'none')]"/>
                 <filter string="Entrega Atrasada" name="late_delivery" domain="[('days_to_delivery', '&lt;=', 0), ('picking_status', '!=', 'done')]"/>
                 <separator/>
                 <filter string="Albarán No Creado" name="picking_not_created" domain="[('picking_status', '=', 'not_created')]"/>

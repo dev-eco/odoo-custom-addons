@@ -52,13 +52,15 @@ class SaleOrder(models.Model):
         help='Días restantes hasta la fecha de entrega'
     )
     
-    # Color para la vista kanban
-    color = fields.Integer(string='Color', compute='_compute_color', store=True)
-    
-    # Campo para marcar el estado del pedido
-    order_status = fields.Selection([
+        ('new', 'Nuevo'),  # Nuevo estado por defecto
+>>>>>>> development
+        ('warehouse', 'Almacén'),
+        ('manufacturing', 'Fabricación'),
+        ('prepared', 'Preparado'),
+        ('shipped', 'Salida')
 <<<<<<< HEAD
-        ('none', 'Sin estado'),
+    ], string='Estado de Pedido', default='none', tracking=True,
+       help='Estado actual del pedido: sin estado, en almacén, en fabricación, preparado o ya salido')
 =======
         ('new', 'Nuevo'),  # Nuevo estado por defecto
 >>>>>>> development
