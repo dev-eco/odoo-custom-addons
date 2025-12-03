@@ -1,3 +1,70 @@
+from odoo import api, fields, models
+from datetime import datetime, timedelta
+
+class SaleOrder(models.Model):
+    _inherit = 'sale.order'
+
+    # Campo calculado para mostrar resumen de productos
+    product_summary = fields.Text(
+        string='Resumen de Productos',
+        compute='_compute_product_summary',
+        store=False,
+        help='Resumen de referencias y cantidades de productos'
+    )
+    
+    # Campo para facilitar la agrupación por fecha de entrega
+    delivery_date = fields.Date(
+        string='Fecha de Entrega',
+        compute='_compute_delivery_date',
+        store=True,
+        help='Fecha estimada de entrega para agrupar'
+    )
+    
+    # Campo para contar total de unidades
+    total_product_qty = fields.Float(
+        string='Total Unidades',
+        compute='_compute_total_qty',
+        store=True,
+        help='Total de unidades en el pedido'
+    )
+    
+    # Campo para mostrar el estado del albarán
+    picking_status = fields.Selection([
+        ('not_created', 'No Creado'),
+        ('waiting', 'Esperando'),
+        ('partially_available', 'Parcialmente Disponible'),
+        ('assigned', 'Reservado'),
+        ('done', 'Realizado'),
+        ('cancelled', 'Cancelado')
+    ], string='Estado Albarán', compute='_compute_picking_status', store=True)
+    
+    # Campo para indicar si el pedido es urgente
+    is_urgent = fields.Boolean(
+        string='Urgente',
+        help='Marcar si el pedido es urgente'
+    )
+    
+    # Días restantes hasta la entrega
+    days_to_delivery = fields.Integer(
+        string='Días para Entrega',
+        compute='_compute_days_to_delivery',
+        store=True,
+        help='Días restantes hasta la fecha de entrega'
+    )
+    
+    # Color para la vista kanban
+    color = fields.Integer(string='Color', compute='_compute_color', store=True)
+    
+    # Campo para marcar el estado del pedido
+    order_status = fields.Selection([
+        ('new', 'Nuevo'),  # Nuevo estado por defecto
+        ('warehouse', 'Almacén'),
+        ('manufacturing', 'Fabricación'),
+        ('prepared', 'Preparado'),
+        ('shipped', 'Salida')
+    ], string='Estado de Pedido', default='new', tracking=True,
+       help='Estado actual del pedido: nuevo, en almacén, en fabricación, preparado o ya salido')
+    
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):
         for order in self:

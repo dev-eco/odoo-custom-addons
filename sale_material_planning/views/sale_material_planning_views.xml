@@ -104,9 +104,7 @@
                                     <strong class="o_kanban_record_title">
                                         <field name="name"/> - <field name="partner_id"/>
                                     </strong>
-                                    <span t-if="record.order_status.raw_value == 'shipped'" class="badge badge-success">SALIDA</span>                                    
-                                    <span t-elif="record.order_status.raw_value == 'prepared'" class="badge badge-info">PREPARADO</span>
-                                    <span t-elif="record.order_status.raw_value == 'manufacturing'" class="badge badge-primary">FABRICACIÓN</span>
+                                    <span t-if="record.order_status.raw_value == 'shipped'" class="badge badge-success">SALIDA</span>
                                     <span t-elif="record.order_status.raw_value == 'prepared'" class="badge badge-info">PREPARADO</span>
                                     <span t-elif="record.order_status.raw_value == 'manufacturing'" class="badge badge-primary">FABRICACIÓN</span>
                                     <span t-elif="record.is_urgent.raw_value" class="badge badge-danger">URGENTE</span>
@@ -223,72 +221,11 @@
         </field>
     </record>
 
-    <!-- Vista de lista simplificada para planificación de material sin resumen -->
-    <record id="view_order_tree_material_planning_simple" model="ir.ui.view">
-        <field name="name">sale.order.tree.material.planning.simple</field>
-        <field name="model">sale.order</field>
-        <field name="arch" type="xml">
-            <tree string="Pedidos para Planificación de Material (Simple)">
-                <field name="name" string="Pedido"/>
-                <field name="partner_id"/>
-                <field name="delivery_date"/>
-                <field name="days_to_delivery" 
-                       decoration-warning="days_to_delivery &lt;= 3 and days_to_delivery &gt; 0 and picking_status != 'done'"
-                       decoration-danger="days_to_delivery &lt;= 0 and picking_status != 'done'"/>
-                <field name="is_urgent" widget="boolean_toggle" decoration-danger="is_urgent == True"/>
-                <field name="order_status" decoration-success="order_status == 'shipped'" 
-                       decoration-info="order_status == 'manufacturing'" 
-                       decoration-warning="order_status == 'warehouse'"
-                       decoration-muted="order_status == 'none'"/>
-                <field name="total_product_qty" sum="Total"/>
-                <field name="picking_status" widget="badge" 
-                       decoration-success="picking_status == 'done'" 
-                       decoration-info="picking_status == 'assigned'" 
-                       decoration-warning="picking_status == 'partially_available'" 
-                       decoration-danger="picking_status in ['not_created', 'waiting']"/>
-                <field name="commitment_date" invisible="1"/>
-                <field name="expected_date" invisible="1"/>
-                <field name="amount_total" sum="Total" widget="monetary"/>
-            </tree>
-        </field>
-    </record>
-
-    <!-- Acción para abrir vista de planificación simplificada -->
-    <record id="action_sale_order_material_planning_simple" model="ir.actions.act_window">
-        <field name="name">Planificación Simple</field>
-        <field name="res_model">sale.order</field>
-        <field name="view_mode">tree,form</field>
-        <field name="domain">[('state', 'not in', ['cancel'])]</field>
-        <field name="context">{
-            'search_default_pending_delivery': 1,
-            'search_default_delivery_date_day': 1,
-            'search_default_late_delivery': 0,
-            'search_default_urgent_orders': 0,
-            'search_default_my_company': 1
-        }</field>
-        <field name="view_ids" eval="[(5, 0, 0),
-            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_order_tree_material_planning_simple')})]"/>
-        <field name="search_view_id" ref="view_sales_order_filter_material_planning"/>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                No hay pedidos pendientes para planificar.
-            </p>
-        </field>
-    </record>
-
     <!-- Elemento de menú -->
     <menuitem id="menu_sale_material_planning"
               name="Planificación de Material"
               parent="sale.sale_menu_root"
               sequence="5"
               action="action_sale_order_material_planning"
-              groups="sales_team.group_sale_salesman"/>
-              
-    <!-- Elemento de menú para la vista simplificada -->
-    <menuitem id="menu_sale_material_planning_simple"
-              name="Planificación Simple"
-              parent="sale.sale_menu_root"
-              sequence="6"
-              action="action_sale_order_material_planning_simple"
               groups="sales_team.group_sale_salesman"/>
 </odoo>
