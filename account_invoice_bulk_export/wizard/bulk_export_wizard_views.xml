@@ -64,6 +64,15 @@
                                 invisible="state == 'draft' or state == 'preview'"
                                 icon="fa-refresh"/>
                         
+                        <!-- Botón: Debug PDF -->
+                        <button name="action_debug_pdf_generation" 
+                                type="object" 
+                                string="Debug PDF" 
+                                class="btn-secondary" 
+                                invisible="state != 'preview'"
+                                icon="fa-bug"
+                                groups="base.group_system"/>
+                        
                         <!-- Barra de estado -->
                         <field name="state" 
                                widget="statusbar" 
