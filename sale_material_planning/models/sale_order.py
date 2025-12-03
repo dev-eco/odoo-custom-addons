@@ -1,27 +1,3 @@
-        ('new', 'Nuevo'),  # Nuevo estado por defecto
->>>>>>> development
-        ('warehouse', 'Almacén'),
-        ('manufacturing', 'Fabricación'),
-        ('prepared', 'Preparado'),
-        ('shipped', 'Salida')
-<<<<<<< HEAD
-    ], string='Estado de Pedido', default='none', tracking=True,
-       help='Estado actual del pedido: sin estado, en almacén, en fabricación, preparado o ya salido')
-=======
-        ('new', 'Nuevo'),  # Nuevo estado por defecto
->>>>>>> development
-        ('warehouse', 'Almacén'),
-        ('manufacturing', 'Fabricación'),
-        ('prepared', 'Preparado'),
-        ('shipped', 'Salida')
-<<<<<<< HEAD
-    ], string='Estado de Pedido', default='none', tracking=True,
-       help='Estado actual del pedido: sin estado, en almacén, en fabricación, preparado o ya salido')
-=======
-    ], string='Estado de Pedido', default='new', tracking=True,
-       help='Estado actual del pedido: nuevo, en almacén, en fabricación, preparado o ya salido')
->>>>>>> development
-    
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):
         for order in self:
