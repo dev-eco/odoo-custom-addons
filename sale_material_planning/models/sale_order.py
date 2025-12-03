@@ -57,13 +57,22 @@ class SaleOrder(models.Model):
     
     # Campo para marcar el estado del pedido
     order_status = fields.Selection([
+<<<<<<< HEAD
         ('none', 'Sin estado'),
+=======
+        ('new', 'Nuevo'),  # Nuevo estado por defecto
+>>>>>>> development
         ('warehouse', 'Almacén'),
         ('manufacturing', 'Fabricación'),
         ('prepared', 'Preparado'),
         ('shipped', 'Salida')
+<<<<<<< HEAD
     ], string='Estado de Pedido', default='none', tracking=True,
        help='Estado actual del pedido: sin estado, en almacén, en fabricación, preparado o ya salido')
+=======
+    ], string='Estado de Pedido', default='new', tracking=True,
+       help='Estado actual del pedido: nuevo, en almacén, en fabricación, preparado o ya salido')
+>>>>>>> development
     
     @api.depends('order_line.product_id', 'order_line.product_uom_qty')
     def _compute_product_summary(self):
@@ -152,6 +161,8 @@ class SaleOrder(models.Model):
                 order.color = 10  # Verde (prioridad máxima)
             elif order.order_status == 'manufacturing':
                 order.color = 4  # Azul claro
+            elif order.order_status == 'new':
+                order.color = 6  # Gris claro para nuevos
             elif order.is_urgent:
                 order.color = 1  # Rojo
             elif order.picking_status == 'done':
@@ -185,4 +196,10 @@ class SaleOrder(models.Model):
         """Marcar el pedido como preparado para salida"""
         for order in self:
             order.write({'order_status': 'prepared'})
+        return True
+        
+    def action_mark_as_new(self):
+        """Marcar el pedido como nuevo"""
+        for order in self:
+            order.write({'order_status': 'new'})
         return True

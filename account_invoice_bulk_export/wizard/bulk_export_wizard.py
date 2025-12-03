@@ -6,7 +6,7 @@ import zipfile
 import tarfile
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
 
 from odoo import api, fields, models, _
@@ -700,12 +700,12 @@ class BulkExportWizard(models.TransientModel):
                     if self.organize_by_type:
                         folder = self._get_folder_name(invoice) + '/'
                     
-                    # Generar nombre de archivo y obtener PDF
+                    # Generar archivo - MÉTODO SIMPLIFICADO
                     filename = folder + self._generate_filename(invoice)
-                    pdf_content = self._get_invoice_pdf(invoice)
+                    pdf_content = self._get_invoice_pdf(invoice)  # Ahora es más robusto
                     
-                    if not pdf_content:
-                        _logger.warning(f"PDF vacío para factura {invoice.name}")
+                    if not pdf_content or len(pdf_content) < 50:
+                        _logger.warning(f"PDF inválido para factura {invoice.name}")
                         failed_count += 1
                         continue
                         
@@ -743,11 +743,9 @@ class BulkExportWizard(models.TransientModel):
                                 zip_file.writestr(full_path, att_content)
                         
                 except Exception as e:
-                    _logger.warning(
-                        f"Error al procesar factura {invoice.name}: {e}",
-                        exc_info=True
-                    )
+                    _logger.error(f"Error procesando factura {invoice.name}: {str(e)}")
                     failed_count += 1
+                    continue  # Continuar con la siguiente factura
 
         # Actualizar progreso final
         self._update_progress(90, _('Finalizando archivo...'))
@@ -788,12 +786,12 @@ class BulkExportWizard(models.TransientModel):
                     if self.organize_by_type:
                         folder = self._get_folder_name(invoice) + '/'
                     
-                    # Generar archivo
+                    # Generar archivo - MÉTODO SIMPLIFICADO
                     filename = folder + self._generate_filename(invoice)
-                    pdf_content = self._get_invoice_pdf(invoice)
+                    pdf_content = self._get_invoice_pdf(invoice)  # Ahora es más robusto
                     
-                    if not pdf_content:
-                        _logger.warning(f"PDF vacío para factura {invoice.name}")
+                    if not pdf_content or len(pdf_content) < 50:
+                        _logger.warning(f"PDF inválido para factura {invoice.name}")
                         failed_count += 1
                         continue
                         
@@ -824,11 +822,9 @@ class BulkExportWizard(models.TransientModel):
                             tar_file.addfile(att_tarinfo, io.BytesIO(att_content))
                     
                 except Exception as e:
-                    _logger.warning(
-                        f"Error al procesar factura {invoice.name}: {e}",
-                        exc_info=True
-                    )
+                    _logger.error(f"Error procesando factura {invoice.name}: {str(e)}")
                     failed_count += 1
+                    continue  # Continuar con la siguiente factura
 
         self._update_progress(90, _('Finalizando archivo...'))
         
@@ -1066,6 +1062,27 @@ startxref
             _logger.error(f"Error generando PDF de respaldo para {invoice.name}: {str(e)}")
             # PDF completamente mínimo como último recurso
             return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF"
+<<<<<<< HEAD
+=======
+
+    def _has_pdf_attachment(self, invoice):
+        """
+        Verifica si la factura tiene un PDF adjunto.
+        
+        Args:
+            invoice: registro de factura
+            
+        Returns:
+            bool: True si tiene PDF adjunto, False en caso contrario
+        """
+        pdf_count = self.env['ir.attachment'].search_count([
+            ('res_model', '=', 'account.move'),
+            ('res_id', '=', invoice.id),
+            ('mimetype', '=', 'application/pdf'),
+        ])
+        return pdf_count > 0
+
+>>>>>>> development
     
     def _get_invoice_attachments(self, invoice):
         """

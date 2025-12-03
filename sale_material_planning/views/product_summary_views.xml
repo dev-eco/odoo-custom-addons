@@ -23,7 +23,8 @@
                 <field name="order_status" decoration-success="order_status == 'shipped'" 
                        decoration-info="order_status == 'prepared'"
                        decoration-primary="order_status == 'manufacturing'" 
-                       decoration-warning="order_status == 'warehouse'"/>
+                       decoration-warning="order_status == 'warehouse'"
+                       decoration-muted="order_status == 'new'"/>
                 <field name="state" invisible="1"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </tree>
@@ -54,6 +55,7 @@ datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter string="Pedidos Confirmados" name="confirmed_orders" domain="[('state', '=', 'sale')]"/>
                 <filter string="Urgentes" name="urgent_orders" domain="[('is_urgent', '=', True)]"/>
+                <filter string="Nuevos" name="new_orders" domain="[('order_status', '=', 'new')]"/>
                 <filter string="Salida" name="shipped_orders" domain="[('order_status', '=', 'shipped')]"/>
                 <filter string="Preparado" name="prepared_orders" domain="[('order_status', '=', 'prepared')]"/>
                 <filter string="En Fabricación" name="manufacturing_orders" domain="[('order_status', '=', 'manufacturing')]"/>
