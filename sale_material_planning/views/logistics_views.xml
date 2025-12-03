@@ -17,7 +17,8 @@
                        decoration-success="order_status == 'shipped'"
                        decoration-info="order_status == 'prepared'"
                        decoration-primary="order_status == 'manufacturing'"
-                       decoration-warning="order_status == 'warehouse'"/>
+                       decoration-warning="order_status == 'warehouse'"
+                       decoration-muted="order_status == 'new'"/>
                 <field name="total_product_qty" sum="Total"/>
                 <field name="picking_status" widget="badge"
                        decoration-success="picking_status == 'done'"

@@ -126,6 +126,7 @@ class ProductSummary(models.Model):
     ], string='Estado Albarán', readonly=True)
     is_urgent = fields.Boolean(string='Urgente', readonly=True)
     order_status = fields.Selection([
+        ('new', 'Nuevo'),
         ('warehouse', 'Almacén'),
         ('manufacturing', 'Fabricación'),
         ('prepared', 'Preparado'),
