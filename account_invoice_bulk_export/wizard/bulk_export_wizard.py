@@ -955,6 +955,7 @@ class BulkExportWizard(models.TransientModel):
             c.drawString(100, 750, f"ERROR AL GENERAR PDF")
             
 <<<<<<< HEAD
+<<<<<<< HEAD
         except Exception as e:
             _logger.error(f"Error generando PDF de respaldo para {invoice.name}: {str(e)}")
             # PDF completamente mínimo como último recurso
@@ -981,6 +982,8 @@ class BulkExportWizard(models.TransientModel):
 
 >>>>>>> development
 =======
+=======
+>>>>>>> parent of d0cdf60 ([fix] few bugs)
             # Información de la factura
             c.setFont("Helvetica", 12)
             c.drawString(100, 700, f"Factura: {invoice.name}")
@@ -1000,6 +1003,9 @@ class BulkExportWizard(models.TransientModel):
             _logger.error(f"Error al generar PDF de error: {str(pdf_error)}")
             # Si falla incluso el PDF de error, devolver un PDF mínimo
             return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF"
+<<<<<<< HEAD
+>>>>>>> parent of d0cdf60 ([fix] few bugs)
+=======
 >>>>>>> parent of d0cdf60 ([fix] few bugs)
     
     def _get_invoice_attachments(self, invoice):
