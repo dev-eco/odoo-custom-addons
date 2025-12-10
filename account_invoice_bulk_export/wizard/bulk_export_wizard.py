@@ -851,19 +851,11 @@ class BulkExportWizard(models.TransientModel):
         return folder_names.get(invoice.move_type, '05_Otros')
 
     def _generate_filename(self, invoice):
-        """
-        Genera nombre de archivo basado en el patrón configurado.
-        
-        Args:
-            invoice: registro de factura
-            
-        Returns:
-            str: nombre de archivo sanitizado
-        """
+        """Genera nombre de archivo basado en el patrón configurado."""
         # Mapeo de tipos de documento
         move_type_names = {
             'out_invoice': 'FAC_CLI',
-            'in_invoice': 'FAC_PROV',
+            'in_invoice': 'FAC_PROV', 
             'out_refund': 'NC_CLI',
             'in_refund': 'NC_PROV',
         }
@@ -876,19 +868,17 @@ class BulkExportWizard(models.TransientModel):
         if invoice.invoice_date:
             date_str = invoice.invoice_date.strftime('%Y%m%d')
         else:
-            date_str = 'SIN_FECHA'
+            date_str = fields.Date.today().strftime('%Y%m%d')
 
         # Patrones de nombres
         patterns = {
             'standard': f'{move_type}_{number}_{partner}_{date_str}.pdf',
-            'date_first': f'{date_str}_{move_type}_{number}_{partner}.pdf',
+            'date_first': f'{date_str}_{move_type}_{number}_{partner}.pdf', 
             'partner_first': f'{partner}_{move_type}_{number}_{date_str}.pdf',
             'simple': f'{move_type}_{number}_{date_str}.pdf',
         }
         
-        filename = patterns.get(self.filename_pattern, patterns['standard'])
-        
-        return filename
+        return patterns.get(self.filename_pattern, patterns['standard'])
 
     def _sanitize_filename_enhanced(self, name):
         """
@@ -928,499 +918,366 @@ class BulkExportWizard(models.TransientModel):
 
     def _get_invoice_pdf_enhanced(self, invoice):
         """
-        Estrategia mejorada para obtener PDF real de facturas.
-        Prioriza adjuntos existentes antes de generar nuevos.
+        Estrategia mejorada para obtener PDF real de facturas con manejo robusto de errores.
         """
         try:
-            _logger.info(f"[ENHANCED] Buscando PDF para {invoice.name} (tipo: {invoice.move_type})")
+            _logger.info(f"Generando PDF para factura {invoice.name} (tipo: {invoice.move_type})")
             
             # ESTRATEGIA 1: Buscar PDF adjunto existente
-            pdf_attachment = self.env['ir.attachment'].search([
-                ('res_model', '=', 'account.move'),
-                ('res_id', '=', invoice.id),
-                ('mimetype', '=', 'application/pdf'),
-                ('name', 'ilike', '%.pdf')
-            ], limit=1)
+            try:
+                pdf_attachment = self.env['ir.attachment'].search([
+                    ('res_model', '=', 'account.move'),
+                    ('res_id', '=', invoice.id),
+                    ('mimetype', '=', 'application/pdf'),
+                    ('name', 'ilike', '%.pdf')
+                ], limit=1)
+                
+                if pdf_attachment and pdf_attachment.datas:
+                    _logger.info(f"PDF encontrado en adjuntos: {pdf_attachment.name}")
+                    return base64.b64decode(pdf_attachment.datas)
+            except Exception as e:
+                _logger.debug(f"Error buscando adjuntos PDF: {e}")
             
-            if pdf_attachment and pdf_attachment.datas:
-                _logger.info(f"[SUCCESS] PDF encontrado en adjuntos: {pdf_attachment.name}")
-                return base64.b64decode(pdf_attachment.datas)
+            # ESTRATEGIA 2: Usar reportes estándar de Odoo por XML ID (con validación)
+            report_xmlids = [
+                'account.account_invoices',
+                'account.report_invoice_with_payments', 
+                'account.account_invoice_report_duplicate_main'
+            ]
             
-            # ESTRATEGIA 2: Buscar reporte específico por tipo de factura
-            report_xmlids = {
-                'out_invoice': ['account.account_invoices', 'account.report_invoice'],
-                'in_invoice': ['account.account_invoices', 'account.report_invoice'],
-                'out_refund': ['account.account_invoices', 'account.report_invoice'], 
-                'in_refund': ['account.account_invoices', 'account.report_invoice']
-            }
-            
-            for xmlid in report_xmlids.get(invoice.move_type, []):
+            for xmlid in report_xmlids:
                 try:
+                    # Validar que el XML ID existe antes de usarlo
+                    model_data = self.env['ir.model.data'].search([
+                        ('module', '=', xmlid.split('.')[0]),
+                        ('name', '=', xmlid.split('.')[1])
+                    ], limit=1)
+                    
+                    if not model_data:
+                        _logger.debug(f"XML ID {xmlid} no encontrado")
+                        continue
+                        
                     report = self.env.ref(xmlid, raise_if_not_found=False)
-                    if report:
-                        _logger.info(f"[TRYING] Reporte {xmlid} para {invoice.move_type}")
+                    if report and hasattr(report, '_render_qweb_pdf'):
+                        _logger.info(f"Intentando reporte {xmlid}")
                         pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                        if pdf_content and len(pdf_content) > 100:  # PDF válido
-                            _logger.info(f"[SUCCESS] PDF generado con {xmlid}")
+                        if pdf_content and len(pdf_content) > 100:
+                            _logger.info(f"PDF generado exitosamente con {xmlid}")
                             return pdf_content
                 except Exception as e:
-                    _logger.debug(f"[FAILED] {xmlid}: {e}")
+                    _logger.debug(f"Error con reporte {xmlid}: {e}")
             
-            # ESTRATEGIA 3: Buscar cualquier reporte compatible
-            reports = self.env['ir.actions.report'].search([
-                ('model', '=', 'account.move'),
-                ('report_type', '=', 'qweb-pdf')
-            ])
-            
-            for report in reports:
-                try:
-                    if invoice.move_type in ['out_invoice', 'out_refund'] and 'vendor' in report.name.lower():
-                        continue  # Skip vendor reports for customer invoices
-                    if invoice.move_type in ['in_invoice', 'in_refund'] and 'customer' in report.name.lower():
-                        continue  # Skip customer reports for vendor invoices
-                    
-                    _logger.info(f"[TRYING] Reporte genérico: {report.name}")
-                    pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                    if pdf_content and len(pdf_content) > 100:
-                        _logger.info(f"[SUCCESS] PDF con reporte genérico: {report.name}")
-                        return pdf_content
-                except Exception as e:
-                    _logger.debug(f"[FAILED] Reporte {report.name}: {e}")
-            
-            # ESTRATEGIA 4: Forzar generación y almacenamiento
+            # ESTRATEGIA 3: Buscar reportes por modelo (CORREGIDO)
             try:
-                if hasattr(invoice, 'action_invoice_print'):
-                    pdf_content = self._force_pdf_generation(invoice)
-                    if pdf_content:
-                        return pdf_content
+                # Buscar reportes usando los campos correctos
+                domain = [
+                    ('model', '=', 'account.move'),
+                    ('report_type', '=', 'qweb-pdf')
+                ]
+                
+                reports = self.env['ir.actions.report'].search(domain)
+                _logger.info(f"Encontrados {len(reports)} reportes para account.move")
+                
+                for report in reports:
+                    try:
+                        # Validar que el reporte tiene los métodos necesarios
+                        if not hasattr(report, '_render_qweb_pdf'):
+                            continue
+                            
+                        _logger.info(f"Probando reporte: {report.name} ({report.report_name})")
+                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                        
+                        if pdf_content and len(pdf_content) > 100:
+                            _logger.info(f"PDF generado con reporte: {report.name}")
+                            return pdf_content
+                            
+                    except Exception as e:
+                        _logger.debug(f"Error con reporte {report.name}: {e}")
+                        
             except Exception as e:
-                _logger.debug(f"[FAILED] Generación forzada: {e}")
+                _logger.debug(f"Error buscando reportes por modelo: {e}")
             
-            # ÚLTIMO RECURSO: PDF automático mejorado
-            _logger.warning(f"[FALLBACK] Generando PDF automático para {invoice.name}")
-            return self._generate_automatic_pdf_enhanced(invoice)
+            # ESTRATEGIA 4: Generar PDF usando acción de impresión estándar
+            pdf_content = self._generate_pdf_via_print_action(invoice)
+            if pdf_content:
+                return pdf_content
+            
+            # ESTRATEGIA 5: Fallback a PDF mínimo
+            _logger.warning(f"Usando PDF mínimo para factura {invoice.name}")
+            return self._generate_minimal_pdf_core(invoice)
             
         except Exception as e:
-            _logger.error(f"[ERROR CRÍTICO] {invoice.name}: {e}", exc_info=True)
-            return self._generate_fallback_pdf(invoice)
+            _logger.error(f"Error crítico generando PDF para {invoice.name}: {e}", exc_info=True)
+            return self._generate_minimal_pdf_core(invoice)
 
-    def _force_pdf_generation(self, invoice):
-        """Fuerza la generación de PDF y lo almacena como adjunto."""
+    def _generate_pdf_via_print_action(self, invoice):
+        """Genera PDF usando la acción de impresión estándar de Odoo con validación mejorada."""
         try:
-            # Intentar generar PDF usando el wizard de impresión estándar
-            wizard = self.env['account.move.send'].create({
-                'move_ids': [(6, 0, [invoice.id])],
-                'checkbox_invoice_pdf': True,
-            })
+            # Lista de posibles reportes estándar de facturas
+            possible_reports = [
+                'account.account_invoices',
+                'account.report_invoice_with_payments'
+            ]
             
-            # Generar el PDF
-            action = wizard.action_send_and_print()
+            for report_xmlid in possible_reports:
+                try:
+                    # Validar existencia del XML ID
+                    module, name = report_xmlid.split('.')
+                    model_data = self.env['ir.model.data'].search([
+                        ('module', '=', module),
+                        ('name', '=', name),
+                        ('model', '=', 'ir.actions.report')
+                    ], limit=1)
+                    
+                    if not model_data:
+                        continue
+                        
+                    report = self.env.ref(report_xmlid, raise_if_not_found=False)
+                    if report and hasattr(report, '_render_qweb_pdf'):
+                        _logger.info(f"Usando reporte estándar: {report_xmlid}")
+                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                        if pdf_content and len(pdf_content) > 100:
+                            return pdf_content
+                            
+                except Exception as e:
+                    _logger.debug(f"Error con reporte {report_xmlid}: {e}")
             
-            # Buscar el PDF recién generado
-            pdf_attachment = self.env['ir.attachment'].search([
-                ('res_model', '=', 'account.move'),
-                ('res_id', '=', invoice.id),
-                ('mimetype', '=', 'application/pdf'),
-                ('create_date', '>=', fields.Datetime.now() - timedelta(minutes=5))
-            ], limit=1, order='create_date desc')
-            
-            if pdf_attachment:
-                return base64.b64decode(pdf_attachment.datas)
+            # Buscar cualquier reporte de facturas disponible
+            try:
+                reports = self.env['ir.actions.report'].search([
+                    ('model', '=', 'account.move'),
+                    ('report_type', '=', 'qweb-pdf')
+                ], limit=5)  # Limitar para evitar demasiadas pruebas
+                
+                for report in reports:
+                    try:
+                        if hasattr(report, '_render_qweb_pdf'):
+                            pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                            if pdf_content and len(pdf_content) > 100:
+                                _logger.info(f"PDF generado con reporte: {report.name}")
+                                return pdf_content
+                    except Exception as e:
+                        _logger.debug(f"Error con reporte {report.name}: {e}")
+                        
+            except Exception as e:
+                _logger.debug(f"Error buscando reportes alternativos: {e}")
                 
         except Exception as e:
-            _logger.debug(f"Generación forzada falló: {e}")
+            _logger.debug(f"Error en generación vía print action: {e}")
         
         return None
 
-    def _analyze_invoice_report_availability(self, invoice):
-        """Analiza qué reportes están disponibles para una factura específica."""
-        analysis = {
-            'invoice_type': invoice.move_type,
-            'available_reports': [],
-            'attachments_found': 0,
-            'recommended_action': ''
-        }
-        
-        # Verificar adjuntos existentes
-        attachments = self.env['ir.attachment'].search([
-            ('res_model', '=', 'account.move'),
-            ('res_id', '=', invoice.id),
-            ('mimetype', '=', 'application/pdf')
-        ])
-        analysis['attachments_found'] = len(attachments)
-        
-        # Verificar reportes disponibles
-        reports = self.env['ir.actions.report'].search([
-            ('model', '=', 'account.move'),
-            ('report_type', '=', 'qweb-pdf')
-        ])
-        
-        for report in reports:
-            try:
-                # Intentar renderizar el reporte
-                pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                if pdf_content:
-                    analysis['available_reports'].append({
-                        'name': report.name,
-                        'report_name': report.report_name,
-                        'xmlid': report.xml_id,
-                        'size_kb': len(pdf_content) // 1024
-                    })
-            except Exception as e:
-                _logger.debug(f"Reporte {report.name} no compatible: {e}")
-        
-        # Recomendación
-        if analysis['attachments_found'] > 0:
-            analysis['recommended_action'] = 'use_attachment'
-        elif analysis['available_reports']:
-            analysis['recommended_action'] = 'use_report'
-        else:
-            analysis['recommended_action'] = 'generate_automatic'
-        
-        _logger.info(f"[ANALYSIS] {invoice.name}: {analysis}")
-        return analysis
-
-    def _generate_automatic_pdf_enhanced(self, invoice):
-        """Genera un PDF automático mejorado usando solo herramientas nativas de Odoo."""
+    def _generate_minimal_pdf_core(self, invoice):
+        """Genera PDF mínimo usando solo herramientas core de Odoo."""
         try:
-            _logger.info(f"Generando PDF automático para {invoice.name}")
+            # Crear HTML simple
+            html_content = self._create_invoice_html(invoice)
             
-            # Crear contenido HTML para convertir a PDF
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8"/>
-                <title>Factura {invoice.name}</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 40px; }}
-                    .header {{ text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }}
-                    .info-table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
-                    .info-table td {{ padding: 8px; border: 1px solid #ddd; }}
-                    .info-table .label {{ background-color: #f5f5f5; font-weight: bold; width: 30%; }}
-                    .lines-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                    .lines-table th, .lines-table td {{ padding: 8px; border: 1px solid #ddd; text-align: left; }}
-                    .lines-table th {{ background-color: #f5f5f5; }}
-                    .footer {{ margin-top: 40px; text-align: center; font-style: italic; color: #666; }}
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>FACTURA: {invoice.name or 'SIN_NUMERO'}</h1>
-                    <p>Documento generado automáticamente</p>
-                </div>
+            # Usar motor de reportes de Odoo para convertir HTML a PDF
+            pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf(
+                [html_content],
+                landscape=False,
+                specific_paperformat_args={
+                    'data-report-margin-top': 20,
+                    'data-report-margin-bottom': 20,
+                    'data-report-margin-left': 15,
+                    'data-report-margin-right': 15,
+                }
+            )
+            
+            if pdf_content and len(pdf_content) > 100:
+                return pdf_content
                 
+        except Exception as e:
+            _logger.debug(f"Error generando PDF mínimo: {e}")
+        
+        # Último recurso: PDF básico válido
+        return self._create_basic_pdf_bytes(invoice)
+
+    def _create_invoice_html(self, invoice):
+        """Crea HTML para la factura usando datos de Odoo."""
+        company = invoice.company_id
+        partner = invoice.partner_id
+        
+        # Formatear líneas de factura
+        lines_html = ""
+        for line in invoice.invoice_line_ids[:20]:  # Limitar a 20 líneas
+            lines_html += f"""
+        <tr>
+            <td>{line.name[:60] if line.name else 'Sin descripción'}</td>
+            <td style="text-align: right;">{line.quantity}</td>
+            <td style="text-align: right;">{line.price_unit:.2f}</td>
+            <td style="text-align: right;">{line.price_subtotal:.2f}</td>
+        </tr>
+        """
+        
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8"/>
+            <title>Factura {invoice.name}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .company {{ font-size: 18px; font-weight: bold; }}
+                .invoice-title {{ font-size: 24px; margin: 20px 0; }}
+                .info-section {{ margin: 20px 0; }}
+                .info-table {{ width: 100%; border-collapse: collapse; }}
+                .info-table td {{ padding: 8px; border: 1px solid #ddd; }}
+                .label {{ font-weight: bold; background: #f5f5f5; }}
+                .lines-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                .lines-table th, .lines-table td {{ padding: 8px; border: 1px solid #ddd; }}
+                .lines-table th {{ background: #f5f5f5; text-align: left; }}
+                .total {{ font-size: 18px; font-weight: bold; text-align: right; margin-top: 20px; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="company">{company.name}</div>
+                <div class="invoice-title">FACTURA: {invoice.name or 'BORRADOR'}</div>
+            </div>
+            
+            <div class="info-section">
                 <table class="info-table">
                     <tr>
-                        <td class="label">ID Interno:</td>
-                        <td>{invoice.id}</td>
+                        <td class="label">Cliente/Proveedor:</td>
+                        <td>{partner.name or 'DESCONOCIDO'}</td>
+                        <td class="label">Fecha:</td>
+                        <td>{invoice.invoice_date or 'SIN FECHA'}</td>
                     </tr>
                     <tr>
-                        <td class="label">Tipo de Documento:</td>
+                        <td class="label">Tipo:</td>
                         <td>{dict(invoice._fields['move_type'].selection).get(invoice.move_type, invoice.move_type)}</td>
-                    </tr>
-                    <tr>
                         <td class="label">Estado:</td>
                         <td>{dict(invoice._fields['state'].selection).get(invoice.state, invoice.state)}</td>
                     </tr>
                     <tr>
-                        <td class="label">Cliente/Proveedor:</td>
-                        <td>{invoice.partner_id.name or 'DESCONOCIDO'}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Fecha de Factura:</td>
-                        <td>{invoice.invoice_date or 'SIN_FECHA'}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Fecha de Vencimiento:</td>
-                        <td>{invoice.invoice_date_due or 'SIN_FECHA'}</td>
-                    </tr>
-                    <tr>
                         <td class="label">Referencia:</td>
                         <td>{invoice.ref or 'N/A'}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Importe Total:</td>
-                        <td>{invoice.amount_total} {invoice.currency_id.name or ''}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Compañía:</td>
-                        <td>{invoice.company_id.name or 'DESCONOCIDA'}</td>
+                        <td class="label">Vencimiento:</td>
+                        <td>{invoice.invoice_date_due or 'N/A'}</td>
                     </tr>
                 </table>
-                
-                <h3>Líneas de Factura:</h3>
-                <table class="lines-table">
-                    <thead>
-                        <tr>
-                            <th>Descripción</th>
-                            <th>Cantidad</th>
-                            <th>Precio Unitario</th>
-                            <th>Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            """
+            </div>
             
-            # Agregar líneas de factura (máximo 15 para evitar PDFs muy largos)
-            for line in invoice.invoice_line_ids[:15]:
-                html_content += f"""
-                        <tr>
-                            <td>{line.name[:80] if line.name else 'Sin descripción'}...</td>
-                            <td>{line.quantity}</td>
-                            <td>{line.price_unit} {invoice.currency_id.name or ''}</td>
-                            <td>{line.price_subtotal} {invoice.currency_id.name or ''}</td>
-                        </tr>
-                """
+            <table class="lines-table">
+                <thead>
+                    <tr>
+                        <th>Descripción</th>
+                        <th style="width: 80px;">Cantidad</th>
+                        <th style="width: 100px;">Precio Unit.</th>
+                        <th style="width: 100px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {lines_html}
+                </tbody>
+            </table>
             
-            html_content += f"""
-                    </tbody>
-                </table>
-                
-                <div class="footer">
-                    <p><strong>NOTA IMPORTANTE:</strong></p>
-                    <p>Este PDF ha sido generado automáticamente porque el reporte original no estaba disponible.</p>
-                    <p>Para obtener el PDF oficial, genere el reporte desde la factura individual.</p>
-                    <p>Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
-                </div>
-            </body>
-            </html>
-            """
+            <div class="total">
+                Total: {invoice.amount_total:.2f} {invoice.currency_id.name or ''}
+            </div>
             
-            # Usar el motor de reportes de Odoo para convertir HTML a PDF
-            try:
-                # Intentar usar wkhtmltopdf a través del motor de reportes de Odoo
-                pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf(
-                    [html_content],
-                    landscape=False,
-                    specific_paperformat_args={
-                        'data-report-margin-top': 40,
-                        'data-report-margin-bottom': 40,
-                        'data-report-margin-left': 20,
-                        'data-report-margin-right': 20,
-                    }
-                )
-                
-                if pdf_content and len(pdf_content) > 100:
-                    _logger.info(f"PDF automático generado exitosamente para {invoice.name}")
-                    return pdf_content
-                    
-            except Exception as e:
-                _logger.debug(f"Error con wkhtmltopdf: {e}")
-            
-            # Fallback: PDF mínimo pero válido
-            _logger.warning(f"Generando PDF mínimo para {invoice.name}")
-            return self._generate_minimal_pdf(invoice)
-            
-        except Exception as e:
-            _logger.error(f"Error generando PDF automático para {invoice.name}: {e}")
-            return self._generate_minimal_pdf(invoice)
-
-    def _generate_minimal_pdf(self, invoice):
-        """Genera un PDF mínimo válido sin dependencias externas."""
-        try:
-            # PDF completamente básico pero válido
-            pdf_content = f"""%PDF-1.4
-1 0 obj
-<<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
-
-2 0 obj
-<<
-/Type /Pages
-/Kids [3 0 R]
-/Count 1
->>
-endobj
-
-3 0 obj
-<<
-/Type /Page
-/Parent 2 0 R
-/MediaBox [0 0 595 842]
-/Contents 4 0 R
-/Resources <<
-  /Font <<
-    /F1 <<
-      /Type /Font
-      /Subtype /Type1
-      /BaseFont /Helvetica
-    >>
-  >>
->>
->>
-endobj
-
-4 0 obj
-<<
-/Length 600
->>
-stream
-BT
-/F1 16 Tf
-50 750 Td
-(FACTURA: {invoice.name or 'SIN_NUMERO'}) Tj
-0 -30 Td
-/F1 12 Tf
-(ID: {invoice.id}) Tj
-0 -20 Td
-(Tipo: {invoice.move_type}) Tj
-0 -20 Td
-(Estado: {invoice.state}) Tj
-0 -20 Td
-(Cliente/Proveedor: {(invoice.partner_id.name or 'DESCONOCIDO')[:50]}) Tj
-0 -20 Td
-(Fecha: {invoice.invoice_date or 'SIN_FECHA'}) Tj
-0 -20 Td
-(Importe: {invoice.amount_total} {invoice.currency_id.name or ''}) Tj
-0 -20 Td
-(Compania: {(invoice.company_id.name or 'DESCONOCIDA')[:50]}) Tj
-0 -20 Td
-(Referencia: {invoice.ref or 'N/A'}) Tj
-0 -40 Td
-/F1 10 Tf
-(NOTA: PDF generado automaticamente.) Tj
-0 -15 Td
-(El PDF original no estaba disponible como adjunto.) Tj
-0 -15 Td
-(Para el PDF oficial, genere el reporte desde la factura.) Tj
-0 -15 Td
-(Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}) Tj
-ET
-endstream
-endobj
-
-xref
-0 5
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000300 00000 n 
-trailer
-<<
-/Size 5
-/Root 1 0 R
->>
-startxref
-950
-%%EOF"""
-            
-            return pdf_content.encode('utf-8')
-            
-        except Exception as e:
-            _logger.error(f"Error generando PDF mínimo: {e}")
-            # PDF de emergencia ultra-básico
-            return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF"
-
-    def _generate_fallback_pdf(self, invoice):
+            <div style="margin-top: 40px; text-align: center; color: #666; font-size: 10px;">
+                PDF generado automáticamente - {datetime.now().strftime('%d/%m/%Y %H:%M')}
+            </div>
+        </body>
+        </html>
         """
-        Genera un PDF de respaldo solo con información básica cuando no existe adjunto.
         
-        Args:
-            invoice: registro de factura
-            
-        Returns:
-            bytes: contenido del PDF básico
-        """
+        return html
+
+    def _create_basic_pdf_bytes(self, invoice):
+        """Crea PDF básico válido como último recurso con datos sanitizados."""
         try:
-            _logger.info(f"📄 Generando PDF de respaldo para factura {invoice.name}")
+            # Sanitizar datos para evitar caracteres problemáticos en PDF
+            invoice_name = self._sanitize_for_pdf(invoice.name or 'SIN_NUMERO')
+            partner_name = self._sanitize_for_pdf((invoice.partner_id.name or 'DESCONOCIDO')[:40])
+            invoice_date = str(invoice.invoice_date or 'SIN_FECHA')
+            amount_total = f"{invoice.amount_total:.2f}"
+            currency_name = invoice.currency_id.name or 'EUR'
+            state = invoice.state or 'draft'
+            current_date = datetime.now().strftime('%d/%m/%Y %H:%M')
             
-            # PDF mínimo pero válido con información de la factura
             pdf_content = f"""%PDF-1.4
-1 0 obj
-<<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
-
-2 0 obj
-<<
-/Type /Pages
-/Kids [3 0 R]
-/Count 1
->>
-endobj
-
-3 0 obj
-<<
-/Type /Page
-/Parent 2 0 R
-/MediaBox [0 0 595 842]
-/Contents 4 0 R
-/Resources <<
-  /Font <<
-    /F1 <<
-      /Type /Font
-      /Subtype /Type1
-      /BaseFont /Helvetica
-    >>
-  >>
->>
->>
-endobj
-
-4 0 obj
-<<
-/Length 400
->>
-stream
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R/Resources<</Font<</F1<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>>>>>>>endobj
+4 0 obj<</Length 450>>stream
 BT
 /F1 16 Tf
 50 750 Td
-(FACTURA: {invoice.name or 'SIN_NUMERO'}) Tj
-0 -30 Td
+(FACTURA: {invoice_name}) Tj
+0 -25 Td
 /F1 12 Tf
-(ID: {invoice.id}) Tj
+(Cliente: {partner_name}) Tj
 0 -20 Td
-(Tipo: {invoice.move_type}) Tj
+(Fecha: {invoice_date}) Tj
 0 -20 Td
-(Estado: {invoice.state}) Tj
+(Importe: {amount_total} {currency_name}) Tj
 0 -20 Td
-(Cliente/Proveedor: {(invoice.partner_id.name or 'DESCONOCIDO')[:60]}) Tj
-0 -20 Td
-(Fecha: {invoice.invoice_date or 'SIN_FECHA'}) Tj
-0 -20 Td
-(Importe: {invoice.amount_total} {invoice.currency_id.name or ''}) Tj
-0 -20 Td
-(Compania: {(invoice.company_id.name or 'DESCONOCIDA')[:60]}) Tj
+(Estado: {state}) Tj
 0 -40 Td
 /F1 10 Tf
-(NOTA: PDF generado automaticamente.) Tj
+(PDF generado automaticamente por exportacion masiva) Tj
 0 -15 Td
-(El PDF original no estaba disponible como adjunto.) Tj
+(Generado: {current_date}) Tj
 0 -15 Td
-(Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}) Tj
+(Nota: PDF basico - Contacte administrador para PDFs completos) Tj
 ET
 endstream
 endobj
-
 xref
 0 5
 0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
+0000000010 00000 n 
+0000000053 00000 n 
+0000000102 00000 n 
 0000000300 00000 n 
-trailer
-<<
-/Size 5
-/Root 1 0 R
->>
+trailer<</Size 5/Root 1 0 R>>
 startxref
-750
+800
 %%EOF"""
             
             return pdf_content.encode('utf-8')
             
         except Exception as e:
-            _logger.error(f"Error generando PDF de respaldo para {invoice.name}: {str(e)}")
-            # PDF completamente mínimo como último recurso
-            return b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF"
+            _logger.error(f"Error creando PDF básico: {e}")
+            # PDF mínimo de emergencia
+            return b"""%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R>>endobj
+4 0 obj<</Length 50>>stream
+BT
+/F1 12 Tf
+50 750 Td
+(PDF de emergencia - Error en generacion) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000010 00000 n 
+0000000053 00000 n 
+0000000102 00000 n 
+0000000200 00000 n 
+trailer<</Size 5/Root 1 0 R>>
+startxref
+300
+%%EOF"""
+
+    def _sanitize_for_pdf(self, text):
+        """Sanitiza texto para uso seguro en PDF."""
+        if not text:
+            return 'N/A'
+        
+        # Remover caracteres problemáticos para PDF
+        sanitized = re.sub(r'[^\w\s\-\.\,\:]', '_', str(text))
+        # Limitar longitud
+        return sanitized[:50] if len(sanitized) > 50 else sanitized
 
     def _has_pdf_attachment(self, invoice):
         """
@@ -1510,21 +1367,26 @@ startxref
         self.export_history_id = history
 
     def action_debug_pdf_generation(self):
-        """Método de debug para verificar generación de PDF."""
-        for invoice in self.invoice_ids[:5]:  # Test first 5
-            analysis = self._analyze_invoice_report_availability(invoice)
-            pdf_content = self._get_invoice_pdf_enhanced(invoice)
-            
-            _logger.info(f"[DEBUG] {invoice.name}: "
-                        f"Tamaño PDF: {len(pdf_content) if pdf_content else 0} bytes, "
-                        f"Análisis: {analysis}")
+        """Método de debug simplificado."""
+        debug_info = []
+        
+        for invoice in self.invoice_ids[:3]:  # Solo 3 facturas para debug
+            try:
+                pdf_content = self._get_invoice_pdf_enhanced(invoice)
+                size = len(pdf_content) if pdf_content else 0
+                debug_info.append(f"{invoice.name}: {size} bytes")
+            except Exception as e:
+                debug_info.append(f"{invoice.name}: ERROR - {str(e)}")
+        
+        message = "Debug PDF:\n" + "\n".join(debug_info)
         
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'message': 'Debug completado. Revisar logs del servidor.',
-                'type': 'success',
+                'message': message,
+                'type': 'info',
+                'sticky': True,
             }
         }
 
