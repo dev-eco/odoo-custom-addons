@@ -918,10 +918,11 @@ class BulkExportWizard(models.TransientModel):
 
     def _get_invoice_pdf_enhanced(self, invoice):
         """
-        Estrategia mejorada para obtener PDF real de facturas con manejo robusto de errores.
+        VERSIÓN PATCHEADA - Corrige errores de dominio y cache.
+        Funciona tanto para facturas de cliente como de proveedor.
         """
         try:
-            _logger.info(f"Generando PDF para factura {invoice.name} (tipo: {invoice.move_type})")
+            _logger.info(f"Generando PDF para {invoice.name} (tipo: {invoice.move_type})")
             
             # ESTRATEGIA 1: Buscar PDF adjunto existente
             try:
@@ -936,79 +937,82 @@ class BulkExportWizard(models.TransientModel):
                     _logger.info(f"PDF encontrado en adjuntos: {pdf_attachment.name}")
                     return base64.b64decode(pdf_attachment.datas)
             except Exception as e:
-                _logger.debug(f"Error buscando adjuntos PDF: {e}")
+                _logger.debug(f"Error buscando adjuntos: {e}")
             
-            # ESTRATEGIA 2: Usar reportes estándar de Odoo por XML ID (con validación)
-            report_xmlids = [
-                'account.account_invoices',
-                'account.report_invoice_with_payments', 
-                'account.account_invoice_report_duplicate_main'
-            ]
-            
-            for xmlid in report_xmlids:
-                try:
-                    # Validar que el XML ID existe antes de usarlo
-                    model_data = self.env['ir.model.data'].search([
-                        ('module', '=', xmlid.split('.')[0]),
-                        ('name', '=', xmlid.split('.')[1])
-                    ], limit=1)
-                    
-                    if not model_data:
-                        _logger.debug(f"XML ID {xmlid} no encontrado")
-                        continue
-                        
-                    report = self.env.ref(xmlid, raise_if_not_found=False)
-                    if report and hasattr(report, '_render_qweb_pdf'):
-                        _logger.info(f"Intentando reporte {xmlid}")
-                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                        if pdf_content and len(pdf_content) > 100:
-                            _logger.info(f"PDF generado exitosamente con {xmlid}")
-                            return pdf_content
-                except Exception as e:
-                    _logger.debug(f"Error con reporte {xmlid}: {e}")
-            
-            # ESTRATEGIA 3: Buscar reportes por modelo (CORREGIDO)
+            # ESTRATEGIA 2: Usar TODOS los reportes disponibles (sin XMLIDs hardcodeados)
             try:
-                # Buscar reportes usando los campos correctos
-                domain = [
+                # Buscar reportes disponibles para facturas
+                reports = self.env['ir.actions.report'].search([
                     ('model', '=', 'account.move'),
                     ('report_type', '=', 'qweb-pdf')
-                ]
+                ])
                 
-                reports = self.env['ir.actions.report'].search(domain)
-                _logger.info(f"Encontrados {len(reports)} reportes para account.move")
+                _logger.info(f"Encontrados {len(reports)} reportes PDF para account.move")
                 
+                # Probar cada reporte hasta encontrar uno que funcione
                 for report in reports:
                     try:
-                        # Validar que el reporte tiene los métodos necesarios
                         if not hasattr(report, '_render_qweb_pdf'):
                             continue
                             
-                        _logger.info(f"Probando reporte: {report.name} ({report.report_name})")
+                        _logger.debug(f"Probando reporte: {report.name}")
                         pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
                         
                         if pdf_content and len(pdf_content) > 100:
-                            _logger.info(f"PDF generado con reporte: {report.name}")
+                            _logger.info(f"✓ PDF generado exitosamente con: {report.name}")
                             return pdf_content
+                        else:
+                            _logger.debug(f"PDF vacío o muy pequeño con: {report.name}")
                             
                     except Exception as e:
-                        _logger.debug(f"Error con reporte {report.name}: {e}")
+                        _logger.debug(f"Error con reporte {report.name}: {str(e)[:100]}")
+                        continue
                         
             except Exception as e:
-                _logger.debug(f"Error buscando reportes por modelo: {e}")
+                _logger.debug(f"Error buscando reportes disponibles: {e}")
             
-            # ESTRATEGIA 4: Generar PDF usando acción de impresión estándar
-            pdf_content = self._generate_pdf_via_print_action(invoice)
-            if pdf_content:
-                return pdf_content
+            # ESTRATEGIA 3: XMLIDs seguros (sin problemas de cache)
+            try:
+                # Lista de XMLIDs conocidos, probamos uno por uno
+                safe_xmlids = [
+                    'account.account_invoices',
+                    'account.report_invoice_with_payments',
+                    'account.account_invoices_without_payment'
+                ]
+                
+                for xmlid in safe_xmlids:
+                    try:
+                        # Método seguro para obtener reportes por XMLID
+                        report = self.env.ref(xmlid, raise_if_not_found=False)
+                        
+                        if report and hasattr(report, '_render_qweb_pdf'):
+                            _logger.debug(f"Probando XML ID: {xmlid}")
+                            pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                            
+                            if pdf_content and len(pdf_content) > 100:
+                                _logger.info(f"✓ PDF generado con XML ID: {xmlid}")
+                                return pdf_content
+                        
+                    except Exception as e:
+                        _logger.debug(f"Error con XML ID {xmlid}: {str(e)[:100]}")
+                        continue
+                        
+            except Exception as e:
+                _logger.debug(f"Error con XMLIDs seguros: {e}")
             
-            # ESTRATEGIA 5: Fallback a PDF mínimo
-            _logger.warning(f"Usando PDF mínimo para factura {invoice.name}")
-            return self._generate_minimal_pdf_core(invoice)
+            # ESTRATEGIA 4: Fallback garantizado - PDF de emergencia
+            _logger.warning(f"Todos los reportes fallaron para {invoice.name}, usando PDF de emergencia")
+            return self._generate_emergency_pdf_content(invoice)
             
         except Exception as e:
             _logger.error(f"Error crítico generando PDF para {invoice.name}: {e}", exc_info=True)
-            return self._generate_minimal_pdf_core(invoice)
+            return self._generate_emergency_pdf_content(invoice)
+
+
+
+
+
+
 
     def _generate_pdf_via_print_action(self, invoice):
         """Genera PDF usando la acción de impresión estándar de Odoo con validación mejorada."""
@@ -1384,6 +1388,118 @@ startxref
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
+                'message': message,
+                'type': 'info',
+                'sticky': True,
+            }}
+    def action_diagnose_pdf_issues(self):
+        """
+        Diagnóstica problemas con generación de PDFs.
+        MÉTODO AGREGADO POR PATCH DE EMERGENCIA.
+        """
+        self.ensure_one()
+        
+        diagnosis = []
+        diagnosis.append("=== DIAGNÓSTICO SISTEMA PDF ===")
+        
+        # Información básica
+        diagnosis.append(f"Compañía: {self.company_id.name}")
+        diagnosis.append(f"Usuario: {self.env.user.name}")
+        diagnosis.append(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        
+        # Verificar reportes disponibles
+        reports = self.env['ir.actions.report'].search([
+            ('model', '=', 'account.move'),
+            ('report_type', '=', 'qweb-pdf')
+        ])
+        
+        diagnosis.append(f"Reportes PDF encontrados: {len(reports)}")
+        for i, report in enumerate(reports[:5], 1):
+            diagnosis.append(f"  {i}. {report.name} ({report.report_name})")
+        
+        # Verificar XMLIDs críticos
+        diagnosis.append("Verificando XMLIDs estándar:")
+        xmlids = [
+            'account.account_invoices',
+            'account.report_invoice_with_payments',
+            'account.account_invoices_without_payment'
+        ]
+        
+        working_xmlids = 0
+        for xmlid in xmlids:
+            try:
+                report = self.env.ref(xmlid, raise_if_not_found=False)
+                if report:
+                    diagnosis.append(f"  ✓ {xmlid}: OK - {report.name}")
+                    working_xmlids += 1
+                else:
+                    diagnosis.append(f"  ✗ {xmlid}: NO ENCONTRADO")
+            except Exception as e:
+                diagnosis.append(f"  ✗ {xmlid}: ERROR - {str(e)[:50]}")
+        
+        # Probar con facturas de prueba
+        test_invoices = []
+        if self.invoice_ids:
+            test_invoices = self.invoice_ids[:2]
+        else:
+            # Buscar facturas de prueba
+            client_inv = self.env['account.move'].search([
+                ('move_type', '=', 'out_invoice'),
+                ('state', '=', 'posted')
+            ], limit=1)
+            vendor_inv = self.env['account.move'].search([
+                ('move_type', '=', 'in_invoice'),
+                ('state', '=', 'posted')
+            ], limit=1)
+            test_invoices = client_inv + vendor_inv
+        
+        if test_invoices:
+            diagnosis.append(f"Probando con {len(test_invoices)} facturas:")
+            
+            for invoice in test_invoices:
+                diagnosis.append(f"Factura: {invoice.name}")
+                diagnosis.append(f"  Tipo: {invoice.move_type}")
+                diagnosis.append(f"  Estado: {invoice.state}")
+                
+                # Probar con reportes disponibles
+                success_count = 0
+                for report in reports[:3]:
+                    try:
+                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                        if pdf_content and len(pdf_content) > 100:
+                            diagnosis.append(f"  ✓ {report.name}: {len(pdf_content)} bytes")
+                            success_count += 1
+                        else:
+                            diagnosis.append(f"  ✗ {report.name}: PDF vacío")
+                    except Exception as e:
+                        diagnosis.append(f"  ✗ {report.name}: {str(e)[:50]}")
+                
+                diagnosis.append(f"  Éxito: {success_count}/{min(3, len(reports))} reportes")
+        else:
+            diagnosis.append("⚠️  No hay facturas disponibles para prueba")
+        
+        # Resumen y recomendaciones
+        diagnosis.append("=== RESUMEN ===")
+        diagnosis.append(f"Reportes disponibles: {len(reports)}")
+        diagnosis.append(f"XMLIDs funcionando: {working_xmlids}/{len(xmlids)}")
+        
+        if len(reports) == 0:
+            diagnosis.append("🔥 PROBLEMA CRÍTICO: No hay reportes PDF disponibles")
+        elif working_xmlids == 0:
+            diagnosis.append("⚠️  PROBLEMA: Ningún XMLID estándar funciona")
+        else:
+            diagnosis.append("✅ Sistema parece funcional")
+        
+        diagnosis.append("=== SISTEMA DE EMERGENCIA ACTIVO ===")
+        diagnosis.append("Si fallan los reportes, se generará PDF básico")
+        
+        message = "".join(diagnosis)
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Diagnóstico PDF - Sistema Patcheado',
                 'message': message,
                 'type': 'info',
                 'sticky': True,
