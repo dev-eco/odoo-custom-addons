@@ -60,7 +60,11 @@ Requisitos:
         'account',
         'base',
         'mail',  # Para attachments
+        'web',   # Para controladores
     ],
+    'external_dependencies': {
+        'python': ['zipfile', 'tarfile'],  # Librerías estándar de Python
+    },
     'data': [
         'security/ir.model.access.csv',
         'security/export_security.xml',

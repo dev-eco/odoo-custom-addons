@@ -7,11 +7,22 @@ import tarfile
 import logging
 import re
 import unicodedata
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from collections import defaultdict
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError, AccessError
+
+# Soporte opcional para queue_job
+try:
+    from odoo.addons.queue_job.job import job
+    HAS_QUEUE_JOB = True
+except ImportError:
+    HAS_QUEUE_JOB = False
+    def job(func):
+        return func
 
 _logger = logging.getLogger(__name__)
 
@@ -294,6 +305,18 @@ class BulkExportWizard(models.TransientModel):
         string='Archivos Adjuntos',
         readonly=True,
     )
+    
+    use_background_processing = fields.Boolean(
+        string='Procesamiento en Background',
+        default=lambda self: HAS_QUEUE_JOB and self._should_use_background(),
+        help='Usar procesamiento en background para lotes grandes'
+    )
+
+    job_id = fields.Char(
+        string='ID del Job',
+        readonly=True,
+        help='Identificador del job en background'
+    )
 
     # ==========================================
     # CAMPOS COMPUTADOS
@@ -396,10 +419,35 @@ class BulkExportWizard(models.TransientModel):
     def _check_batch_size(self):
         """Valida que el tamaño del lote esté en rango válido."""
         for record in self:
-            if record.batch_size < 1 or record.batch_size > 500:
+            if record.batch_size < 1 or record.batch_size > 100:
                 raise ValidationError(
-                    _('El tamaño del lote debe estar entre 1 y 500.')
+                    _('El tamaño del lote debe estar entre 1 y 100.')
                 )
+
+    def _validate_export_limits(self, invoices):
+        """
+        Valida límites de exportación para prevenir sobrecarga del servidor.
+        
+        Args:
+            invoices: recordset de facturas a exportar
+        """
+        invoice_count = len(invoices)
+        
+        # Límite absoluto de facturas
+        max_invoices = 1000
+        if invoice_count > max_invoices:
+            raise UserError(_(
+                'No se pueden exportar más de %d facturas a la vez. '
+                'Actualmente seleccionadas: %d. '
+                'Use filtros de fecha para reducir la cantidad.'
+            ) % (max_invoices, invoice_count))
+        
+        # Advertencia para exportaciones grandes
+        if invoice_count > 500:
+            _logger.warning(
+                f"Exportación grande iniciada por {self.env.user.name}: "
+                f"{invoice_count} facturas"
+            )
 
     # ==========================================
     # MÉTODOS DE NAVEGACIÓN
@@ -425,16 +473,13 @@ class BulkExportWizard(models.TransientModel):
         self.write({'state': 'draft'})
         return self._reload_wizard()
 
+    def _should_use_background(self):
+        """Determina si usar background basado en cantidad de facturas."""
+        invoices = self._get_invoices_to_export()
+        return len(invoices) > 100  # Umbral configurable
+
     def action_start_export(self):
-        """
-        Inicia el proceso de exportación con validación de seguridad.
-        
-        Este método incluye múltiples capas de validación de seguridad:
-        - Verificación de permisos de usuario
-        - Validación de acceso a facturas individuales
-        - Sanitización de nombres de archivo
-        - Límites de procesamiento por lotes
-        """
+        """Inicia el proceso de exportación con soporte para background."""
         self.ensure_one()
         
         # VALIDACIÓN DE SEGURIDAD: Verificar permisos de contabilidad
@@ -453,6 +498,48 @@ class BulkExportWizard(models.TransientModel):
                 'o Usuario de Facturas. Contacte a su administrador.'
             ))
 
+        # Obtener facturas a exportar
+        invoices = self._get_invoices_to_export()
+        
+        if not invoices:
+            raise UserError(_('No se encontraron facturas que coincidan con los criterios.'))
+
+        # Decidir si usar background
+        if self.use_background_processing and HAS_QUEUE_JOB and len(invoices) > 50:
+            return self._start_background_export(invoices)
+        else:
+            return self._start_synchronous_export(invoices)
+
+    @job
+    def _process_export_background(self, invoice_ids):
+        """Procesa la exportación en background."""
+        invoices = self.env['account.move'].browse(invoice_ids)
+        return self._generate_export_file(invoices)
+
+    def _start_background_export(self, invoices):
+        """Inicia exportación en background."""
+        self.write({
+            'state': 'processing',
+            'progress_message': _('Iniciando procesamiento en background...'),
+        })
+        
+        # Crear job
+        job = self.with_delay()._process_export_background(invoices.ids)
+        self.job_id = job.uuid
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Procesamiento Iniciado'),
+                'message': _('La exportación se está procesando en background. Recibirá una notificación cuando termine.'),
+                'type': 'info',
+                'sticky': True,
+            }
+        }
+
+    def _start_synchronous_export(self, invoices):
+        """Inicia exportación síncrona."""
         try:
             self.write({
                 'state': 'processing',
@@ -464,13 +551,6 @@ class BulkExportWizard(models.TransientModel):
             
             start_time = datetime.now()
             
-            # Obtener facturas a exportar
-            self._update_progress(10, _('Obteniendo facturas...'))
-            invoices = self._get_invoices_to_export()
-            
-            if not invoices:
-                raise UserError(_('No se encontraron facturas que coincidan con los criterios.'))
-
             # Validación de seguridad: verificar acceso a todas las facturas
             self._update_progress(15, _('Validando permisos...'))
             try:
@@ -543,15 +623,31 @@ class BulkExportWizard(models.TransientModel):
 
         return self._reload_wizard()
 
+    def _generate_download_token(self):
+        """Genera token seguro para descarga."""
+        data = f"{self.id}_{self.create_uid.id}_{self.create_date}"
+        return hashlib.sha256(data.encode()).hexdigest()[:32]
+
+    def _get_download_url(self):
+        """Obtiene URL segura de descarga."""
+        if not self.export_file:
+            return None
+        
+        token = self._generate_download_token()
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        return f"{base_url}/bulk_export/download/{self.id}/{token}"
+
     def action_download(self):
-        """Descarga el archivo generado."""
+        """Descarga el archivo generado usando controlador seguro."""
         self.ensure_one()
         if not self.export_file:
             raise UserError(_('No hay archivo disponible para descargar.'))
 
+        download_url = self._get_download_url()
+        
         return {
             'type': 'ir.actions.act_url',
-            'url': f'/web/content?model={self._name}&id={self.id}&field=export_file&filename_field=export_filename&download=true',
+            'url': download_url,
             'target': 'self',
         }
 
@@ -667,7 +763,7 @@ class BulkExportWizard(models.TransientModel):
 
     def _generate_zip_file(self, invoices):
         """
-        Genera archivo ZIP con facturas.
+        Genera archivo ZIP con facturas usando procesamiento por lotes.
         
         Args:
             invoices: recordset de facturas
@@ -675,78 +771,95 @@ class BulkExportWizard(models.TransientModel):
         Returns:
             tuple: (datos_zip, cantidad_fallidas, cantidad_adjuntos)
         """
+        # Validar límites antes de procesar
+        self._validate_export_limits(invoices)
+        
         buffer = io.BytesIO()
         failed_count = 0
         attachments_count = 0
         total = len(invoices)
+        processed = 0
 
-        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zip_file:
             
             # Configurar contraseña si es necesario
             if self.compression_format == 'zip_password' and self.archive_password:
                 zip_file.setpassword(self.archive_password.encode('utf-8'))
 
-            # Procesar facturas
-            for idx, invoice in enumerate(invoices, 1):
-                try:
-                    # Actualizar progreso
-                    progress = 20 + (idx / total) * 60  # 20-80%
-                    self._update_progress(
-                        progress,
-                        _('Procesando factura %d de %d: %s') % (idx, total, invoice.name)
-                    )
-                    
-                    # Determinar carpeta según organización
-                    folder = ''
-                    if self.organize_by_type:
-                        folder = self._get_folder_name(invoice) + '/'
-                    
-                    # Generar archivo - MÉTODO SIMPLIFICADO
-                    filename = folder + self._generate_filename(invoice)
-                    pdf_content = self._get_invoice_pdf_enhanced(invoice)  # Ahora es más robusto
-                    
-                    if not pdf_content or len(pdf_content) < 50:
-                        _logger.warning(f"PDF inválido para factura {invoice.name}")
+            # Procesar en lotes para optimizar memoria
+            batch_size = min(self.batch_size, 50)  # Máximo 50 por lote
+            
+            for batch_start in range(0, total, batch_size):
+                batch_end = min(batch_start + batch_size, total)
+                batch_invoices = invoices[batch_start:batch_end]
+                
+                # Procesar lote actual
+                for invoice in batch_invoices:
+                    processed += 1
+                    try:
+                        # Actualizar progreso
+                        progress = 20 + (processed / total) * 60  # 20-80%
+                        self._update_progress(
+                            progress,
+                            _('Procesando factura %d de %d: %s') % (processed, total, invoice.name)
+                        )
+                        
+                        # Determinar carpeta según organización
+                        folder = ''
+                        if self.organize_by_type:
+                            folder = self._get_folder_name(invoice) + '/'
+                        
+                        # Generar archivo
+                        filename = folder + self._generate_filename(invoice)
+                        pdf_content = self._get_invoice_pdf_enhanced(invoice)
+                        
+                        if not self._validate_pdf_content(pdf_content):
+                            _logger.warning(f"PDF inválido para factura {invoice.name}")
+                            failed_count += 1
+                            continue
+                        
+                        # Agregar PDF al ZIP
+                        if self.compression_format == 'zip_password':
+                            zip_file.writestr(
+                                filename,
+                                pdf_content,
+                                pwd=self.archive_password.encode('utf-8') if self.archive_password else None
+                            )
+                        else:
+                            zip_file.writestr(filename, pdf_content)
+                        
+                        # Liberar memoria del PDF
+                        del pdf_content
+                        
+                        # Agregar adjuntos si está habilitado
+                        if self.include_attachments:
+                            attachments = self._get_invoice_attachments(invoice)
+                            attachments_count += len(attachments)
+                            
+                            for att_filename, att_content in attachments:
+                                att_path = folder + 'adjuntos/' + invoice.name + '/'
+                                full_path = att_path + att_filename
+                                
+                                if self.compression_format == 'zip_password':
+                                    zip_file.writestr(
+                                        full_path,
+                                        att_content,
+                                        pwd=self.archive_password.encode('utf-8')
+                                    )
+                                else:
+                                    zip_file.writestr(full_path, att_content)
+                                
+                                # Liberar memoria del adjunto
+                                del att_content
+                            
+                    except Exception as e:
+                        _logger.error(f"Error procesando factura {invoice.name}: {str(e)}")
                         failed_count += 1
                         continue
-                        
-                    # Asegurar que pdf_content sea bytes
-                    if isinstance(pdf_content, str):
-                        pdf_content = pdf_content.encode('utf-8')
-                    
-                    # Agregar PDF al ZIP
-                    if self.compression_format == 'zip_password':
-                        zip_file.writestr(
-                            filename,
-                            pdf_content,
-                            pwd=self.archive_password.encode('utf-8') if self.archive_password else None
-                        )
-                    else:
-                        zip_file.writestr(filename, pdf_content)
-                    
-                    # Agregar adjuntos si está habilitado
-                    if self.include_attachments:
-                        attachments = self._get_invoice_attachments(invoice)
-                        attachments_count += len(attachments)
-                        
-                        for att_filename, att_content in attachments:
-                            # Crear subcarpeta de adjuntos
-                            att_path = folder + 'adjuntos/' + invoice.name + '/'
-                            full_path = att_path + att_filename
-                            
-                            if self.compression_format == 'zip_password':
-                                zip_file.writestr(
-                                    full_path,
-                                    att_content,
-                                    pwd=self.archive_password.encode('utf-8')
-                                )
-                            else:
-                                zip_file.writestr(full_path, att_content)
-                        
-                except Exception as e:
-                    _logger.error(f"Error procesando factura {invoice.name}: {str(e)}")
-                    failed_count += 1
-                    continue  # Continuar con la siguiente factura
+                
+                # Commit intermedio para liberar memoria
+                if batch_start > 0 and batch_start % (batch_size * 5) == 0:
+                    self.env.cr.commit()
 
         # Actualizar progreso final
         self._update_progress(90, _('Finalizando archivo...'))
@@ -918,94 +1031,54 @@ class BulkExportWizard(models.TransientModel):
 
     def _get_invoice_pdf_enhanced(self, invoice):
         """
-        VERSIÓN PATCHEADA - Corrige errores de dominio y cache.
-        Funciona tanto para facturas de cliente como de proveedor.
+        Genera PDF de factura con estrategia simplificada y robusta.
         """
         try:
-            _logger.info(f"Generando PDF para {invoice.name} (tipo: {invoice.move_type})")
+            # 1. Buscar PDF adjunto existente
+            pdf_attachment = self.env['ir.attachment'].search([
+                ('res_model', '=', 'account.move'),
+                ('res_id', '=', invoice.id),
+                ('mimetype', '=', 'application/pdf'),
+                ('name', 'ilike', '%.pdf')
+            ], limit=1)
             
-            # ESTRATEGIA 1: Buscar PDF adjunto existente
+            if pdf_attachment and pdf_attachment.datas:
+                try:
+                    pdf_content = base64.b64decode(pdf_attachment.datas)
+                    if self._validate_pdf_content(pdf_content):
+                        return pdf_content
+                except Exception:
+                    pass
+            
+            # 2. Generar usando reporte estándar de facturas
             try:
-                pdf_attachment = self.env['ir.attachment'].search([
-                    ('res_model', '=', 'account.move'),
-                    ('res_id', '=', invoice.id),
-                    ('mimetype', '=', 'application/pdf'),
-                    ('name', 'ilike', '%.pdf')
-                ], limit=1)
-                
-                if pdf_attachment and pdf_attachment.datas:
-                    _logger.info(f"PDF encontrado en adjuntos: {pdf_attachment.name}")
-                    return base64.b64decode(pdf_attachment.datas)
+                report = self.env.ref('account.account_invoices', raise_if_not_found=False)
+                if report:
+                    pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                    if self._validate_pdf_content(pdf_content):
+                        return pdf_content
             except Exception as e:
-                _logger.debug(f"Error buscando adjuntos: {e}")
+                _logger.warning(f"Error generando PDF estándar para {invoice.name}: {e}")
             
-            # ESTRATEGIA 2: Usar TODOS los reportes disponibles (sin XMLIDs hardcodeados)
-            try:
-                # Buscar reportes disponibles para facturas
-                reports = self.env['ir.actions.report'].search([
-                    ('model', '=', 'account.move'),
-                    ('report_type', '=', 'qweb-pdf')
-                ])
-                
-                _logger.info(f"Encontrados {len(reports)} reportes PDF para account.move")
-                
-                # Probar cada reporte hasta encontrar uno que funcione
-                for report in reports:
-                    try:
-                        if not hasattr(report, '_render_qweb_pdf'):
-                            continue
-                            
-                        _logger.debug(f"Probando reporte: {report.name}")
-                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                        
-                        if pdf_content and len(pdf_content) > 100:
-                            _logger.info(f"✓ PDF generado exitosamente con: {report.name}")
-                            return pdf_content
-                        else:
-                            _logger.debug(f"PDF vacío o muy pequeño con: {report.name}")
-                            
-                    except Exception as e:
-                        _logger.debug(f"Error con reporte {report.name}: {str(e)[:100]}")
-                        continue
-                        
-            except Exception as e:
-                _logger.debug(f"Error buscando reportes disponibles: {e}")
+            # 3. Fallback: buscar cualquier reporte disponible
+            reports = self.env['ir.actions.report'].search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ], limit=3)
             
-            # ESTRATEGIA 3: XMLIDs seguros (sin problemas de cache)
-            try:
-                # Lista de XMLIDs conocidos, probamos uno por uno
-                safe_xmlids = [
-                    'account.account_invoices',
-                    'account.report_invoice_with_payments',
-                    'account.account_invoices_without_payment'
-                ]
-                
-                for xmlid in safe_xmlids:
-                    try:
-                        # Método seguro para obtener reportes por XMLID
-                        report = self.env.ref(xmlid, raise_if_not_found=False)
-                        
-                        if report and hasattr(report, '_render_qweb_pdf'):
-                            _logger.debug(f"Probando XML ID: {xmlid}")
-                            pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                            
-                            if pdf_content and len(pdf_content) > 100:
-                                _logger.info(f"✓ PDF generado con XML ID: {xmlid}")
-                                return pdf_content
-                        
-                    except Exception as e:
-                        _logger.debug(f"Error con XML ID {xmlid}: {str(e)[:100]}")
-                        continue
-                        
-            except Exception as e:
-                _logger.debug(f"Error con XMLIDs seguros: {e}")
+            for report in reports:
+                try:
+                    pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                    if self._validate_pdf_content(pdf_content):
+                        return pdf_content
+                except Exception:
+                    continue
             
-            # ESTRATEGIA 4: Fallback garantizado - PDF de emergencia
-            _logger.warning(f"Todos los reportes fallaron para {invoice.name}, usando PDF de emergencia")
+            # 4. Último recurso: PDF básico
             return self._generate_emergency_pdf_content(invoice)
             
         except Exception as e:
-            _logger.error(f"Error crítico generando PDF para {invoice.name}: {e}", exc_info=True)
+            _logger.error(f"Error crítico generando PDF para {invoice.name}: {e}")
             return self._generate_emergency_pdf_content(invoice)
 
 
@@ -1192,43 +1265,96 @@ class BulkExportWizard(models.TransientModel):
         
         return html
 
-    def _create_basic_pdf_bytes(self, invoice):
-        """Crea PDF básico válido como último recurso con datos sanitizados."""
-        try:
-            # Sanitizar datos para evitar caracteres problemáticos en PDF
-            invoice_name = self._sanitize_for_pdf(invoice.name or 'SIN_NUMERO')
-            partner_name = self._sanitize_for_pdf((invoice.partner_id.name or 'DESCONOCIDO')[:40])
-            invoice_date = str(invoice.invoice_date or 'SIN_FECHA')
-            amount_total = f"{invoice.amount_total:.2f}"
-            currency_name = invoice.currency_id.name or 'EUR'
-            state = invoice.state or 'draft'
-            current_date = datetime.now().strftime('%d/%m/%Y %H:%M')
+    def _generate_emergency_pdf_content(self, invoice):
+        """
+        Genera PDF de emergencia cuando fallan todos los métodos estándar.
+        
+        Args:
+            invoice: registro de factura
             
-            pdf_content = f"""%PDF-1.4
+        Returns:
+            bytes: contenido PDF válido
+        """
+        try:
+            # Usar HTML simple y convertir a PDF con wkhtmltopdf
+            html_content = self._create_simple_invoice_html(invoice)
+            
+            # Intentar usar el motor de reportes de Odoo
+            try:
+                pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf(
+                    [html_content],
+                    landscape=False,
+                    specific_paperformat_args={
+                        'data-report-margin-top': 20,
+                        'data-report-margin-bottom': 20,
+                    }
+                )
+                
+                if self._validate_pdf_content(pdf_content):
+                    return pdf_content
+                    
+            except Exception as e:
+                _logger.debug(f"Error con wkhtmltopdf: {e}")
+            
+            # Fallback final: PDF básico pero válido
+            return self._create_minimal_pdf_bytes(invoice)
+            
+        except Exception as e:
+            _logger.error(f"Error en PDF de emergencia: {e}")
+            return self._create_minimal_pdf_bytes(invoice)
+
+    def _create_simple_invoice_html(self, invoice):
+        """Crea HTML simple para la factura."""
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8"/>
+            <title>Factura {invoice.name or 'BORRADOR'}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .info {{ margin: 10px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>FACTURA: {invoice.name or 'BORRADOR'}</h1>
+            </div>
+            <div class="info">
+                <p><strong>Cliente:</strong> {invoice.partner_id.name or 'DESCONOCIDO'}</p>
+                <p><strong>Fecha:</strong> {invoice.invoice_date or 'SIN FECHA'}</p>
+                <p><strong>Importe:</strong> {invoice.amount_total:.2f} {invoice.currency_id.name or ''}</p>
+                <p><strong>Estado:</strong> {invoice.state or 'draft'}</p>
+            </div>
+            <p style="margin-top: 40px; text-align: center; color: #666; font-size: 10px;">
+                PDF generado automáticamente - {datetime.now().strftime('%d/%m/%Y %H:%M')}
+            </p>
+        </body>
+        </html>
+        """
+
+    def _create_minimal_pdf_bytes(self, invoice):
+        """Crea PDF mínimo pero válido."""
+        invoice_name = self._sanitize_for_pdf(invoice.name or 'SIN_NUMERO')
+        partner_name = self._sanitize_for_pdf((invoice.partner_id.name or 'DESCONOCIDO')[:30])
+        
+        pdf_content = f"""%PDF-1.4
 1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R/Resources<</Font<</F1<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>>>>>>>endobj
-4 0 obj<</Length 450>>stream
+4 0 obj<</Length 200>>stream
 BT
-/F1 16 Tf
+/F1 14 Tf
 50 750 Td
 (FACTURA: {invoice_name}) Tj
-0 -25 Td
-/F1 12 Tf
+0 -30 Td
 (Cliente: {partner_name}) Tj
-0 -20 Td
-(Fecha: {invoice_date}) Tj
-0 -20 Td
-(Importe: {amount_total} {currency_name}) Tj
-0 -20 Td
-(Estado: {state}) Tj
-0 -40 Td
+0 -30 Td
+(Importe: {invoice.amount_total:.2f}) Tj
+0 -50 Td
 /F1 10 Tf
-(PDF generado automaticamente por exportacion masiva) Tj
-0 -15 Td
-(Generado: {current_date}) Tj
-0 -15 Td
-(Nota: PDF basico - Contacte administrador para PDFs completos) Tj
+(PDF basico - Error en generacion completa) Tj
 ET
 endstream
 endobj
@@ -1238,40 +1364,36 @@ xref
 0000000010 00000 n 
 0000000053 00000 n 
 0000000102 00000 n 
-0000000300 00000 n 
+0000000250 00000 n 
 trailer<</Size 5/Root 1 0 R>>
 startxref
-800
+500
 %%EOF"""
+        
+        return pdf_content.encode('utf-8')
+
+    def _validate_pdf_content(self, pdf_content):
+        """
+        Valida que el contenido sea un PDF válido.
+        
+        Args:
+            pdf_content: bytes del contenido PDF
             
-            return pdf_content.encode('utf-8')
-            
-        except Exception as e:
-            _logger.error(f"Error creando PDF básico: {e}")
-            # PDF mínimo de emergencia
-            return b"""%PDF-1.4
-1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
-2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
-3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R>>endobj
-4 0 obj<</Length 50>>stream
-BT
-/F1 12 Tf
-50 750 Td
-(PDF de emergencia - Error en generacion) Tj
-ET
-endstream
-endobj
-xref
-0 5
-0000000000 65535 f 
-0000000010 00000 n 
-0000000053 00000 n 
-0000000102 00000 n 
-0000000200 00000 n 
-trailer<</Size 5/Root 1 0 R>>
-startxref
-300
-%%EOF"""
+        Returns:
+            bool: True si es un PDF válido
+        """
+        if not pdf_content or len(pdf_content) < 100:
+            return False
+        
+        # Verificar header PDF
+        if not pdf_content.startswith(b'%PDF-'):
+            return False
+        
+        # Verificar que contiene EOF
+        if b'%%EOF' not in pdf_content[-1024:]:
+            return False
+        
+        return True
 
     def _sanitize_for_pdf(self, text):
         """Sanitiza texto para uso seguro en PDF."""
