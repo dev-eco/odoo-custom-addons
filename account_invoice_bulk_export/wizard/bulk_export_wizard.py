@@ -1030,62 +1030,125 @@ class BulkExportWizard(models.TransientModel):
         return ascii_name or 'Archivo_Sin_Nombre'
 
     def _get_invoice_pdf_enhanced(self, invoice):
-        """
-        Genera PDF de factura con estrategia simplificada y robusta.
-        """
-        try:
-            # 1. Buscar PDF adjunto existente
-            pdf_attachment = self.env['ir.attachment'].search([
-                ('res_model', '=', 'account.move'),
-                ('res_id', '=', invoice.id),
-                ('mimetype', '=', 'application/pdf'),
-                ('name', 'ilike', '%.pdf')
-            ], limit=1)
+            """
+            Genera PDF de factura con estrategia simplificada y robusta.
             
-            if pdf_attachment and pdf_attachment.datas:
-                try:
-                    pdf_content = base64.b64decode(pdf_attachment.datas)
-                    if self._validate_pdf_content(pdf_content):
-                        return pdf_content
-                except Exception:
-                    pass
+            Estrategia de fallback en orden:
+            1. PDF adjunto existente
+            2. Reporte estándar account.report_invoice
+            3. Cualquier reporte disponible para account.move
+            4. PDF de emergencia básico
             
-            # 2. Generar usando reporte estándar de facturas
+            Args:
+                invoice: registro account.move de la factura
+                
+            Returns:
+                bytes: contenido del PDF generado
+            """
             try:
-                report = self.env.ref('account.account_invoices', raise_if_not_found=False)
-                if report:
-                    pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                    if self._validate_pdf_content(pdf_content):
-                        return pdf_content
-            except Exception as e:
-                _logger.warning(f"Error generando PDF estándar para {invoice.name}: {e}")
-            
-            # 3. Fallback: buscar cualquier reporte disponible
-            reports = self.env['ir.actions.report'].search([
-                ('model', '=', 'account.move'),
-                ('report_type', '=', 'qweb-pdf')
-            ], limit=3)
-            
-            for report in reports:
+                # ============================================================
+                # PASO 1: Buscar PDF adjunto existente
+                # ============================================================
+                pdf_attachment = self.env['ir.attachment'].search([
+                    ('res_model', '=', 'account.move'),
+                    ('res_id', '=', invoice.id),
+                    ('mimetype', '=', 'application/pdf'),
+                    ('name', 'ilike', '%.pdf')
+                ], limit=1)
+                
+                if pdf_attachment and pdf_attachment.datas:
+                    try:
+                        pdf_content = base64.b64decode(pdf_attachment.datas)
+                        if self._validate_pdf_content(pdf_content):
+                            _logger.info(f"✓ Usando PDF adjunto para factura {invoice.name}")
+                            return pdf_content
+                    except Exception as e:
+                        _logger.debug(f"Error decodificando adjunto de {invoice.name}: {e}")
+                
+                # ============================================================
+                # PASO 2: Generar usando reporte estándar - BÚSQUEDA DIRECTA
+                # ============================================================
+                # CORRECCIÓN: Buscar directamente sin pasar por ir.model.data
+                # Esto evita el error de lista [84] en lugar de 84
                 try:
-                    pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
-                    if self._validate_pdf_content(pdf_content):
-                        return pdf_content
-                except Exception:
-                    continue
-            
-            # 4. Último recurso: PDF básico
-            return self._generate_emergency_pdf_content(invoice)
-            
-        except Exception as e:
-            _logger.error(f"Error crítico generando PDF para {invoice.name}: {e}")
-            return self._generate_emergency_pdf_content(invoice)
-
-
-
-
-
-
+                    standard_report = self.env['ir.actions.report'].search([
+                        ('model', '=', 'account.move'),
+                        ('report_type', '=', 'qweb-pdf'),
+                        ('report_name', '=', 'account.report_invoice')
+                    ], limit=1)
+                    
+                    if standard_report:
+                        _logger.info(f"✓ Usando reporte estándar para factura {invoice.name}")
+                        pdf_content, _ = standard_report.sudo()._render_qweb_pdf([invoice.id])
+                        
+                        if self._validate_pdf_content(pdf_content):
+                            return pdf_content
+                        else:
+                            _logger.warning(f"PDF estándar generado pero inválido para {invoice.name}")
+                            
+                except Exception as e:
+                    _logger.warning(
+                        f"Error generando PDF con reporte estándar para {invoice.name}: {e}",
+                        exc_info=True
+                    )
+                
+                # ============================================================
+                # PASO 3: Fallback - buscar CUALQUIER reporte disponible
+                # ============================================================
+                try:
+                    available_reports = self.env['ir.actions.report'].search([
+                        ('model', '=', 'account.move'),
+                        ('report_type', '=', 'qweb-pdf')
+                    ], limit=5)
+                    
+                    _logger.info(
+                        f"Buscando entre {len(available_reports)} reportes disponibles "
+                        f"para factura {invoice.name}"
+                    )
+                    
+                    for report in available_reports:
+                        try:
+                            _logger.debug(
+                                f"  Intentando reporte: {report.report_name} "
+                                f"(ID: {report.id})"
+                            )
+                            
+                            pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                            
+                            if self._validate_pdf_content(pdf_content):
+                                _logger.info(
+                                    f"✓ PDF generado exitosamente con reporte "
+                                    f"{report.report_name} para {invoice.name}"
+                                )
+                                return pdf_content
+                                
+                        except Exception as e:
+                            _logger.debug(
+                                f"  ✗ Error con reporte {report.report_name}: {e}"
+                            )
+                            continue
+                            
+                except Exception as e:
+                    _logger.warning(
+                        f"Error buscando reportes alternativos para {invoice.name}: {e}"
+                    )
+                
+                # ============================================================
+                # PASO 4: Último recurso - PDF básico de emergencia
+                # ============================================================
+                _logger.warning(
+                    f"⚠ Ningún reporte disponible funcionó. "
+                    f"Generando PDF de emergencia para {invoice.name}"
+                )
+                return self._generate_emergency_pdf_content(invoice)
+                
+            except Exception as e:
+                # Captura cualquier error no manejado
+                _logger.error(
+                    f"❌ Error crítico generando PDF para {invoice.name}: {e}",
+                    exc_info=True
+                )
+                return self._generate_emergency_pdf_content(invoice)
 
     def _generate_pdf_via_print_action(self, invoice):
         """Genera PDF usando la acción de impresión estándar de Odoo con validación mejorada."""
