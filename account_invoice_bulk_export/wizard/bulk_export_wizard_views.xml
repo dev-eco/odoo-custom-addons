@@ -4,46 +4,125 @@
         <field name="name">account.bulk.export.wizard.form</field>
         <field name="model">account.bulk.export.wizard</field>
         <field name="arch" type="xml">
-            <form string="Export Invoices">
-                <sheet>
-                    <group invisible="export_file">
-                        <field name="company_id" invisible="1"/>
-                        <field name="invoice_ids" widget="many2many_tags">
-                            <tree>
-                                <field name="name"/>
-                                <field name="partner_id"/>
-                                <field name="invoice_date"/>
-                                <field name="amount_total"/>
-                                <field name="state"/>
-                            </tree>
-                        </field>
-                    </group>
-                    
-                    <group invisible="not export_file">
-                        <div class="alert alert-success" role="alert">
-                            <h4 class="alert-heading">Export Complete!</h4>
-                            <p>Your file is ready for download.</p>
-                        </div>
-                        <field name="export_file" invisible="1"/>
-                        <field name="export_filename" invisible="1"/>
-                    </group>
-                </sheet>
+            <form string="Bulk Invoice Export">
                 
-                <footer>
-                    <button name="action_export" 
-                            string="Export" 
+                <!-- Header con botones y estado -->
+                <header>
+                    <field name="state" invisible="1"/>
+                    
+                    <button name="action_start_export" 
                             type="object" 
-                            class="btn-primary"
-                            invisible="export_file"/>
+                            string="Start Export" 
+                            class="btn-primary" 
+                            invisible="state != 'draft'"/>
+                    
                     <button name="action_download" 
-                            string="Download" 
                             type="object" 
-                            class="btn-primary"
-                            invisible="not export_file"/>
+                            string="Download File" 
+                            class="btn-success" 
+                            invisible="state != 'done'"/>
+                    
+                    <button name="action_restart" 
+                            type="object" 
+                            string="New Export" 
+                            class="btn-secondary" 
+                            invisible="state == 'draft'"/>
+                    
+                    <field name="state" 
+                           widget="statusbar" 
+                           statusbar_visible="draft,processing,done"/>
+                </header>
+
+                <!-- Contenido principal -->
+                <sheet>
+                    
+                    <!-- Título -->
+                    <div class="oe_title">
+                        <h1>Bulk Invoice Export</h1>
+                    </div>
+
+                    <!-- Mensaje de procesamiento -->
+                    <div class="alert alert-warning" 
+                         invisible="state != 'processing'">
+                        <p><i class="fa fa-spinner fa-spin"/> Processing export, please wait...</p>
+                    </div>
+
+                    <!-- Mensaje de error -->
+                    <div class="alert alert-danger" 
+                         invisible="state != 'error'">
+                        <h4>Export Failed</h4>
+                        <field name="error_message" readonly="1"/>
+                    </div>
+
+                    <!-- Mensaje de éxito -->
+                    <div class="alert alert-success" 
+                         invisible="state != 'done'">
+                        <h4>Export Completed Successfully</h4>
+                        <p>
+                            <strong><field name="export_count"/> invoices</strong> exported in 
+                            <strong><field name="processing_time"/> seconds</strong>
+                        </p>
+                        <p invisible="failed_count == 0">
+                            <strong class="text-warning"><field name="failed_count"/> invoices</strong> failed to export
+                        </p>
+                    </div>
+
+                    <!-- Configuración - solo visible en draft -->
+                    <div invisible="state != 'draft'">
+                        
+                        <!-- Configuración básica -->
+                        <group string="Basic Configuration">
+                            <group>
+                                <field name="company_id" options="{'no_create': True}"/>
+                                <field name="state_filter"/>
+                            </group>
+                        </group>
+
+                        <!-- Selección de facturas -->
+                        <group string="Invoice Selection" invisible="invoice_ids">
+                            <group>
+                                <field name="include_out_invoice"/>
+                                <field name="include_in_invoice"/>
+                            </group>
+                            <group>
+                                <field name="include_out_refund"/>
+                                <field name="include_in_refund"/>
+                            </group>
+                        </group>
+
+                        <!-- Facturas pre-seleccionadas -->
+                        <group string="Selected Invoices" invisible="not invoice_ids">
+                            <field name="invoice_ids" 
+                                   widget="many2many_tags" 
+                                   options="{'no_create': True}" 
+                                   nolabel="1"/>
+                        </group>
+
+                    </div>
+
+                    <!-- Resultados - solo visible cuando está done -->
+                    <div invisible="state != 'done'">
+                        <group string="Export Results">
+                            <group>
+                                <field name="export_count" readonly="1"/>
+                                <field name="failed_count" readonly="1" invisible="failed_count == 0"/>
+                                <field name="processing_time" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="export_filename" readonly="1"/>
+                            </group>
+                        </group>
+                    </div>
+
+                </sheet>
+
+                <!-- Footer -->
+                <footer>
                     <button string="Close" 
                             class="btn-secondary" 
                             special="cancel"/>
                 </footer>
+
             </form>
         </field>
     </record>
@@ -66,4 +145,5 @@
         <field name="binding_model_id" ref="account.model_account_move"/>
         <field name="binding_view_types">list</field>
     </record>
+
 </odoo>
