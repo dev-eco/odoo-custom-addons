@@ -65,11 +65,426 @@ class BulkExportWizard(models.TransientModel):
     # ==========================================
     # MÉTODOS PRINCIPALES - CORREGIDOS
     # ==========================================
+<<<<<<< HEAD
 
     def action_start_export(self):
         """Inicia el proceso de exportación - MÉTODO REQUERIDO POR XML"""
         self.ensure_one()
         
+=======
+    
+    compression_format = fields.Selection([
+        ('zip', 'ZIP'),
+        ('zip_password', 'ZIP con Contraseña'),
+        ('tar_gz', 'TAR.GZ'),
+        ('tar_bz2', 'TAR.BZ2'),
+    ], string='Formato de Compresión', required=True,
+       help='Formato del archivo comprimido a generar',
+       default=lambda self: self.env['ir.config_parameter'].sudo().get_param(
+           'account_invoice_bulk_export.default_format', 'zip'))
+
+    archive_password = fields.Char(
+        string='Contraseña del Archivo',
+        help='Contraseña para protección del ZIP (solo para ZIP con Contraseña)'
+    )
+
+    # ==========================================
+    # OPCIONES DE NOMBRES DE ARCHIVO
+    # ==========================================
+    
+    filename_pattern = fields.Selection([
+        ('standard', 'Tipo_Número_Partner_Fecha'),
+        ('date_first', 'Fecha_Tipo_Número_Partner'),
+        ('partner_first', 'Partner_Tipo_Número_Fecha'),
+        ('simple', 'Tipo_Número_Fecha'),
+    ], string='Patrón de Nombres',
+       help='Patrón para generar nombres de archivos PDF',
+       default=lambda self: self.env['ir.config_parameter'].sudo().get_param(
+           'account_invoice_bulk_export.default_pattern', 'standard'))
+
+    # ==========================================
+    # OPCIONES AVANZADAS
+    # ==========================================
+    
+    organize_by_type = fields.Boolean(
+        string='Organizar en Carpetas por Tipo',
+        default=True,
+        help='Crea carpetas separadas para facturas, notas de crédito, etc.'
+    )
+    
+    include_attachments = fields.Boolean(
+        string='Incluir Adjuntos',
+        default=False,
+        help='Incluir archivos adjuntos a las facturas'
+    )
+    
+    batch_size = fields.Integer(
+        string='Tamaño del Lote',
+        default=lambda self: int(self.env['ir.config_parameter'].sudo().get_param(
+            'account_invoice_bulk_export.default_batch_size', '50')),
+        help='Número de facturas a procesar simultáneamente (1-500)'
+    )
+
+    # ==========================================
+    # VISTA PREVIA
+    # ==========================================
+    
+    preview_invoice_count = fields.Integer(
+        string='Total Facturas a Exportar',
+        compute='_compute_preview_stats',
+    )
+    
+    preview_out_invoice_count = fields.Integer(
+        string='Facturas de Cliente',
+        compute='_compute_preview_stats',
+    )
+    
+    preview_in_invoice_count = fields.Integer(
+        string='Facturas de Proveedor',
+        compute='_compute_preview_stats',
+    )
+    
+    preview_out_refund_count = fields.Integer(
+        string='NC de Cliente',
+        compute='_compute_preview_stats',
+    )
+    
+    preview_in_refund_count = fields.Integer(
+        string='NC de Proveedor',
+        compute='_compute_preview_stats',
+    )
+    
+    preview_total_amount = fields.Monetary(
+        string='Importe Total',
+        compute='_compute_preview_stats',
+        currency_field='currency_id',
+    )
+    
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda',
+        default=lambda self: self.env.company.currency_id,
+    )
+
+    # ==========================================
+    # PROGRESO
+    # ==========================================
+    
+    progress_percentage = fields.Float(
+        string='Progreso (%)',
+        default=0.0,
+    )
+    
+    progress_message = fields.Char(
+        string='Mensaje de Progreso',
+    )
+
+    # ==========================================
+    # RESULTADOS
+    # ==========================================
+    
+    export_file = fields.Binary(
+        string='Archivo de Exportación',
+        readonly=True,
+        attachment=False,
+    )
+    
+    export_filename = fields.Char(
+        string='Nombre del Archivo',
+        readonly=True,
+    )
+    
+    export_count = fields.Integer(
+        string='Facturas Exportadas',
+        readonly=True,
+    )
+    
+    failed_count = fields.Integer(
+        string='Facturas Fallidas',
+        readonly=True,
+    )
+    
+    processing_time = fields.Float(
+        string='Tiempo de Procesamiento (s)',
+        readonly=True,
+    )
+    
+    file_size_mb = fields.Float(
+        string='Tamaño del Archivo (MB)',
+        readonly=True,
+        compute='_compute_file_size',
+    )
+    
+    error_message = fields.Text(
+        string='Detalles del Error',
+        readonly=True,
+    )
+    
+    export_history_id = fields.Many2one(
+        'account.invoice.export.history',
+        string='Registro de Exportación',
+        readonly=True,
+        help='Registro en el historial de exportaciones',
+    )
+    
+    attachments_count = fields.Integer(
+        string='Archivos Adjuntos',
+        readonly=True,
+    )
+    
+    use_background_processing = fields.Boolean(
+        string='Procesamiento en Background',
+        default=lambda self: HAS_QUEUE_JOB and self._should_use_background(),
+        help='Usar procesamiento en background para lotes grandes'
+    )
+
+    job_id = fields.Char(
+        string='ID del Job',
+        readonly=True,
+        help='Identificador del job en background'
+    )
+
+    # ==========================================
+    # CAMPOS COMPUTADOS
+    # ==========================================
+
+    @api.depends('invoice_ids')
+    def _compute_selected_count(self):
+        """Calcula la cantidad de facturas seleccionadas."""
+        for record in self:
+            record.selected_count = len(record.invoice_ids)
+
+    @api.depends('export_file')
+    def _compute_file_size(self):
+        """Calcula el tamaño del archivo exportado en MB con manejo robusto de errores."""
+        for record in self:
+            try:
+                # Validación inicial
+                if not record.export_file:
+                    record.file_size_mb = 0.0
+                    continue
+                
+                # Obtener tamaño aproximado del campo Binary
+                # Los campos Binary en Odoo ya están en base64, así que estimamos el tamaño
+                # El tamaño real es aproximadamente 3/4 del tamaño en base64
+                if record.export_file:
+                    # Longitud del string base64
+                    base64_length = len(record.export_file) if isinstance(record.export_file, str) else 0
+                    # Estimación del tamaño real (3/4 del tamaño base64)
+                    estimated_size = base64_length * 3 / 4
+                    # Convertir a MB
+                    record.file_size_mb = round(estimated_size / (1024 * 1024), 2)
+                else:
+                    record.file_size_mb = 0.0
+                    
+            except Exception as e:
+                _logger.error(f"Error en _compute_file_size para registro {record.id}: {str(e)}")
+                record.file_size_mb = 0.0
+
+    @api.depends('date_from', 'date_to', 'partner_ids', 'include_out_invoice',
+                 'include_in_invoice', 'include_out_refund', 'include_in_refund',
+                 'state_filter', 'invoice_ids', 'company_id')
+    def _compute_preview_stats(self):
+        """Calcula estadísticas para la vista previa."""
+        for record in self:
+            invoices = record._get_invoices_to_export()
+            
+            record.preview_invoice_count = len(invoices)
+            record.preview_out_invoice_count = len(invoices.filtered(
+                lambda inv: inv.move_type == 'out_invoice'
+            ))
+            record.preview_in_invoice_count = len(invoices.filtered(
+                lambda inv: inv.move_type == 'in_invoice'
+            ))
+            record.preview_out_refund_count = len(invoices.filtered(
+                lambda inv: inv.move_type == 'out_refund'
+            ))
+            record.preview_in_refund_count = len(invoices.filtered(
+                lambda inv: inv.move_type == 'in_refund'
+            ))
+            
+            # Calcular importe total en la moneda de la compañía
+            total = 0.0
+            for invoice in invoices:
+                if invoice.currency_id == record.currency_id:
+                    total += invoice.amount_total
+                else:
+                    # Convertir a moneda de la compañía
+                    total += invoice.currency_id._convert(
+                        invoice.amount_total,
+                        record.currency_id,
+                        record.company_id,
+                        invoice.invoice_date or fields.Date.today()
+                    )
+            record.preview_total_amount = total
+
+    # ==========================================
+    # VALIDACIONES
+    # ==========================================
+
+    @api.constrains('date_from', 'date_to')
+    def _check_dates(self):
+        """Valida que la fecha desde no sea posterior a la fecha hasta."""
+        for record in self:
+            if record.date_from and record.date_to:
+                if record.date_from > record.date_to:
+                    raise ValidationError(
+                        _('La fecha desde no puede ser posterior a la fecha hasta.')
+                    )
+
+    @api.constrains('compression_format', 'archive_password')
+    def _check_password(self):
+        """Valida que se proporcione contraseña para ZIP protegido."""
+        for record in self:
+            if record.compression_format == 'zip_password' and not record.archive_password:
+                raise ValidationError(
+                    _('Se requiere una contraseña para ZIP con protección de contraseña.')
+                )
+
+    @api.constrains('batch_size')
+    def _check_batch_size(self):
+        """Valida que el tamaño del lote esté en rango válido."""
+        for record in self:
+            if record.batch_size < 1 or record.batch_size > 100:
+                raise ValidationError(
+                    _('El tamaño del lote debe estar entre 1 y 100.')
+                )
+
+    def _validate_export_limits(self, invoices):
+        """
+        Valida límites de exportación para prevenir sobrecarga del servidor.
+        CORRECCIÓN: Límites más conservadores y mejor logging.
+        
+        Args:
+            invoices: recordset de facturas a exportar
+        """
+        if not invoices:
+            raise UserError(_('No hay facturas para exportar.'))
+            
+        invoice_count = len(invoices)
+        
+        # Límites basados en el entorno
+        max_invoices = 500  # Reducido para mejor rendimiento
+        warning_threshold = 200
+        
+        if invoice_count > max_invoices:
+            raise UserError(_(
+                'No se pueden exportar más de %d facturas a la vez. '
+                'Actualmente seleccionadas: %d. '
+                'Use filtros de fecha para reducir la cantidad.'
+            ) % (max_invoices, invoice_count))
+        
+        # Advertencia para exportaciones grandes
+        if invoice_count > warning_threshold:
+            _logger.warning(
+                f"Exportación grande iniciada por {self.env.user.name}: "
+                f"{invoice_count} facturas. Tiempo estimado: {invoice_count * 2} segundos."
+            )
+        
+        # Validar acceso a las facturas
+        try:
+            invoices.check_access_rights('read')
+            invoices.check_access_rule('read')
+        except AccessError as e:
+            raise AccessError(_('No tiene acceso a algunas de las facturas seleccionadas: %s') % str(e))
+        
+        _logger.info(f"Validación de límites completada: {invoice_count} facturas aprobadas para exportación")
+
+    # ==========================================
+    # MÉTODOS DE NAVEGACIÓN
+    # ==========================================
+
+    def action_show_preview(self):
+        """Muestra la vista previa de las facturas a exportar."""
+        self.ensure_one()
+        
+        # Validar que hay facturas para exportar
+        invoices = self._get_invoices_to_export()
+        if not invoices:
+            raise UserError(
+                _('No se encontraron facturas que coincidan con los criterios especificados.')
+            )
+        
+        self.write({'state': 'preview'})
+        return self._reload_wizard()
+
+    def action_back_to_config(self):
+        """Regresa a la configuración desde la vista previa."""
+        self.ensure_one()
+        self.write({'state': 'draft'})
+        return self._reload_wizard()
+
+    def _should_use_background(self):
+        """Determina si usar background basado en cantidad de facturas."""
+        invoices = self._get_invoices_to_export()
+        return len(invoices) > 100  # Umbral configurable
+
+    def action_start_export(self):
+        """Inicia el proceso de exportación con validaciones mejoradas."""
+        self.ensure_one()
+        
+        # VALIDACIÓN DE SEGURIDAD: Verificar permisos de contabilidad
+        accounting_groups = [
+            'account.group_account_user',
+            'account.group_account_manager',
+            'account.group_account_invoice',
+        ]
+        
+        has_access = any(self.env.user.has_group(group) for group in accounting_groups)
+        
+        if not has_access:
+            raise AccessError(_(
+                'No tiene permisos para exportar facturas. '
+                'Grupos requeridos: Usuario de Contabilidad, Gestor de Contabilidad, '
+                'o Usuario de Facturas. Contacte a su administrador.'
+            ))
+
+        # Obtener facturas a exportar con validación
+        invoices = self._get_invoices_to_export()
+        
+        if not invoices:
+            raise UserError(_('No se encontraron facturas que coincidan con los criterios.'))
+
+        # Validar límites antes de procesar
+        self._validate_export_limits(invoices)
+
+        # Decidir si usar background (solo si está disponible)
+        if self.use_background_processing and HAS_QUEUE_JOB and len(invoices) > 50:
+            return self._start_background_export(invoices)
+        else:
+            return self._start_synchronous_export(invoices)
+
+    @job
+    def _process_export_background(self, invoice_ids):
+        """Procesa la exportación en background."""
+        invoices = self.env['account.move'].browse(invoice_ids)
+        return self._generate_export_file(invoices)
+
+    def _start_background_export(self, invoices):
+        """Inicia exportación en background."""
+        self.write({
+            'state': 'processing',
+            'progress_message': _('Iniciando procesamiento en background...'),
+        })
+        
+        # Crear job
+        job = self.with_delay()._process_export_background(invoices.ids)
+        self.job_id = job.uuid
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Procesamiento Iniciado'),
+                'message': _('La exportación se está procesando en background. Recibirá una notificación cuando termine.'),
+                'type': 'info',
+                'sticky': True,
+            }
+        }
+
+    def _start_synchronous_export(self, invoices):
+        """Inicia exportación síncrona."""
+>>>>>>> 8556445 ([fix] few bugs)
         try:
             self.write({'state': 'processing', 'error_message': False})
             
@@ -128,6 +543,7 @@ class BulkExportWizard(models.TransientModel):
 
         return self._reload_wizard()
 
+<<<<<<< HEAD
     def action_download(self):
         """Descarga el archivo generado - MÉTODO REQUERIDO POR XML"""
         self.ensure_one()
@@ -146,14 +562,115 @@ class BulkExportWizard(models.TransientModel):
         self.ensure_one()
         
         self.write({
+=======
+    def _generate_download_token(self):
+        """Genera token seguro para descarga con validaciones."""
+        try:
+            # Validar que tenemos los datos necesarios
+            if not self.id or not self.create_uid or not self.create_date:
+                raise ValueError("Datos insuficientes para generar token")
+            
+            # Crear string de datos para hash
+            data_parts = [
+                str(self.id),
+                str(self.create_uid.id),
+                str(self.create_date),
+                str(self.export_filename or ''),
+            ]
+            
+            data = "_".join(data_parts)
+            return hashlib.sha256(data.encode('utf-8')).hexdigest()[:32]
+            
+        except Exception as e:
+            _logger.error(f"Error generando token de descarga: {e}")
+            # Token de fallback basado solo en ID
+            return hashlib.sha256(f"fallback_{self.id}".encode('utf-8')).hexdigest()[:32]
+
+    def _get_download_url(self):
+        """Obtiene URL segura de descarga con validaciones."""
+        if not self.export_file or not self.export_filename:
+            return None
+        
+        try:
+            token = self._generate_download_token()
+            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            
+            if not base_url:
+                _logger.warning("web.base.url no configurado, usando URL relativa")
+                return f"/bulk_export/download/{self.id}/{token}"
+            
+            return f"{base_url}/bulk_export/download/{self.id}/{token}"
+            
+        except Exception as e:
+            _logger.error(f"Error generando URL de descarga: {e}")
+            return None
+
+    def action_download(self):
+        """Descarga el archivo generado con manejo de errores mejorado."""
+        self.ensure_one()
+        
+        if not self.export_file:
+            raise UserError(_('No hay archivo disponible para descargar.'))
+        
+        if not self.export_filename:
+            raise UserError(_('Nombre de archivo no disponible.'))
+
+        try:
+            # Intentar usar controlador seguro si está disponible
+            download_url = self._get_download_url()
+            if download_url:
+                return {
+                    'type': 'ir.actions.act_url',
+                    'url': download_url,
+                    'target': 'self',
+                }
+        except Exception as e:
+            _logger.warning(f"Error generando URL de descarga segura: {e}")
+        
+        # Fallback: descarga directa usando widget binary
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'download_mode': True}
+        }
+
+    def action_restart(self):
+        """Reinicia el wizard para una nueva exportación con limpieza completa."""
+        self.ensure_one()
+        
+        # Limpiar todos los campos de resultado
+        reset_values = {
+>>>>>>> 8556445 ([fix] few bugs)
             'state': 'draft',
             'export_file': False,
             'export_filename': False,
             'export_count': 0,
             'failed_count': 0,
+<<<<<<< HEAD
             'processing_time': 0,
             'error_message': False,
         })
+=======
+            'attachments_count': 0,
+            'processing_time': 0.0,
+            'file_size_mb': 0.0,
+            'error_message': False,
+            'progress_percentage': 0.0,
+            'progress_message': False,
+            'export_history_id': False,
+            'job_id': False,
+        }
+        
+        try:
+            self.write(reset_values)
+            _logger.info(f"Wizard reiniciado por usuario {self.env.user.name}")
+        except Exception as e:
+            _logger.error(f"Error reiniciando wizard: {e}")
+            raise UserError(_('Error al reiniciar el wizard. Intente cerrar y abrir nuevamente.'))
+>>>>>>> 8556445 ([fix] few bugs)
         
         return self._reload_wizard()
 
@@ -485,6 +1002,7 @@ class BulkExportWizard(models.TransientModel):
 
     def _get_invoice_pdf_enhanced(self, invoice):
         """
+<<<<<<< HEAD
         Genera PDF de factura con estrategia simplificada y robusta.
         """
         try:
@@ -580,6 +1098,177 @@ class BulkExportWizard(models.TransientModel):
             
             return pdf_content if pdf_content else None
 
+=======
+        Genera PDF de factura con estrategia robusta compatible con Odoo 17.
+        
+        CORRECCIONES APLICADAS:
+        - Uso correcto de operadores domain ('in' en lugar de '=')
+        - Validación de tipos antes de operaciones string
+        - Manejo seguro de claves de caché
+        - Compatibilidad con módulos OCA
+        
+        Args:
+            invoice: registro account.move de la factura
+            
+        Returns:
+            bytes: contenido del PDF generado o None si falla
+        """
+        try:
+            # ============================================================
+            # PASO 1: Buscar PDF adjunto existente
+            # ============================================================
+            pdf_attachment = self.env['ir.attachment'].search([
+                ('res_model', '=', 'account.move'),
+                ('res_id', '=', invoice.id),
+                ('mimetype', '=', 'application/pdf'),
+                ('name', 'ilike', '%.pdf')
+            ], limit=1)
+            
+            if pdf_attachment and pdf_attachment.datas:
+                try:
+                    pdf_content = base64.b64decode(pdf_attachment.datas)
+                    if self._validate_pdf_content(pdf_content):
+                        _logger.info(f"✓ Usando PDF adjunto para factura {invoice.name}")
+                        return pdf_content
+                except Exception as e:
+                    _logger.debug(f"Error decodificando adjunto de {invoice.name}: {e}")
+
+            # ============================================================
+            # PASO 2: Intentar reportes estándar con búsqueda segura
+            # ============================================================
+            standard_reports = [
+                'account.report_invoice',
+                'account.account_invoices',
+                'account.report_invoice_with_payments'
+            ]
+            
+            for report_name in standard_reports:
+                try:
+                    # CORRECCIÓN: Usar operador 'in' y validar tipos
+                    if not isinstance(report_name, str):
+                        continue
+                        
+                    # Búsqueda directa sin ir.model.data para evitar errores de caché
+                    report = self.env['ir.actions.report'].search([
+                        ('model', '=', 'account.move'),
+                        ('report_type', '=', 'qweb-pdf'),
+                        ('report_name', '=', report_name)  # Usar '=' con string individual
+                    ], limit=1)
+                    
+                    if report:
+                        _logger.debug(f"Intentando reporte estándar: {report_name}")
+                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                        
+                        if self._validate_pdf_content(pdf_content):
+                            _logger.info(f"✓ PDF generado con reporte {report_name} para {invoice.name}")
+                            return pdf_content
+                            
+                except Exception as e:
+                    _logger.debug(f"Error con reporte estándar {report_name}: {e}")
+                    continue
+            
+            # ============================================================
+            # PASO 3: Fallback - buscar reportes disponibles
+            # ============================================================
+            try:
+                available_reports = self.env['ir.actions.report'].search([
+                    ('model', '=', 'account.move'),
+                    ('report_type', '=', 'qweb-pdf')
+                ], limit=5)
+                
+                _logger.info(f"Probando {len(available_reports)} reportes disponibles para {invoice.name}")
+                
+                for report in available_reports:
+                    try:
+                        # Validar que report.report_name es string antes de usar
+                        if not hasattr(report, 'report_name') or not report.report_name:
+                            continue
+                            
+                        _logger.debug(f"  Probando: {report.report_name} (ID: {report.id})")
+                        
+                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                        
+                        if self._validate_pdf_content(pdf_content):
+                            _logger.info(f"✓ PDF generado con {report.report_name} para {invoice.name}")
+                            return pdf_content
+                            
+                    except Exception as e:
+                        _logger.debug(f"  ✗ Error con {getattr(report, 'report_name', 'unknown')}: {e}")
+                        continue
+                        
+            except Exception as e:
+                _logger.warning(f"Error buscando reportes alternativos: {e}")
+            
+            # ============================================================
+            # PASO 4: PDF de emergencia
+            # ============================================================
+            _logger.warning(f"⚠ Generando PDF de emergencia para {invoice.name}")
+            return self._generate_emergency_pdf_content(invoice)
+            
+        except Exception as e:
+            _logger.error(f"❌ Error crítico generando PDF para {invoice.name}: {e}", exc_info=True)
+            return self._generate_emergency_pdf_content(invoice)
+
+    def _generate_pdf_via_print_action(self, invoice):
+        """
+        Genera PDF usando reportes disponibles con manejo seguro de XMLIDs.
+        CORRECCIÓN: Evita errores de caché y domain con listas.
+        """
+        try:
+            # Lista de XMLIDs de reportes estándar
+            possible_xmlids = [
+                'account.account_invoices',
+                'account.report_invoice_with_payments',
+                'account.account_invoices_without_payment'
+            ]
+            
+            for xmlid in possible_xmlids:
+                try:
+                    # CORRECCIÓN: Validar formato XMLID antes de usar
+                    if not isinstance(xmlid, str) or '.' not in xmlid:
+                        continue
+                    
+                    # Usar env.ref con manejo seguro de errores
+                    report = self.env.ref(xmlid, raise_if_not_found=False)
+                    
+                    if report and hasattr(report, '_render_qweb_pdf'):
+                        _logger.debug(f"Probando reporte XMLID: {xmlid}")
+                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                        
+                        if self._validate_pdf_content(pdf_content):
+                            _logger.info(f"✓ PDF generado con XMLID {xmlid} para {invoice.name}")
+                            return pdf_content
+                            
+                except Exception as e:
+                    _logger.debug(f"Error con XMLID {xmlid}: {e}")
+                    continue
+            
+            # Buscar reportes disponibles sin usar XMLIDs problemáticos
+            try:
+                available_reports = self.env['ir.actions.report'].search([
+                    ('model', '=', 'account.move'),
+                    ('report_type', '=', 'qweb-pdf')
+                ], limit=3)  # Limitar para evitar demasiadas pruebas
+                
+                for report in available_reports:
+                    try:
+                        if not hasattr(report, '_render_qweb_pdf'):
+                            continue
+                            
+                        pdf_content, _ = report.sudo()._render_qweb_pdf([invoice.id])
+                        
+                        if self._validate_pdf_content(pdf_content):
+                            _logger.info(f"✓ PDF generado con reporte {report.name}")
+                            return pdf_content
+                            
+                    except Exception as e:
+                        _logger.debug(f"Error con reporte {getattr(report, 'name', 'unknown')}: {e}")
+                        continue
+                        
+            except Exception as e:
+                _logger.debug(f"Error buscando reportes: {e}")
+                
+>>>>>>> 8556445 ([fix] few bugs)
         except Exception as e:
             _logger.error(f"Error generating PDF for {invoice.name}: {str(e)}")
             return None
@@ -602,8 +1291,385 @@ class BulkExportWizard(models.TransientModel):
             return safe_name or 'unknown_file'
             
         except Exception as e:
+<<<<<<< HEAD
             _logger.error(f"Error sanitizing filename: {str(e)}")
             return 'unknown_file'
+=======
+            _logger.error(f"Error en PDF de emergencia: {e}")
+            return self._create_minimal_pdf_bytes(invoice)
+
+    def _create_simple_invoice_html(self, invoice):
+        """Crea HTML simple para la factura."""
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8"/>
+            <title>Factura {invoice.name or 'BORRADOR'}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .info {{ margin: 10px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>FACTURA: {invoice.name or 'BORRADOR'}</h1>
+            </div>
+            <div class="info">
+                <p><strong>Cliente:</strong> {invoice.partner_id.name or 'DESCONOCIDO'}</p>
+                <p><strong>Fecha:</strong> {invoice.invoice_date or 'SIN FECHA'}</p>
+                <p><strong>Importe:</strong> {invoice.amount_total:.2f} {invoice.currency_id.name or ''}</p>
+                <p><strong>Estado:</strong> {invoice.state or 'draft'}</p>
+            </div>
+            <p style="margin-top: 40px; text-align: center; color: #666; font-size: 10px;">
+                PDF generado automáticamente - {datetime.now().strftime('%d/%m/%Y %H:%M')}
+            </p>
+        </body>
+        </html>
+        """
+
+    def _create_minimal_pdf_bytes(self, invoice):
+        """Crea PDF mínimo pero válido."""
+        invoice_name = self._sanitize_for_pdf(invoice.name or 'SIN_NUMERO')
+        partner_name = self._sanitize_for_pdf((invoice.partner_id.name or 'DESCONOCIDO')[:30])
+        
+        pdf_content = f"""%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R/Resources<</Font<</F1<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>>>>>>>endobj
+4 0 obj<</Length 200>>stream
+BT
+/F1 14 Tf
+50 750 Td
+(FACTURA: {invoice_name}) Tj
+0 -30 Td
+(Cliente: {partner_name}) Tj
+0 -30 Td
+(Importe: {invoice.amount_total:.2f}) Tj
+0 -50 Td
+/F1 10 Tf
+(PDF basico - Error en generacion completa) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000010 00000 n 
+0000000053 00000 n 
+0000000102 00000 n 
+0000000250 00000 n 
+trailer<</Size 5/Root 1 0 R>>
+startxref
+500
+%%EOF"""
+        
+        return pdf_content.encode('utf-8')
+
+    def _validate_pdf_content(self, pdf_content):
+        """
+        Valida que el contenido sea un PDF válido.
+        
+        Args:
+            pdf_content: bytes del contenido PDF
+            
+        Returns:
+            bool: True si es un PDF válido
+        """
+        if not pdf_content or len(pdf_content) < 100:
+            return False
+        
+        # Verificar header PDF
+        if not pdf_content.startswith(b'%PDF-'):
+            return False
+        
+        # Verificar que contiene EOF
+        if b'%%EOF' not in pdf_content[-1024:]:
+            return False
+        
+        return True
+
+    def _sanitize_for_pdf(self, text):
+        """Sanitiza texto para uso seguro en PDF."""
+        if not text:
+            return 'N/A'
+        
+        # Remover caracteres problemáticos para PDF
+        sanitized = re.sub(r'[^\w\s\-\.\,\:]', '_', str(text))
+        # Limitar longitud
+        return sanitized[:50] if len(sanitized) > 50 else sanitized
+
+    def _has_pdf_attachment(self, invoice):
+        """
+        Verifica si la factura tiene un PDF adjunto.
+        
+        Args:
+            invoice: registro de factura
+            
+        Returns:
+            bool: True si tiene PDF adjunto, False en caso contrario
+        """
+        pdf_count = self.env['ir.attachment'].search_count([
+            ('res_model', '=', 'account.move'),
+            ('res_id', '=', invoice.id),
+            ('mimetype', '=', 'application/pdf'),
+        ])
+        return pdf_count > 0
+
+    
+    def _get_invoice_attachments(self, invoice):
+        """
+        Obtiene los archivos adjuntos de una factura.
+        
+        Args:
+            invoice: registro de factura
+            
+        Returns:
+            list: lista de tuplas (nombre_archivo, contenido)
+        """
+        if not self.include_attachments:
+            return []
+            
+        attachments = []
+        for attachment in invoice.attachment_ids:
+            try:
+                # Obtener contenido binario del adjunto
+                content = base64.b64decode(attachment.datas)
+                filename = self._sanitize_filename_enhanced(attachment.name)
+                attachments.append((filename, content))
+            except Exception as e:
+                _logger.warning(
+                    f"Error al procesar adjunto {attachment.name}: {e}",
+                    exc_info=True
+                )
+                
+        return attachments
+
+    def _create_export_history(self, invoices):
+        """
+        Crea registro en el historial de exportaciones.
+        
+        Args:
+            invoices: recordset de facturas exportadas
+        """
+        # Determinar tipos de documento incluidos
+        move_types = []
+        if self.include_out_invoice:
+            move_types.append('Facturas Cliente')
+        if self.include_in_invoice:
+            move_types.append('Facturas Proveedor')
+        if self.include_out_refund:
+            move_types.append('NC Cliente')
+        if self.include_in_refund:
+            move_types.append('NC Proveedor')
+        
+        history = self.env['account.invoice.export.history'].create({
+            'export_filename': self.export_filename,
+            'export_date': fields.Datetime.now(),
+            'user_id': self.env.user.id,
+            'company_id': self.company_id.id,
+            'compression_format': self.compression_format,
+            'filename_pattern': self.filename_pattern,
+            'total_invoices': len(invoices),
+            'exported_count': self.export_count,
+            'failed_count': self.failed_count,
+            'processing_time': self.processing_time,
+            'file_size': self.file_size_mb,
+            'include_attachments': self.include_attachments,
+            'organized_by_type': self.organize_by_type,
+            'date_from': self.date_from,
+            'date_to': self.date_to,
+            'move_types': ', '.join(move_types),
+            'state_filter': self.state_filter,
+            'invoice_ids': [(6, 0, invoices.ids)],
+        })
+        
+        self.export_history_id = history
+
+    def action_debug_pdf_generation(self):
+        """Método de debug simplificado."""
+        debug_info = []
+        
+        for invoice in self.invoice_ids[:3]:  # Solo 3 facturas para debug
+            try:
+                pdf_content = self._get_invoice_pdf_enhanced(invoice)
+                size = len(pdf_content) if pdf_content else 0
+                debug_info.append(f"{invoice.name}: {size} bytes")
+            except Exception as e:
+                debug_info.append(f"{invoice.name}: ERROR - {str(e)}")
+        
+        message = "Debug PDF:\n" + "\n".join(debug_info)
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'message': message,
+                'type': 'info',
+                'sticky': True,
+            }}
+    def action_diagnose_pdf_issues(self):
+        """
+        Diagnóstica problemas con generación de PDFs.
+        VERSIÓN CORREGIDA: Compatible con Odoo 17 y módulos OCA.
+        """
+        self.ensure_one()
+        
+        diagnosis = []
+        diagnosis.append("=== DIAGNÓSTICO SISTEMA PDF CORREGIDO ===\n")
+        
+        # Información básica
+        diagnosis.append(f"Compañía: {self.company_id.name}")
+        diagnosis.append(f"Usuario: {self.env.user.name}")
+        diagnosis.append(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        diagnosis.append(f"Versión Odoo: {self.env['ir.module.module'].get_version()}\n")
+        
+        # Verificar reportes disponibles con búsqueda segura
+        try:
+            reports = self.env['ir.actions.report'].search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ])
+            
+            diagnosis.append(f"Reportes PDF encontrados: {len(reports)}")
+            for i, report in enumerate(reports[:5], 1):
+                report_name = getattr(report, 'report_name', 'N/A')
+                diagnosis.append(f"  {i}. {report.name} ({report_name})")
+        except Exception as e:
+            diagnosis.append(f"❌ Error buscando reportes: {e}")
+            reports = self.env['ir.actions.report']
+        
+        # Verificar XMLIDs con manejo seguro
+        diagnosis.append("\nVerificando XMLIDs estándar:")
+        xmlids = [
+            'account.account_invoices',
+            'account.report_invoice_with_payments',
+            'account.account_invoices_without_payment'
+        ]
+        
+        working_xmlids = 0
+        for xmlid in xmlids:
+            try:
+                # CORRECCIÓN: Manejo seguro de XMLIDs
+                if not isinstance(xmlid, str) or '.' not in xmlid:
+                    diagnosis.append(f"  ✗ {xmlid}: FORMATO INVÁLIDO")
+                    continue
+                    
+                report = self.env.ref(xmlid, raise_if_not_found=False)
+                if report and hasattr(report, 'name'):
+                    diagnosis.append(f"  ✓ {xmlid}: OK - {report.name}")
+                    working_xmlids += 1
+                else:
+                    diagnosis.append(f"  ✗ {xmlid}: NO ENCONTRADO")
+            except Exception as e:
+                diagnosis.append(f"  ✗ {xmlid}: ERROR - {str(e)[:50]}")
+        
+        # Probar con facturas reales
+        test_invoices = self._get_test_invoices()
+        
+        if test_invoices:
+            diagnosis.append(f"\nProbando con {len(test_invoices)} facturas:")
+            
+            for invoice in test_invoices:
+                diagnosis.append(f"\nFactura: {invoice.name}")
+                diagnosis.append(f"  Tipo: {invoice.move_type}")
+                diagnosis.append(f"  Estado: {invoice.state}")
+                diagnosis.append(f"  Partner: {invoice.partner_id.name}")
+                
+                # Probar generación PDF con método corregido
+                try:
+                    pdf_content = self._get_invoice_pdf_enhanced(invoice)
+                    if self._validate_pdf_content(pdf_content):
+                        diagnosis.append(f"  ✅ PDF generado exitosamente: {len(pdf_content)} bytes")
+                    else:
+                        diagnosis.append(f"  ⚠️ PDF generado pero inválido")
+                except Exception as e:
+                    diagnosis.append(f"  ❌ Error generando PDF: {str(e)[:100]}")
+        else:
+            diagnosis.append("\n⚠️ No hay facturas disponibles para prueba")
+        
+        # Verificar módulos OCA que pueden interferir
+        diagnosis.append(self._check_oca_modules())
+        
+        # Resumen y recomendaciones
+        diagnosis.append("\n=== RESUMEN CORREGIDO ===")
+        diagnosis.append(f"Reportes disponibles: {len(reports)}")
+        diagnosis.append(f"XMLIDs funcionando: {working_xmlids}/{len(xmlids)}")
+        
+        if len(reports) == 0:
+            diagnosis.append("🔥 CRÍTICO: No hay reportes PDF disponibles")
+            diagnosis.append("   Solución: Reinstalar módulo 'account' o verificar datos base")
+        elif working_xmlids == 0:
+            diagnosis.append("⚠️ ADVERTENCIA: XMLIDs estándar no funcionan")
+            diagnosis.append("   Solución: Actualizar datos base o usar reportes alternativos")
+        else:
+            diagnosis.append("✅ Sistema funcional con correcciones aplicadas")
+        
+        diagnosis.append("\n=== CORRECCIONES APLICADAS ===")
+        diagnosis.append("✓ Operadores domain corregidos ('in' en lugar de '=')")
+        diagnosis.append("✓ Validación de tipos antes de operaciones string")
+        diagnosis.append("✓ Manejo seguro de claves de caché")
+        diagnosis.append("✓ Sistema de emergencia PDF mejorado")
+        
+        message = "\n".join(diagnosis)
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Diagnóstico PDF - Versión Corregida',
+                'message': message,
+                'type': 'info',
+                'sticky': True,
+            }
+        }
+    
+    def _get_test_invoices(self):
+        """Obtiene facturas de prueba para diagnóstico."""
+        test_invoices = []
+        
+        if self.invoice_ids:
+            test_invoices = self.invoice_ids[:2]
+        else:
+            # Buscar facturas de diferentes tipos
+            for move_type in ['out_invoice', 'in_invoice']:
+                invoice = self.env['account.move'].search([
+                    ('move_type', '=', move_type),
+                    ('state', '=', 'posted'),
+                    ('company_id', '=', self.company_id.id)
+                ], limit=1)
+                if invoice:
+                    test_invoices.append(invoice)
+        
+        return self.env['account.move'].browse([inv.id for inv in test_invoices])
+    
+    def _check_oca_modules(self):
+        """Verifica módulos OCA que pueden interferir."""
+        diagnosis = ["\n=== VERIFICACIÓN MÓDULOS OCA ==="]
+        
+        problematic_modules = [
+            'report_xlsx',
+            'server_environment',
+            'queue_job'
+        ]
+        
+        for module_name in problematic_modules:
+            try:
+                module = self.env['ir.module.module'].search([
+                    ('name', '=', module_name),
+                    ('state', '=', 'installed')
+                ], limit=1)
+                
+                if module:
+                    diagnosis.append(f"⚠️ {module_name}: INSTALADO - Puede interferir con reportes")
+                else:
+                    diagnosis.append(f"✓ {module_name}: No instalado")
+            except Exception as e:
+                diagnosis.append(f"? {module_name}: Error verificando - {str(e)[:30]}")
+        
+        return "\n".join(diagnosis)
+>>>>>>> 8556445 ([fix] few bugs)
 
     def _reload_wizard(self):
         """Recarga wizard manteniendo contexto"""
