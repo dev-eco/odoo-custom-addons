@@ -67,14 +67,8 @@ desktop.ini
 # no deben versionarse, solo los archivos fuente
 docs/_build/
 *.pdf
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 
 # Otros
->>>>>>> feature/sale-material-planning
-=======
->>>>>>> feature/invoice-batch-export
 .aider.chat.history.md
 .aider.input.history
 .aider.tags.cache.v4/
