@@ -6,12 +6,12 @@
     'summary': 'Exportación masiva de facturas a archivos comprimidos con funcionalidades avanzadas',
     'description': """
 Exportación Masiva de Facturas - Versión Completa
-================================================
+==================================================
 
 Módulo completo para exportar múltiples facturas a archivos comprimidos con funcionalidades avanzadas.
 
 Características Principales:
----------------------------
+----------------------------
 • Exportación masiva de facturas de clientes y proveedores
 • Múltiples formatos de compresión (ZIP, TAR.GZ, TAR.BZ2)
 • Protección con contraseña para archivos ZIP
@@ -25,7 +25,7 @@ Características Principales:
 • Validaciones de seguridad y permisos robustas
 
 Funcionalidades Técnicas:
-------------------------
+-------------------------
 • Generación PDF usando reportes estándar de Odoo
 • Manejo seguro de errores y logging detallado
 • Compatibilidad total con Odoo 17 Community Edition
@@ -35,7 +35,7 @@ Funcionalidades Técnicas:
 • Configuración global personalizable
 
 Casos de Uso:
-------------
+-------------
 • Envío masivo de facturas a clientes
 • Respaldo periódico de documentos contables
 • Auditorías y revisiones contables
