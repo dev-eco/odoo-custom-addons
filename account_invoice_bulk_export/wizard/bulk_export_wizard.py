@@ -57,7 +57,7 @@ class BulkExportWizard(models.TransientModel):
         ('processing', 'Procesando'),
         ('done', 'Completado'),
         ('error', 'Error'),
-    ], string='Estado', default='draft', required=True, tracking=True)
+    ], string='Estado', default='draft', required=True)
 
     company_id = fields.Many2one(
         'res.company',
@@ -176,8 +176,7 @@ class BulkExportWizard(models.TransientModel):
 
     archive_password = fields.Char(
         string='Contraseña del Archivo',
-        help='Contraseña para proteger el archivo ZIP (mínimo 6 caracteres)',
-        password=True
+        help='Contraseña para proteger el archivo ZIP (mínimo 6 caracteres)'
     )
 
     filename_pattern = fields.Selection([
@@ -193,8 +192,7 @@ class BulkExportWizard(models.TransientModel):
     
     custom_filename_pattern = fields.Char(
         string='Patrón Personalizado',
-        help='Variables: {type}, {number}, {partner}, {date}, {year}, {month}, {day}. Ejemplo: {partner}_{type}_{number}_{date}',
-        placeholder='Ej: {partner}_{type}_{number}_{date}'
+        help='Variables: {type}, {number}, {partner}, {date}, {year}, {month}, {day}. Ejemplo: {partner}_{type}_{number}_{date}'
     )
 
     # ==========================================

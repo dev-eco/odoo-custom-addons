@@ -62,12 +62,12 @@
                         </div>
 
                         <!-- Información contextual -->
-                        <div class="alert alert-info" invisible="not context_info">
+                        <div class="alert alert-info" role="status" invisible="not context_info">
                             <field name="context_info" nolabel="1"/>
                         </div>
 
                         <!-- Mensaje de procesamiento con progreso -->
-                        <div class="alert alert-warning" invisible="state != 'processing'">
+                        <div class="alert alert-warning" role="status" invisible="state != 'processing'">
                             <h4><i class="fa fa-cog fa-spin"/> Procesando Exportación</h4>
                             <p>Por favor espere mientras se procesan las facturas...</p>
                             <div invisible="progress_percentage == 0">
@@ -79,7 +79,7 @@
                         </div>
 
                         <!-- Mensaje de error detallado -->
-                        <div class="alert alert-danger" invisible="state != 'error'">
+                        <div class="alert alert-danger" role="alert" invisible="state != 'error'">
                             <h4><i class="fa fa-exclamation-triangle"/> Error en la Exportación</h4>
                             <field name="error_message" readonly="1" widget="text"/>
                             <p class="mt-2">
@@ -88,7 +88,7 @@
                         </div>
 
                         <!-- Mensaje de éxito con estadísticas -->
-                        <div class="alert alert-success" invisible="state != 'done'">
+                        <div class="alert alert-success" role="status" invisible="state != 'done'">
                             <h4><i class="fa fa-check-circle"/> ¡Exportación Completada Exitosamente!</h4>
                             <div class="row">
                                 <div class="col-md-6">
