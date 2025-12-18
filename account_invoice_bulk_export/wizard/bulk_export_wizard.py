@@ -711,13 +711,15 @@ class BulkExportWizard(models.TransientModel):
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for invoice in invoices:
                 try:
-                    # Obtener PDF de la factura
+                    # Obtener PDF de la factura con logging mejorado
                     pdf_content = self._get_invoice_pdf(invoice)
                     
-                    if not pdf_content or len(pdf_content) < 50:
-                        _logger.warning(f"PDF inválido para factura {invoice.name}")
+                    if not pdf_content or len(pdf_content) < PDF_MIN_SIZE:
+                        _logger.error(f"PDF inválido o vacío para factura {invoice.name} (tipo: {invoice.move_type})")
                         failed_count += 1
                         continue
+                    
+                    _logger.debug(f"PDF válido obtenido para {invoice.name}: {len(pdf_content)} bytes")
                         
                     # Generar nombre de archivo
                     filename = self._generate_filename(invoice)
@@ -749,13 +751,15 @@ class BulkExportWizard(models.TransientModel):
         with tarfile.open(fileobj=buffer, mode=mode) as tar_file:
             for invoice in invoices:
                 try:
-                    # Obtener PDF de la factura
+                    # Obtener PDF de la factura con logging mejorado
                     pdf_content = self._get_invoice_pdf(invoice)
                     
-                    if not pdf_content or len(pdf_content) < 50:
-                        _logger.warning(f"PDF inválido para factura {invoice.name}")
+                    if not pdf_content or len(pdf_content) < PDF_MIN_SIZE:
+                        _logger.error(f"PDF inválido o vacío para factura {invoice.name} (tipo: {invoice.move_type})")
                         failed_count += 1
                         continue
+                    
+                    _logger.debug(f"PDF válido obtenido para {invoice.name}: {len(pdf_content)} bytes")
                         
                     # Generar nombre de archivo
                     filename = self._generate_filename(invoice)
@@ -778,45 +782,142 @@ class BulkExportWizard(models.TransientModel):
 
     def _get_invoice_pdf(self, invoice):
         """
-        Obtiene PDF de factura con lógica específica por tipo.
-        CORRECCIÓN CRÍTICA: Diferentes estrategias para clientes vs proveedores.
+        Obtiene PDF de factura con lógica optimizada por tipo.
+        CORRECCIÓN: Facturas de cliente buscan en mail.message, proveedores en ir.attachment.
         """
         try:
-            # Para facturas de clientes: generar PDF directamente
+            # Para facturas de clientes: buscar PDF en mensajes de correo primero
             if invoice.move_type in ['out_invoice', 'out_refund']:
-                return self._generate_pdf_for_customer_invoice(invoice)
+                _logger.debug(f"Buscando PDF en mensajes para factura de cliente: {invoice.name}")
+                
+                # 1. Buscar PDF en mail.message (cuando se envió al cliente)
+                pdf_content = self._get_pdf_from_mail_messages(invoice)
+                if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                    _logger.debug(f"PDF encontrado en mensajes para {invoice.name}: {len(pdf_content)} bytes")
+                    return pdf_content
+                
+                # 2. Buscar en adjuntos directos como fallback
+                pdf_content = self._get_pdf_from_attachment(invoice)
+                if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                    _logger.debug(f"PDF encontrado en adjuntos directos para {invoice.name}: {len(pdf_content)} bytes")
+                    return pdf_content
+                
+                # 3. Solo generar si no se encuentra nada
+                _logger.debug(f"No se encontró PDF adjunto para {invoice.name}, generando como último recurso...")
+                return self._generate_pdf_direct(invoice)
             
             # Para facturas de proveedores: buscar adjunto primero, generar después
             elif invoice.move_type in ['in_invoice', 'in_refund']:
+                _logger.debug(f"Buscando PDF adjunto para factura de proveedor: {invoice.name}")
+                
                 # 1. Intentar encontrar PDF adjunto
                 pdf_content = self._get_pdf_from_attachment(invoice)
-                if pdf_content:
+                if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                    _logger.debug(f"PDF adjunto encontrado para {invoice.name}: {len(pdf_content)} bytes")
                     return pdf_content
                 
-                # 2. Si no hay adjunto, generar PDF
-                return self._generate_pdf_for_vendor_invoice(invoice)
+                # 2. Si no hay adjunto válido, generar PDF
+                _logger.debug(f"No se encontró PDF adjunto para {invoice.name}, generando...")
+                return self._generate_pdf_direct(invoice)
             
             # Fallback para otros tipos
+            _logger.warning(f"Tipo de factura no reconocido: {invoice.move_type} para {invoice.name}")
             return self._generate_pdf_direct(invoice)
             
         except Exception as e:
-            _logger.error(f"Error obteniendo PDF para {invoice.name}: {str(e)}")
+            _logger.error(f"Error obteniendo PDF para {invoice.name}: {str(e)}", exc_info=True)
             return None
 
-    def _get_pdf_from_attachment(self, invoice):
-        """Busca PDF adjunto para facturas de proveedores."""
+    def _get_pdf_from_mail_messages(self, invoice):
+        """
+        Busca PDF adjunto en mensajes de correo para facturas de cliente.
+        NUEVO: Busca específicamente en mail.message donde se enviaron las facturas.
+        """
         try:
-            attachment = self.env['ir.attachment'].search([
+            # Buscar mensajes relacionados con esta factura
+            messages = self.env['mail.message'].search([
+                ('model', '=', 'account.move'),
+                ('res_id', '=', invoice.id),
+                ('message_type', 'in', ['email', 'comment'])
+            ], order='create_date desc')
+            
+            _logger.debug(f"Encontrados {len(messages)} mensajes para factura {invoice.name}")
+            
+            for message in messages:
+                # Buscar adjuntos PDF en este mensaje
+                attachments = self.env['ir.attachment'].search([
+                    ('res_model', '=', 'mail.message'),
+                    ('res_id', '=', message.id),
+                    ('mimetype', '=', 'application/pdf')
+                ], order='create_date desc')
+                
+                for attachment in attachments:
+                    if attachment.datas:
+                        try:
+                            pdf_content = base64.b64decode(attachment.datas)
+                            if len(pdf_content) > PDF_MIN_SIZE:
+                                _logger.debug(f"PDF válido encontrado en mensaje: {attachment.name}")
+                                return pdf_content
+                        except Exception as decode_error:
+                            _logger.warning(f"Error decodificando adjunto de mensaje {attachment.name}: {decode_error}")
+                            continue
+            
+            # Buscar también por nombre de factura en adjuntos de mensajes
+            if not messages or not any(att for msg in messages for att in self.env['ir.attachment'].search([
+                ('res_model', '=', 'mail.message'),
+                ('res_id', '=', msg.id),
+                ('mimetype', '=', 'application/pdf')
+            ])):
+                _logger.debug(f"Buscando PDFs por nombre de factura: {invoice.name}")
+                name_attachments = self.env['ir.attachment'].search([
+                    ('res_model', '=', 'mail.message'),
+                    ('mimetype', '=', 'application/pdf'),
+                    '|',
+                    ('name', 'ilike', invoice.name),
+                    ('name', 'ilike', invoice.name.replace('/', '_'))
+                ], limit=10)
+                
+                for attachment in name_attachments:
+                    if attachment.datas:
+                        try:
+                            pdf_content = base64.b64decode(attachment.datas)
+                            if len(pdf_content) > PDF_MIN_SIZE:
+                                _logger.debug(f"PDF encontrado por nombre: {attachment.name}")
+                                return pdf_content
+                        except Exception as decode_error:
+                            continue
+                
+        except Exception as e:
+            _logger.warning(f"Error buscando PDF en mensajes para {invoice.name}: {str(e)}")
+        
+        return None
+
+    def _get_pdf_from_attachment(self, invoice):
+        """
+        Busca PDF adjunto directamente en la factura.
+        ACTUALIZADO: Simplificado para buscar solo en adjuntos directos.
+        """
+        try:
+            # Buscar adjuntos PDF directos de la factura
+            attachments = self.env['ir.attachment'].search([
                 ('res_model', '=', 'account.move'),
                 ('res_id', '=', invoice.id),
                 ('mimetype', '=', 'application/pdf')
-            ], limit=1)
+            ], order='create_date desc')
             
-            if attachment and attachment.datas:
-                return base64.b64decode(attachment.datas)
+            for attachment in attachments:
+                if attachment.datas:
+                    try:
+                        pdf_content = base64.b64decode(attachment.datas)
+                        if len(pdf_content) > PDF_MIN_SIZE:
+                            _logger.debug(f"PDF adjunto directo válido encontrado: {attachment.name}")
+                            return pdf_content
+                    except Exception as decode_error:
+                        _logger.warning(f"Error decodificando adjunto {attachment.name}: {decode_error}")
+                        continue
                 
         except Exception as e:
-            _logger.warning(f"Error buscando adjunto para {invoice.name}: {str(e)}")
+            _logger.warning(f"Error buscando adjunto directo para {invoice.name}: {str(e)}")
         
         return None
 
@@ -829,29 +930,63 @@ class BulkExportWizard(models.TransientModel):
         return self._generate_pdf_direct(invoice)
 
     def _generate_pdf_direct(self, invoice):
-        """Genera PDF usando sistema de reportes de Odoo."""
+        """
+        Genera PDF usando sistema de reportes de Odoo.
+        CORRECCIÓN: Múltiples estrategias de generación con validación robusta.
+        """
         try:
-            # 1. Buscar reporte estándar de facturas
+            # Estrategia 1: Reporte estándar de facturas
             report = self.env.ref('account.account_invoices', raise_if_not_found=False)
             
-            if not report:
-                # 2. Buscar cualquier reporte disponible
-                reports = self.env['ir.actions.report'].search([
-                    ('model', '=', 'account.move'),
-                    ('report_type', '=', 'qweb-pdf')
-                ], limit=1)
-                report = reports[0] if reports else None
-                
             if report:
-                # CORRECCIÓN CRÍTICA: usar lista de IDs de forma segura
-                pdf_content, _ = report._render_qweb_pdf([invoice.id])
-                return pdf_content
-                
-            _logger.warning(f"No se encontró reporte PDF para {invoice.name}")
+                try:
+                    pdf_content, _ = report._render_qweb_pdf([invoice.id])
+                    if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                        _logger.debug(f"PDF generado con reporte estándar para {invoice.name}")
+                        return pdf_content
+                except Exception as render_error:
+                    _logger.warning(f"Error con reporte estándar para {invoice.name}: {render_error}")
+            
+            # Estrategia 2: Buscar reportes alternativos
+            alternative_reports = [
+                'account.report_invoice_with_payments',
+                'account.account_invoices_without_payment'
+            ]
+            
+            for report_xmlid in alternative_reports:
+                try:
+                    alt_report = self.env.ref(report_xmlid, raise_if_not_found=False)
+                    if alt_report:
+                        pdf_content, _ = alt_report._render_qweb_pdf([invoice.id])
+                        if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                            _logger.debug(f"PDF generado con reporte alternativo {report_xmlid} para {invoice.name}")
+                            return pdf_content
+                except Exception as alt_error:
+                    _logger.debug(f"Reporte alternativo {report_xmlid} falló: {alt_error}")
+                    continue
+            
+            # Estrategia 3: Buscar cualquier reporte disponible
+            reports = self.env['ir.actions.report'].search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ])
+            
+            for report in reports:
+                try:
+                    pdf_content, _ = report._render_qweb_pdf([invoice.id])
+                    if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                        _logger.debug(f"PDF generado con reporte genérico {report.name} para {invoice.name}")
+                        return pdf_content
+                except Exception as generic_error:
+                    _logger.debug(f"Reporte genérico {report.name} falló: {generic_error}")
+                    continue
+            
+            # Si llegamos aquí, no se pudo generar PDF
+            _logger.error(f"No se pudo generar PDF para {invoice.name} con ningún método")
             return None
             
         except Exception as e:
-            _logger.error(f"Error generando PDF para {invoice.name}: {str(e)}")
+            _logger.error(f"Error crítico generando PDF para {invoice.name}: {str(e)}", exc_info=True)
             return None
 
     def _generate_filename(self, invoice):
@@ -1042,28 +1177,31 @@ class BulkExportWizard(models.TransientModel):
         else:
             diagnosis.append("\n⚠️ No hay facturas disponibles para prueba")
         
+        # Verificar adjuntos en mensajes para facturas de cliente
+        diagnosis.append(self._check_mail_attachments())
+        
         # Verificar módulos OCA que pueden interferir
         diagnosis.append(self._check_oca_modules())
         
         # Resumen y recomendaciones
-        diagnosis.append("\n=== RESUMEN CORREGIDO ===")
+        diagnosis.append("\n=== RESUMEN OPTIMIZADO ===")
         diagnosis.append(f"Reportes disponibles: {len(reports)}")
         diagnosis.append(f"XMLIDs funcionando: {working_xmlids}/{len(xmlids)}")
         
         if len(reports) == 0:
-            diagnosis.append("🔥 CRÍTICO: No hay reportes PDF disponibles")
-            diagnosis.append("   Solución: Reinstalar módulo 'account' o verificar datos base")
+            diagnosis.append("⚠️ ADVERTENCIA: No hay reportes PDF disponibles")
+            diagnosis.append("   Nota: Se usarán PDFs adjuntos existentes")
         elif working_xmlids == 0:
             diagnosis.append("⚠️ ADVERTENCIA: XMLIDs estándar no funcionan")
-            diagnosis.append("   Solución: Actualizar datos base o usar reportes alternativos")
+            diagnosis.append("   Nota: Se priorizarán PDFs adjuntos sobre generación")
         else:
-            diagnosis.append("✅ Sistema funcional con correcciones aplicadas")
+            diagnosis.append("✅ Sistema funcional - PDFs adjuntos + generación disponible")
         
-        diagnosis.append("\n=== CORRECCIONES APLICADAS ===")
-        diagnosis.append("✓ Operadores domain corregidos ('in' en lugar de '=')")
-        diagnosis.append("✓ Validación de tipos antes de operaciones string")
-        diagnosis.append("✓ Manejo seguro de claves de caché")
-        diagnosis.append("✓ Sistema de emergencia PDF mejorado")
+        diagnosis.append("\n=== ESTRATEGIA OPTIMIZADA ===")
+        diagnosis.append("✓ Facturas cliente: Buscar en mail.message primero")
+        diagnosis.append("✓ Facturas proveedor: Buscar en ir.attachment")
+        diagnosis.append("✓ Generación PDF solo como último recurso")
+        diagnosis.append("✓ Validación robusta de contenido PDF")
         
         message = "\n".join(diagnosis)
         
@@ -1097,6 +1235,35 @@ class BulkExportWizard(models.TransientModel):
         
         return self.env['account.move'].browse([inv.id for inv in test_invoices])
     
+    def _check_mail_attachments(self):
+        """Verifica disponibilidad de PDFs en mensajes de correo."""
+        diagnosis = ["\n=== VERIFICACIÓN ADJUNTOS EN MENSAJES ==="]
+        
+        try:
+            # Contar mensajes con adjuntos PDF
+            pdf_attachments = self.env['ir.attachment'].search_count([
+                ('res_model', '=', 'mail.message'),
+                ('mimetype', '=', 'application/pdf')
+            ])
+            diagnosis.append(f"PDFs en mensajes: {pdf_attachments}")
+            
+            # Verificar facturas de cliente con mensajes
+            client_invoices_with_messages = self.env['mail.message'].search_count([
+                ('model', '=', 'account.move'),
+                ('message_type', 'in', ['email', 'comment'])
+            ])
+            diagnosis.append(f"Mensajes en facturas: {client_invoices_with_messages}")
+            
+            if pdf_attachments > 0:
+                diagnosis.append("✅ Sistema optimizado: PDFs disponibles en mensajes")
+            else:
+                diagnosis.append("⚠️ Pocos PDFs en mensajes - se usará generación")
+                
+        except Exception as e:
+            diagnosis.append(f"❌ Error verificando mensajes: {str(e)[:50]}")
+        
+        return "\n".join(diagnosis)
+
     def _check_oca_modules(self):
         """Verifica módulos OCA que pueden interferir."""
         diagnosis = ["\n=== VERIFICACIÓN MÓDULOS OCA ==="]

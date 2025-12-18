@@ -79,6 +79,4 @@ Casos de Uso:
     'external_dependencies': {
         'python': [],
     },
-    'post_init_hook': '_post_init_hook',
-    'uninstall_hook': '_uninstall_hook',
 }
