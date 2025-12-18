@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vista de árbol del historial -->
+        <record id="view_invoice_export_history_tree" model="ir.ui.view">
+            <field name="name">account.invoice.export.history.tree</field>
+            <field name="model">account.invoice.export.history</field>
+            <field name="arch" type="xml">
+                <tree string="Historial de Exportaciones" 
+                      default_order="export_date desc"
+                      decoration-success="success_rate &gt;= 95"
+                      decoration-warning="success_rate &gt;= 80 and success_rate &lt; 95"
+                      decoration-danger="success_rate &lt; 80">
+                    
+                    <field name="export_date" string="Fecha"/>
+                    <field name="export_filename" string="Archivo"/>
+                    <field name="user_id" string="Usuario"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                    <field name="total_invoices" string="Total Facturas" sum="Total"/>
+                    <field name="exported_count" string="Exportadas" sum="Exportadas"/>
+                    <field name="failed_count" string="Fallidas" sum="Fallidas"/>
+                    <field name="success_rate" string="Éxito (%)" widget="progressbar"/>
+                    <field name="compression_format" string="Formato"/>
+                    <field name="file_size" string="Tamaño (MB)" sum="Total MB"/>
+                    <field name="processing_time" string="Tiempo (s)" sum="Total Tiempo"/>
+                    
+                </tree>
+            </field>
+        </record>
+
+        <!-- Vista de formulario del historial -->
+        <record id="view_invoice_export_history_form" model="ir.ui.view">
+            <field name="name">account.invoice.export.history.form</field>
+            <field name="model">account.invoice.export.history</field>
+            <field name="arch" type="xml">
+                <form string="Detalle de Exportación">
+                    <sheet>
+                        
+                        <div class="oe_title">
+                            <h1>
+                                <i class="fa fa-history"/> Registro de Exportación
+                            </h1>
+                        </div>
+
+                        <!-- Información Principal -->
+                        <group string="📋 Información Principal">
+                            <group>
+                                <field name="export_filename" readonly="1"/>
+                                <field name="export_date" readonly="1"/>
+                                <field name="user_id" readonly="1"/>
+                                <field name="company_id" readonly="1" groups="base.group_multi_company"/>
+                            </group>
+                            <group>
+                                <field name="compression_format" readonly="1"/>
+                                <field name="filename_pattern" readonly="1"/>
+                                <field name="file_size" readonly="1" widget="float"/>
+                                <field name="processing_time" readonly="1" widget="float_time"/>
+                            </group>
+                        </group>
+
+                        <!-- Estadísticas -->
+                        <group string="📊 Estadísticas">
+                            <group>
+                                <field name="total_invoices" readonly="1"/>
+                                <field name="exported_count" readonly="1"/>
+                                <field name="failed_count" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="success_rate" readonly="1" widget="progressbar"/>
+                                <field name="include_attachments" readonly="1"/>
+                                <field name="organized_by_type" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <!-- Filtros Aplicados -->
+                        <group string="🔍 Filtros Aplicados">
+                            <group>
+                                <field name="date_from" readonly="1"/>
+                                <field name="date_to" readonly="1"/>
+                                <field name="state_filter" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="move_types" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <!-- Facturas Exportadas -->
+                        <notebook>
+                            <page string="Facturas Exportadas">
+                                <field name="invoice_ids" readonly="1">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="partner_id"/>
+                                        <field name="invoice_date"/>
+                                        <field name="amount_total"/>
+                                        <field name="state"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Notas">
+                                <field name="notes" widget="text" placeholder="Agregar notas sobre esta exportación..."/>
+                            </page>
+                        </notebook>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vista de búsqueda del historial -->
+        <record id="view_invoice_export_history_search" model="ir.ui.view">
+            <field name="name">account.invoice.export.history.search</field>
+            <field name="model">account.invoice.export.history</field>
+            <field name="arch" type="xml">
+                <search string="Buscar Exportaciones">
+                    
+                    <!-- Campos de búsqueda -->
+                    <field name="export_filename" string="Nombre de Archivo"/>
+                    <field name="user_id" string="Usuario"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                    
+                    <!-- Filtros predefinidos -->
+                    <filter name="filter_today" 
+                            string="Hoy" 
+                            domain="[('export_date', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                    ('export_date', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                    
+                    <filter name="filter_this_week" 
+                            string="Esta Semana" 
+                            domain="[('export_date', '&gt;=', (context_today() - datetime.timedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00'))]"/>
+                    
+                    <filter name="filter_this_month" 
+                            string="Este Mes" 
+                            domain="[('export_date', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                    
+                    <separator/>
+                    
+                    <filter name="filter_my_exports" 
+                            string="Mis Exportaciones" 
+                            domain="[('user_id', '=', uid)]"/>
+                    
+                    <separator/>
+                    
+                    <filter name="filter_with_failures" 
+                            string="Con Errores" 
+                            domain="[('failed_count', '&gt;', 0)]"/>
+                    
+                    <filter name="filter_with_attachments" 
+                            string="Con Adjuntos" 
+                            domain="[('include_attachments', '=', True)]"/>
+                    
+                    <separator/>
+                    
+                    <!-- Agrupación -->
+                    <group expand="0" string="Agrupar Por">
+                        <filter name="group_by_user" 
+                                string="Usuario" 
+                                context="{'group_by': 'user_id'}"/>
+                        
+                        <filter name="group_by_date" 
+                                string="Fecha" 
+                                context="{'group_by': 'export_date:month'}"/>
+                        
+                        <filter name="group_by_company" 
+                                string="Compañía" 
+                                context="{'group_by': 'company_id'}" 
+                                groups="base.group_multi_company"/>
+                        
+                        <filter name="group_by_format" 
+                                string="Formato" 
+                                context="{'group_by': 'compression_format'}"/>
+                    </group>
+                    
+                </search>
+            </field>
+        </record>
+
+        <!-- Acción para el historial de exportaciones -->
+        <record id="action_invoice_export_history" model="ir.actions.act_window">
+            <field name="name">Historial de Exportaciones</field>
+            <field name="res_model">account.invoice.export.history</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_this_month': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No hay exportaciones registradas
+                </p>
+                <p>
+                    El historial de exportaciones se creará automáticamente cada vez 
+                    que exporte facturas usando el wizard de exportación masiva.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>
