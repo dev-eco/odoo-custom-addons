@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Herencia de vista tree de sale.order -->
+        <record id="view_order_tree_inherit_paid" model="ir.ui.view">
+            <field name="name">sale.order.tree.paid</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='amount_total']" position="after">
+                    <field name="x_is_paid" string="Pagado"/>
+                </xpath>
+                <xpath expr="//tree" position="attributes">
+                    <attribute name="editable">top</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Herencia de vista form de sale.order -->
+        <record id="view_order_form_inherit_paid" model="ir.ui.view">
+            <field name="name">sale.order.form.paid</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <!-- Añadir campo en el header junto a otros campos de estado -->
+                <xpath expr="//field[@name='state']" position="after">
+                    <field name="x_is_paid" string="Pagado"/>
+                </xpath>
+                
+                <!-- Añadir botón en el header -->
+                <xpath expr="//button[@name='action_confirm']" position="after">
+                    <button name="action_toggle_paid" 
+                            type="object" 
+                            string="Marcar Pagado" 
+                            class="btn-primary"
+                            invisible="x_is_paid == True"/>
+                    <button name="action_toggle_paid" 
+                            type="object" 
+                            string="Marcar No Pagado" 
+                            class="btn-secondary"
+                            invisible="x_is_paid == False"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
