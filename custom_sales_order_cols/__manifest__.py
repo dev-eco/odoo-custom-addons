@@ -2,11 +2,11 @@
 {
     'name': "Sale Order Paid Column",
 
-    'summary': "Añade columna de estado pagado en pedidos de venta",
+    'summary': "Añade columna de estado pagado en pedidos de venta basada en facturas",
 
     'description': """
 Módulo que añade una columna para indicar si un pedido está pagado o no.
-Incluye campo booleano editable y botón para marcar/desmarcar con registro en chatter.
+El estado se calcula automáticamente basándose en el estado de pago de las facturas relacionadas.
     """,
 
     'author': "Tu Empresa",
@@ -16,7 +16,7 @@ Incluye campo booleano editable y botón para marcar/desmarcar con registro en c
     'version': '17.0.1.0.0',
 
     # any module necessary for this one to work correctly
-    'depends': ['sale', 'mail'],
+    'depends': ['sale', 'mail', 'account'],
 
     # always loaded
     'data': [
