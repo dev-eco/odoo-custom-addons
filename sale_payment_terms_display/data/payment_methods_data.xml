@@ -2,7 +2,7 @@
 <odoo>
     <data noupdate="1">
         <!-- Métodos de pago estándar -->
-        <record id="payment_method_bank_transfer" model="payment.method">
+        <record id="payment_method_bank_transfer" model="sale.payment.method">
             <field name="name">Transferencia Bancaria</field>
             <field name="code">bank_transfer</field>
             <field name="sequence">10</field>
@@ -15,7 +15,7 @@
 como referencia.&lt;/p&gt;</field>
         </record>
 
-        <record id="payment_method_credit_card" model="payment.method">
+        <record id="payment_method_credit_card" model="sale.payment.method">
             <field name="name">Tarjeta de Crédito</field>
             <field name="code">credit_card</field>
             <field name="sequence">20</field>
@@ -27,7 +27,7 @@ como referencia.&lt;/p&gt;</field>
             <field name="fees_info">&lt;p&gt;Comisión del 2.5% sobre el importe total.&lt;/p&gt;</field>
         </record>
 
-        <record id="payment_method_paypal" model="payment.method">
+        <record id="payment_method_paypal" model="sale.payment.method">
             <field name="name">PayPal</field>
             <field name="code">paypal</field>
             <field name="sequence">30</field>
@@ -40,7 +40,7 @@ como referencia.&lt;/p&gt;</field>
             <field name="max_amount">3000</field>
         </record>
 
-        <record id="payment_method_check" model="payment.method">
+        <record id="payment_method_check" model="sale.payment.method">
             <field name="name">Cheque Bancario</field>
             <field name="code">check</field>
             <field name="sequence">40</field>

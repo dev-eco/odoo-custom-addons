@@ -4,8 +4,8 @@
     <template id="report_saleorder_payment_document" inherit_id="sale.report_saleorder_document">
         
         
-        <!-- Información de pago después de las líneas de producto -->
-        <xpath expr="//table[contains(@class,'o_main_table')]" position="after">
+        <!-- Información de pago después de los totales -->
+        <xpath expr="//div[contains(@class,'clearfix')]" position="after">
             <div t-if="doc.show_bank_info or doc.show_early_discount or doc.show_payment_qr" 
                  style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 20px;">
                 
