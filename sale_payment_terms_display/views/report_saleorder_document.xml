@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Personalizar reporte PDF de presupuestos -->
+    <template id="report_saleorder_document_payment_terms" 
+              inherit_id="sale.report_saleorder_document">
+        
+        <!-- Añadir información de pago antes de las líneas -->
+        <xpath expr="//div[hasclass('page')]//table[1]" position="before">
+            <div t-if="doc.payment_term_id" class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h6><strong>Condiciones de Pago</strong></h6>
+                        <p class="mb-1">
+                            <strong><span t-field="doc.payment_term_id.name"/></strong>
+                        </p>
+                        <small t-if="doc.payment_term_id.note" class="text-muted">
+                            <span t-field="doc.payment_term_id.note"/>
+                        </small>
+                        
+                        <!-- Mostrar desglose de vencimientos si existen -->
+                        <div t-if="doc.payment_term_id.line_ids" class="mt-2">
+                            <small class="text-muted">Calendario de pagos:</small>
+                            <ul class="list-unstyled small">
+                                <li t-foreach="doc.payment_term_id.line_ids" t-as="line">
+                                    <t t-if="line.value == 'percent'">
+                                        • <span t-esc="line.value_amount"/>% 
+                                        a los <span t-esc="line.nb_days"/> días
+                                    </t>
+                                    <t t-elif="line.value == 'balance'">
+                                        • Resto a los <span t-esc="line.nb_days"/> días
+                                    </t>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        
+        <!-- Alternativa: Añadir en el pie del documento -->
+        <xpath expr="//div[@name='informations'] | //div[@id='informations']" position="after">
+            <div t-if="doc.payment_term_id" class="row">
+                <div class="col-6">
+                    <strong>Términos de Pago:</strong><br/>
+                    <span t-field="doc.payment_term_id.name"/><br/>
+                    <small t-if="doc.payment_term_id.note">
+                        <span t-field="doc.payment_term_id.note"/>
+                    </small>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>
