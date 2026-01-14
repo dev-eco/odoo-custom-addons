@@ -58,12 +58,12 @@ class SaleOrder(models.Model):
     
     # Métodos de pago disponibles
     available_payment_methods = fields.Many2many(
-        'payment.method',
+        'sale.payment.method',
         string='Métodos de Pago Disponibles',
         help='Métodos de pago aceptados para este pedido'
     )
     preferred_payment_method = fields.Many2one(
-        'payment.method',
+        'sale.payment.method',
         string='Método de Pago Preferido',
         help='Método recomendado según el cliente'
     )

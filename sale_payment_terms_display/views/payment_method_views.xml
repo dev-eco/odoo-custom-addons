@@ -2,8 +2,8 @@
 <odoo>
     <!-- Vista formulario para métodos de pago -->
     <record id="view_payment_method_form" model="ir.ui.view">
-        <field name="name">payment.method.form</field>
-        <field name="model">payment.method</field>
+        <field name="name">sale.payment.method.form</field>
+        <field name="model">sale.payment.method</field>
         <field name="arch" type="xml">
             <form string="Método de Pago">
                 <sheet>
@@ -24,6 +24,7 @@
                             <field name="code"/>
                             <field name="sequence"/>
                             <field name="payment_provider"/>
+                            <field name="is_primary" widget="boolean_toggle"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                         <group>
@@ -60,8 +61,8 @@
 
     <!-- Vista lista para métodos de pago -->
     <record id="view_payment_method_tree" model="ir.ui.view">
-        <field name="name">payment.method.tree</field>
-        <field name="model">payment.method</field>
+        <field name="name">sale.payment.method.tree</field>
+        <field name="model">sale.payment.method</field>
         <field name="arch" type="xml">
             <tree string="Métodos de Pago">
                 <field name="sequence" widget="handle"/>
@@ -72,6 +73,7 @@
                 <field name="requires_bank_account"/>
                 <field name="supports_qr_payment"/>
                 <field name="early_discount_applicable"/>
+                <field name="is_primary"/>
                 <field name="active"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </tree>
@@ -81,7 +83,7 @@
     <!-- Acción para métodos de pago -->
     <record id="action_payment_method" model="ir.actions.act_window">
         <field name="name">Métodos de Pago</field>
-        <field name="res_model">payment.method</field>
+        <field name="res_model">sale.payment.method</field>
         <field name="view_mode">tree,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
