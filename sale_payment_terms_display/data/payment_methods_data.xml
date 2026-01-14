@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Métodos de pago estándar -->
+        <record id="payment_method_bank_transfer" model="payment.method">
+            <field name="name">Transferencia Bancaria</field>
+            <field name="code">bank_transfer</field>
+            <field name="sequence">10</field>
+            <field name="requires_bank_account">True</field>
+            <field name="supports_qr_payment">True</field>
+            <field name="early_discount_applicable">True</field>
+            <field name="processing_days">1</field>
+            <field name="payment_provider">bank_transfer</field>
+            <field name="customer_instructions">&lt;p&gt;Realice la transferencia incluyendo OBLIGATORIAMENTE el número de pedido
+como referencia.&lt;/p&gt;</field>
+        </record>
+
+        <record id="payment_method_credit_card" model="payment.method">
+            <field name="name">Tarjeta de Crédito</field>
+            <field name="code">credit_card</field>
+            <field name="sequence">20</field>
+            <field name="requires_bank_account">False</field>
+            <field name="supports_qr_payment">False</field>
+            <field name="early_discount_applicable">False</field>
+            <field name="processing_days">0</field>
+            <field name="payment_provider">credit_card</field>
+            <field name="fees_info">&lt;p&gt;Comisión del 2.5% sobre el importe total.&lt;/p&gt;</field>
+        </record>
+
+        <record id="payment_method_paypal" model="payment.method">
+            <field name="name">PayPal</field>
+            <field name="code">paypal</field>
+            <field name="sequence">30</field>
+            <field name="requires_bank_account">False</field>
+            <field name="supports_qr_payment">True</field>
+            <field name="early_discount_applicable">False</field>
+            <field name="processing_days">0</field>
+            <field name="payment_provider">paypal</field>
+            <field name="min_amount">10</field>
+            <field name="max_amount">3000</field>
+        </record>
+
+        <record id="payment_method_check" model="payment.method">
+            <field name="name">Cheque Bancario</field>
+            <field name="code">check</field>
+            <field name="sequence">40</field>
+            <field name="requires_bank_account">False</field>
+            <field name="supports_qr_payment">False</field>
+            <field name="early_discount_applicable">True</field>
+            <field name="processing_days">3</field>
+            <field name="payment_provider">other</field>
+            <field name="customer_instructions">&lt;p&gt;Cheque nominativo a favor de la empresa. No se aceptan cheques al
+portador.&lt;/p&gt;</field>
+        </record>
+    </data>
+</odoo>

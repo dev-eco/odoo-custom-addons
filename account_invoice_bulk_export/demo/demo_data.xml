@@ -5,7 +5,7 @@
         <!-- Ejemplo de registro en historial (solo para demo) -->
         <record id="demo_export_history_1" model="account.invoice.export.history">
             <field name="export_filename">facturas_exportacion_20241022_153045.zip</field>
-            <field name="export_date" eval="(DateTime.today() - timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="export_date" eval="(datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S')"/>
             <field name="user_id" ref="base.user_admin"/>
             <field name="company_id" ref="base.main_company"/>
             <field name="compression_format">zip</field>
@@ -23,7 +23,7 @@
 
         <record id="demo_export_history_2" model="account.invoice.export.history">
             <field name="export_filename">facturas_exportacion_20241015_091230.tar.gz</field>
-            <field name="export_date" eval="(DateTime.today() - timedelta(days=14)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="export_date" eval="(datetime.now() - timedelta(days=14)).strftime('%Y-%m-%d %H:%M:%S')"/>
             <field name="user_id" ref="base.user_admin"/>
             <field name="company_id" ref="base.main_company"/>
             <field name="compression_format">tar_gz</field>

@@ -1,0 +1,60 @@
+<odoo>
+  <data>
+    <!-- explicit list view definition -->
+<!--
+    <record model="ir.ui.view" id="sale_payment_terms_display.list">
+      <field name="name">sale_payment_terms_display list</field>
+      <field name="model">sale_payment_terms_display.sale_payment_terms_display</field>
+      <field name="arch" type="xml">
+        <tree>
+          <field name="name"/>
+          <field name="value"/>
+          <field name="value2"/>
+        </tree>
+      </field>
+    </record>
+-->
+
+    <!-- actions opening views on models -->
+<!--
+    <record model="ir.actions.act_window" id="sale_payment_terms_display.action_window">
+      <field name="name">sale_payment_terms_display window</field>
+      <field name="res_model">sale_payment_terms_display.sale_payment_terms_display</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+-->
+
+    <!-- server action to the one above -->
+<!--
+    <record model="ir.actions.server" id="sale_payment_terms_display.action_server">
+      <field name="name">sale_payment_terms_display server</field>
+      <field name="model_id" ref="model_sale_payment_terms_display_sale_payment_terms_display"/>
+      <field name="state">code</field>
+      <field name="code">
+        action = {
+          "type": "ir.actions.act_window",
+          "view_mode": "tree,form",
+          "res_model": model._name,
+        }
+      </field>
+    </record>
+-->
+
+    <!-- Top menu item -->
+<!--
+    <menuitem name="sale_payment_terms_display" id="sale_payment_terms_display.menu_root"/>
+-->
+    <!-- menu categories -->
+<!--
+    <menuitem name="Menu 1" id="sale_payment_terms_display.menu_1" parent="sale_payment_terms_display.menu_root"/>
+    <menuitem name="Menu 2" id="sale_payment_terms_display.menu_2" parent="sale_payment_terms_display.menu_root"/>
+-->
+    <!-- actions -->
+<!--
+    <menuitem name="List" id="sale_payment_terms_display.menu_1_list" parent="sale_payment_terms_display.menu_1"
+              action="sale_payment_terms_display.action_window"/>
+    <menuitem name="Server to list" id="sale_payment_terms_display" parent="sale_payment_terms_display.menu_2"
+              action="sale_payment_terms_display.action_server"/>
+-->
+  </data>
+</odoo>

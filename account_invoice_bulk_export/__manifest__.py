@@ -1,85 +1,83 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Exportación Masiva de Facturas',
-    'version': '17.0.2.0.0',
-    'category': 'Accounting/Accounting',
-    'summary': 'Exporta múltiples facturas a archivos comprimidos con PDFs reales',
+    'version': '17.0.1.2.0',
+    'category': 'Contabilidad/Localización',
+    'summary': 'Exportación masiva de facturas a archivos comprimidos con funcionalidades avanzadas',
     'description': """
-Exportación Masiva de Facturas Mejorada
-========================================
+Exportación Masiva de Facturas - Versión Completa
+==================================================
 
-Exporta facturas de clientes y proveedores a archivos comprimidos con 
-generación real de PDFs, nombres inteligentes y múltiples formatos.
+Módulo completo para exportar múltiples facturas a archivos comprimidos con funcionalidades avanzadas.
 
 Características Principales:
 ----------------------------
-* Exportación masiva desde lista de facturas o con filtros personalizados
-* **Generación real de PDFs** usando el motor de reportes de Odoo
-* Múltiples formatos de compresión: ZIP, TAR.GZ, TAR.BZ2
-* Protección con contraseña para archivos ZIP
-* Patrones inteligentes de nombres de archivo
-* **Organización en carpetas por tipo de documento**
-* **Inclusión opcional de archivos adjuntos**
-* Procesamiento por lotes para mejor rendimiento
-* Soporte multi-empresa completo
-* **Barra de progreso durante la exportación**
-* **Vista previa de facturas a exportar**
-* **Estadísticas detalladas del proceso**
-* **Registro de auditoría de exportaciones**
-* **Interfaz completamente en castellano**
-* Validaciones de seguridad mejoradas
-* Manejo robusto de errores con logs detallados
+• Exportación masiva de facturas de clientes y proveedores
+• Múltiples formatos de compresión (ZIP, TAR.GZ, TAR.BZ2)
+• Protección con contraseña para archivos ZIP
+• Patrones personalizables de nombres de archivo
+• Organización automática por tipo de documento y partner
+• Inclusión de archivos adjuntos (XML, otros PDFs)
+• Historial completo de exportaciones para auditoría
+• Procesamiento por lotes para mejor rendimiento
+• Interfaz de usuario intuitiva y completamente en español
+• Compatible con módulos OCA y terceros
+• Validaciones de seguridad y permisos robustas
+
+Funcionalidades Técnicas:
+-------------------------
+• Generación PDF usando reportes estándar de Odoo
+• Manejo seguro de errores y logging detallado
+• Compatibilidad total con Odoo 17 Community Edition
+• Soporte multi-empresa
+• Filtros avanzados por fecha, partner, estado
+• Descarga segura con tokens de autenticación
+• Configuración global personalizable
 
 Casos de Uso:
 -------------
-* Envío de facturas a asesorías fiscales
-* Backup periódico de documentación
-* Archivos para auditorías
-* Entrega de documentación a clientes
-* Gestión documental empresarial
-
-Seguridad:
-----------
-* Validación de permisos por factura
-* Sanitización de nombres de archivo
-* Límites de procesamiento por lotes
-* Control de acceso basado en grupos
-* Registro de auditoría de exportaciones
-
-Requisitos:
------------
-* Odoo 17.0
-* Módulo 'account' instalado
-* Permisos de usuario de contabilidad
-
+• Envío masivo de facturas a clientes
+• Respaldo periódico de documentos contables
+• Auditorías y revisiones contables
+• Integración con sistemas externos
+• Cumplimiento normativo y archivo digital
     """,
-    'author': 'EcoCaucho Development Team',
-    'website': 'https://www.ecocaucho.com',
+    'author': 'Desarrollo Interno',
+    'website': 'https://www.odoo.com',
     'license': 'LGPL-3',
     'depends': [
         'account',
-        'base',
-        'mail',  # Para attachments
+        'base_setup',
     ],
     'data': [
+        # Seguridad
         'security/ir.model.access.csv',
         'security/export_security.xml',
+        
+        # Datos base
+        'data/export_data.xml',
+        
+        # Vistas principales (orden importante para referencias)
         'views/export_history_views.xml',
+        'views/res_config_settings_views.xml',
         'wizard/bulk_export_wizard_views.xml',
         'views/menu_items.xml',
-        'views/res_config_settings_views.xml',
-        'data/export_data.xml',
     ],
     'demo': [
         'demo/demo_data.xml',
     ],
-    'images': [
-        'static/description/banner.png',
-        'static/description/icon.png',
-    ],
+    'assets': {
+        'web.assets_backend': [
+            'account_invoice_bulk_export/static/src/js/bulk_export.js',
+            'account_invoice_bulk_export/static/src/scss/bulk_export.scss',
+        ],
+    },
+    'images': ['static/description/icon.png'],
     'installable': True,
     'auto_install': False,
     'application': False,
-    'price': 0.00,
-    'currency': 'EUR',
+    'external_dependencies': {
+        'python': [],
+    },
+    # Hooks removidos - no implementados
 }
