@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario para métodos de pago -->
+    <record id="view_payment_method_form" model="ir.ui.view">
+        <field name="name">payment.method.form</field>
+        <field name="model">payment.method</field>
+        <field name="arch" type="xml">
+            <form string="Método de Pago">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button" options='{"terminology": "archive"}'/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del método de pago"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="payment_provider"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="requires_bank_account"/>
+                            <field name="supports_qr_payment"/>
+                            <field name="early_discount_applicable"/>
+                            <field name="processing_days"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Configuración" name="config">
+                            <group>
+                                <group string="Restricciones de Importe">
+                                    <field name="currency_id"/>
+                                    <field name="min_amount"/>
+                                    <field name="max_amount"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Información para Cliente" name="customer_info">
+                            <group>
+                                <field name="description" widget="html"/>
+                                <field name="customer_instructions" widget="html"/>
+                                <field name="fees_info" widget="html"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista lista para métodos de pago -->
+    <record id="view_payment_method_tree" model="ir.ui.view">
+        <field name="name">payment.method.tree</field>
+        <field name="model">payment.method</field>
+        <field name="arch" type="xml">
+            <tree string="Métodos de Pago">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="payment_provider"/>
+                <field name="processing_days"/>
+                <field name="requires_bank_account"/>
+                <field name="supports_qr_payment"/>
+                <field name="early_discount_applicable"/>
+                <field name="active"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Acción para métodos de pago -->
+    <record id="action_payment_method" model="ir.actions.act_window">
+        <field name="name">Métodos de Pago</field>
+        <field name="res_model">payment.method</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear un nuevo método de pago
+            </p>
+            <p>
+                Configure los métodos de pago disponibles para sus clientes.
+                Puede definir restricciones, comisiones e instrucciones específicas.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem id="menu_payment_method"
+              name="Métodos de Pago"
+              parent="sale.sale_menu_root"
+              action="action_payment_method"
+              sequence="50"/>
+</odoo>
