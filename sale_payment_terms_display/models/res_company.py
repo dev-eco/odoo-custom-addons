@@ -79,3 +79,13 @@ class ResCompany(models.Model):
         for company in self:
             if company.early_payment_days < 0:
                 raise ValidationError('Los días para descuento no pueden ser negativos.')
+    
+    @api.constrains('primary_bank_account')
+    def _check_primary_bank_account(self):
+        for company in self:
+            if company.primary_bank_account:
+                # Verificar que la cuenta pertenece a la empresa
+                if company.primary_bank_account.partner_id != company.partner_id:
+                    raise ValidationError(
+                        'La cuenta bancaria principal debe pertenecer a la empresa.'
+                    )
