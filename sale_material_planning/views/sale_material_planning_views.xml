@@ -225,7 +225,7 @@
     <menuitem id="menu_sale_material_planning"
               name="Planificación de Material"
               parent="sale.sale_menu_root"
-              sequence="5"
+              sequence="15"
               action="action_sale_order_material_planning"
               groups="sales_team.group_sale_salesman"/>
 </odoo>

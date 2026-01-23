@@ -129,7 +129,7 @@ datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
     <menuitem id="menu_product_summary"
               name="Resumen de Productos"
               parent="sale.sale_menu_root"
-              sequence="6"
+              sequence="15"
               action="action_product_summary"
               groups="sales_team.group_sale_salesman"/>
 </odoo>
