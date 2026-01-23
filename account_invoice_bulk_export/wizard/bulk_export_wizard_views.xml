@@ -33,9 +33,16 @@
                                 class="btn-secondary" 
                                 invisible="state == 'draft'"/>
                         
+                        <button name="action_test_invoice_search" 
+                                type="object" 
+                                string="🔍 Probar Búsqueda" 
+                                class="btn-info" 
+                                invisible="state not in ['draft', 'error']"
+                                help="Diagnosticar búsqueda de facturas"/>
+                        
                         <button name="action_diagnose_pdf_issues" 
                                 type="object" 
-                                string="🔧 Diagnóstico" 
+                                string="🔧 Diagnóstico PDF" 
                                 class="btn-warning" 
                                 invisible="state not in ['draft', 'error']"
                                 help="Ejecutar diagnóstico del sistema PDF"/>
@@ -114,7 +121,7 @@
                             </div>
                         </div>
 
-                        <!-- Configuración - solo visible en draft -->
+                        <!--Configuración - solo visible en draft -->
                         <div invisible="state != 'draft'">
                             
                             <!-- Configuración básica -->
