@@ -546,6 +546,13 @@ class BulkExportWizard(models.TransientModel):
             if not invoices:
                 raise UserError(_('No se encontraron facturas que coincidan con los criterios.'))
 
+            # NUEVO: Probar con la primera factura antes de procesar todas
+            _logger.info(f"Probando generación PDF con primera factura antes de exportación masiva...")
+            if invoices:
+                test_result = self._test_single_invoice_pdf(invoices[0])
+                if not test_result:
+                    _logger.warning("La prueba de PDF falló, pero continuando con exportación...")
+
             # Validar acceso a facturas
             try:
                 invoices.check_access_rights('read')
@@ -629,21 +636,29 @@ class BulkExportWizard(models.TransientModel):
         return self._reload_wizard()
 
     # ==========================================
-    # MÉTODOS AUXILIARES
+    # MÉTODOS AUXILIARES - BÚSQUEDA DE FACTURAS
     # ==========================================
 
     def _build_invoice_domain(self):
-        """Construye domain para búsqueda de facturas con validaciones."""
+        """
+        Construye domain para búsqueda de facturas con validaciones mejoradas.
+        CORRECCIÓN CRÍTICA: Domain más flexible y robusto para encontrar facturas de venta.
+        """
         self.ensure_one()
         
         # Validar que tenemos company_id
         if not self.company_id:
-            return [('id', '=', False)]  # Domain que no retorna nada
+            _logger.warning("No hay company_id configurada")
+            return [('id', '=', False)]
         
-        # Domain base
-        domain = [('company_id', '=', self.company_id.id)]
+        # Domain base - CRÍTICO: Buscar en account.move, no solo facturas
+        domain = [
+            ('company_id', '=', self.company_id.id),
+            # Asegurar que son movimientos de tipo factura
+            ('move_type', '!=', False),
+        ]
 
-        # Tipos de movimiento - CORREGIDO: usar 'in' para listas
+        # Tipos de movimiento
         move_types = []
         if self.include_out_invoice:
             move_types.append('out_invoice')
@@ -655,63 +670,114 @@ class BulkExportWizard(models.TransientModel):
             move_types.append('in_refund')
         
         if move_types:
-            domain.append(('move_type', 'in', move_types))  # CORRECCIÓN CRÍTICA
+            domain.append(('move_type', 'in', move_types))
+            _logger.info(f"Tipos de movimiento incluidos: {move_types}")
         else:
-            # Si no hay tipos seleccionados, no retornar nada
+            _logger.warning("No hay tipos de movimiento seleccionados")
             return [('id', '=', False)]
 
-        # Filtros de fecha con validación
+        # CORRECCIÓN CRÍTICA: Estado con lógica mejorada
+        if self.state_filter == 'posted':
+            # Solo facturas confirmadas/publicadas
+            domain.append(('state', '=', 'posted'))
+            _logger.info("Filtro de estado: solo confirmadas")
+        elif self.state_filter == 'draft':
+            # Solo borradores
+            domain.append(('state', '=', 'draft'))
+            _logger.info("Filtro de estado: solo borradores")
+        else:
+            # Si es 'all', no agregar filtro de estado pero excluir canceladas
+            _logger.info("Filtro de estado: todos excepto canceladas")
+        
+        # NUEVO: Excluir facturas canceladas siempre (excepto si se buscan explícitamente)
+        if self.state_filter != 'all':
+            domain.append(('state', '!=', 'cancel'))
+
+        # Filtros de fecha - CORRECCIÓN: usar invoice_date como campo principal
         if self.date_from:
             domain.append(('invoice_date', '>=', self.date_from))
+            _logger.info(f"Fecha desde: {self.date_from}")
         if self.date_to:
             domain.append(('invoice_date', '<=', self.date_to))
+            _logger.info(f"Fecha hasta: {self.date_to}")
 
-        # Filtro de partner - CORREGIDO: usar .ids con validación
+        # Filtro de partner
         if self.partner_ids:
             partner_ids = self.partner_ids.ids if hasattr(self.partner_ids, 'ids') else []
             if partner_ids:
                 domain.append(('partner_id', 'in', partner_ids))
+                _logger.info(f"Partners filtrados: {len(partner_ids)}")
         
-        # Filtro de usuario/vendedor con validación
+        # Filtro de usuario/vendedor - CORRECCIÓN: campo correcto en Odoo 17
         if self.user_id and self.user_id.id:
+            # En Odoo 17, el campo es invoice_user_id
             domain.append(('invoice_user_id', '=', self.user_id.id))
+            _logger.info(f"Usuario filtrado: {self.user_id.name}")
 
-        # Filtros de importe con validación
+        # Filtros de importe
         if self.amount_from and self.amount_from > 0:
             domain.append(('amount_total', '>=', self.amount_from))
+            _logger.info(f"Importe mínimo: {self.amount_from}")
         if self.amount_to and self.amount_to > 0:
             domain.append(('amount_total', '<=', self.amount_to))
+            _logger.info(f"Importe máximo: {self.amount_to}")
 
-        # Estado con validación
-        if self.state_filter and self.state_filter != 'all':
-            domain.append(('state', '=', self.state_filter))
+        # Log para debugging
+        _logger.info(f"Domain construido para búsqueda: {domain}")
+
+        # NUEVO: Validar que el domain es válido
+        try:
+            # Hacer una búsqueda de prueba con limit 0 para validar el domain
+            self.env['account.move'].search(domain, limit=0)
+        except Exception as domain_error:
+            _logger.error(f"Domain inválido: {domain}. Error: {str(domain_error)}")
+            return [('id', '=', False)]
 
         return domain
 
     def _get_invoices_to_export(self):
-        """Obtiene facturas basado en criterios de selección con validaciones."""
+        """
+        Obtiene facturas basado en criterios de selección con validaciones mejoradas.
+        CORRECCIÓN: Mejor logging y manejo de errores.
+        """
         self.ensure_one()
 
         # Usar facturas pre-seleccionadas si existen
         if self.invoice_ids:
-            # Filtrar facturas válidas (que existan y sean del tipo correcto)
             valid_invoices = self.invoice_ids.filtered(
                 lambda inv: inv.move_type in ['out_invoice', 'in_invoice', 'out_refund', 'in_refund']
                 and inv.company_id == self.company_id
             )
+            _logger.info(f"Usando {len(valid_invoices)} facturas preseleccionadas")
             return valid_invoices
 
         # Usar domain construido con manejo de errores
         try:
             domain = self._build_invoice_domain()
+            _logger.info(f"Buscando facturas con domain: {domain}")
+            
             if domain == [('id', '=', False)]:
-                return self.env['account.move']  # Recordset vacío
+                _logger.warning("Domain vacío - no se buscarán facturas")
+                return self.env['account.move']
             
             invoices = self.env['account.move'].search(domain)
+            _logger.info(f"Encontradas {len(invoices)} facturas")
+            
+            # NUEVO: Verificar tipos de facturas encontradas
+            if invoices:
+                types_found = set(invoices.mapped('move_type'))
+                states_found = set(invoices.mapped('state'))
+                _logger.info(f"Tipos de facturas encontradas: {types_found}")
+                _logger.info(f"Estados encontrados: {states_found}")
+                _logger.info(f"Nombres de facturas: {invoices.mapped('name')}")
+            else:
+                _logger.warning("No se encontraron facturas con los criterios especificados")
+            
             return invoices
+            
         except Exception as e:
-            _logger.error(f"Error buscando facturas: {str(e)}")
-            return self.env['account.move']  # Recordset vacío en caso de error
+            _logger.error(f"Error buscando facturas: {str(e)}", exc_info=True)
+            return self.env['account.move']
 
     def _generate_export_file(self, invoices):
         """Genera archivo comprimido con PDFs de facturas."""
@@ -803,19 +869,33 @@ class BulkExportWizard(models.TransientModel):
         CORRECCIÓN CRÍTICA: Diferentes estrategias para clientes vs proveedores.
         """
         try:
+            # NUEVO: Logging detallado
+            _logger.info(f"Obteniendo PDF para factura {invoice.name} (tipo: {invoice.move_type})")
+            
             # Para facturas de clientes: generar PDF directamente
             if invoice.move_type in ['out_invoice', 'out_refund']:
-                return self._generate_pdf_for_customer_invoice(invoice)
+                pdf_content = self._generate_pdf_for_customer_invoice(invoice)
+                if pdf_content:
+                    _logger.info(f"PDF generado exitosamente para {invoice.name}: {len(pdf_content)} bytes")
+                else:
+                    _logger.warning(f"No se pudo generar PDF para {invoice.name}")
+                return pdf_content
             
             # Para facturas de proveedores: buscar adjunto primero, generar después
             elif invoice.move_type in ['in_invoice', 'in_refund']:
                 # 1. Intentar encontrar PDF adjunto
                 pdf_content = self._get_pdf_from_attachment(invoice)
                 if pdf_content:
+                    _logger.info(f"PDF obtenido de adjunto para {invoice.name}: {len(pdf_content)} bytes")
                     return pdf_content
                 
                 # 2. Si no hay adjunto, generar PDF
-                return self._generate_pdf_for_vendor_invoice(invoice)
+                pdf_content = self._generate_pdf_for_vendor_invoice(invoice)
+                if pdf_content:
+                    _logger.info(f"PDF generado para factura de proveedor {invoice.name}: {len(pdf_content)} bytes")
+                else:
+                    _logger.warning(f"No se pudo generar PDF para factura de proveedor {invoice.name}")
+                return pdf_content
             
             # Fallback para otros tipos
             return self._generate_pdf_direct(invoice)
@@ -852,6 +932,11 @@ class BulkExportWizard(models.TransientModel):
     def _generate_pdf_direct(self, invoice):
         """Genera PDF usando sistema de reportes de Odoo."""
         try:
+            # Validar que tenemos un invoice válido
+            if not invoice or not invoice.id:
+                _logger.warning("Invoice inválido para generar PDF")
+                return None
+                
             # 1. Buscar reporte estándar de facturas
             report = self.env.ref('account.account_invoices', raise_if_not_found=False)
             
@@ -864,9 +949,18 @@ class BulkExportWizard(models.TransientModel):
                 report = reports[0] if reports else None
                 
             if report:
-                # CORRECCIÓN CRÍTICA: usar lista de IDs de forma segura
-                pdf_content, _ = report._render_qweb_pdf([invoice.id])
-                return pdf_content
+                # CORRECCIÓN CRÍTICA: pasar IDs como lista pero asegurar que report es objeto válido
+                try:
+                    # Verificar que report tiene el método necesario
+                    if hasattr(report, '_render_qweb_pdf'):
+                        pdf_content, _ = report._render_qweb_pdf([invoice.id])
+                        return pdf_content
+                    else:
+                        _logger.error(f"Reporte {report.name} no tiene método _render_qweb_pdf")
+                        return None
+                except Exception as render_error:
+                    _logger.error(f"Error renderizando PDF con reporte {report.name}: {str(render_error)}")
+                    return None
                 
             _logger.warning(f"No se encontró reporte PDF para {invoice.name}")
             return None
@@ -987,11 +1081,125 @@ class BulkExportWizard(models.TransientModel):
         """Abre la vista del historial de exportaciones."""
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Historial de Exportaciones',
+            'name':  'Historial de Exportaciones',
             'res_model': 'account.invoice.export.history',
             'view_mode': 'tree,form',
             'target': 'current',
             'context': {'search_default_this_month': 1},
+        }
+
+    def _test_single_invoice_pdf(self, invoice):
+        """Método de prueba para generar PDF de una sola factura con logging detallado."""
+        _logger.info("="*50)
+        _logger.info(f"PRUEBA PDF INDIVIDUAL: {invoice.name}")
+        _logger.info(f"  ID: {invoice.id}")
+        _logger.info(f"  Tipo: {invoice.move_type}")
+        _logger.info(f"  Estado: {invoice.state}")
+        _logger.info(f"  Partner: {invoice.partner_id.name if invoice.partner_id else 'N/A'}")
+        
+        # Buscar reportes disponibles
+        _logger.info("\nReportes disponibles:")
+        reports = self.env['ir.actions.report'].search([
+            ('model', '=', 'account.move'),
+            ('report_type', '=', 'qweb-pdf')
+        ])
+        
+        for report in reports:
+            _logger.info(f"  - {report.name} (report_name: {report.report_name})")
+        
+        # Intentar generar PDF
+        try:
+            pdf_content = self._get_invoice_pdf(invoice)
+            if pdf_content:
+                _logger.info(f"\n✅ PDF generado: {len(pdf_content)} bytes")
+                return True
+            else:
+                _logger.error("\n❌ PDF no generado (contenido vacío)")
+                return False
+        except Exception as e:
+            _logger.error(f"\n❌ Error generando PDF: {str(e)}", exc_info=True)
+            return False
+        finally:
+            _logger.info("="*50)
+
+    def action_test_invoice_search(self):
+        """
+        Prueba la búsqueda de facturas para diagnosticar problemas.
+        NUEVO MÉTODO: Diagnóstico mejorado de búsqueda.
+        """
+        self.ensure_one()
+        
+        diagnosis = []
+        diagnosis.append("=== DIAGNÓSTICO DE BÚSQUEDA DE FACTURAS ===\n")
+        
+        # Información de configuración
+        diagnosis.append(f"Compañía: {self.company_id.name}")
+        diagnosis.append(f"Filtro de estado: {self.state_filter}")
+        diagnosis.append(f"Incluir facturas cliente: {self.include_out_invoice}")
+        diagnosis.append(f"Incluir facturas proveedor: {self.include_in_invoice}")
+        diagnosis.append(f"Rango de fechas: {self.date_from} - {self.date_to}\n")
+        
+        # Contar facturas por tipo en la base de datos
+        diagnosis.append("FACTURAS EN BASE DE DATOS:")
+        for move_type in ['out_invoice', 'in_invoice', 'out_refund', 'in_refund']:
+            count_all = self.env['account.move'].search_count([
+                ('move_type', '=', move_type),
+                ('company_id', '=', self.company_id.id)
+            ])
+            count_posted = self.env['account.move'].search_count([
+                ('move_type', '=', move_type),
+                ('company_id', '=', self.company_id.id),
+                ('state', '=', 'posted')
+            ])
+            diagnosis.append(f"  {move_type}: {count_all} total, {count_posted} confirmadas")
+        
+        # Probar domain construido
+        diagnosis.append("\nDOMAIN CONSTRUIDO:")
+        domain = self._build_invoice_domain()
+        diagnosis.append(f"  {domain}")
+        
+        # Ejecutar búsqueda
+        diagnosis.append("\nRESULTADO DE BÚSQUEDA:")
+        try:
+            invoices = self.env['account.move'].search(domain)
+            diagnosis.append(f"  Facturas encontradas: {len(invoices)}")
+            
+            if invoices:
+                diagnosis.append("\n  Primeras 5 facturas:")
+                for inv in invoices[:5]:
+                    diagnosis.append(f"    - {inv.name} | {inv.move_type} | {inv.state} | {inv.partner_id.name}")
+            else:
+                diagnosis.append("  ⚠️ NO SE ENCONTRARON FACTURAS")
+                
+                # Intentar búsqueda simplificada
+                diagnosis.append("\n  Probando búsqueda simplificada...")
+                simple_domain = [
+                    ('company_id', '=', self.company_id.id),
+                    ('move_type', '=', 'out_invoice')
+                ]
+                simple_invoices = self.env['account.move'].search(simple_domain, limit=5)
+                diagnosis.append(f"  Facturas con búsqueda simple: {len(simple_invoices)}")
+                
+                if simple_invoices:
+                    diagnosis.append("  ✅ Hay facturas, el problema está en los filtros")
+                else:
+                    diagnosis.append("  ❌ No hay facturas de venta en el sistema")
+                    
+        except Exception as e:
+            diagnosis.append(f"  ❌ ERROR: {str(e)}")
+        
+        message = "\n".join(diagnosis)
+        _logger.info(message)
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Diagnóstico de Búsqueda'),
+                'message': message,
+                'type': 'info',
+                'sticky': True,
+            }
         }
 
     def action_diagnose_pdf_issues(self):

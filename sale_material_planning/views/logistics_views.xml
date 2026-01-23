@@ -78,7 +78,7 @@ datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
     <menuitem id="menu_sale_logistics"
               name="Pedidos para Logística"
               parent="stock.menu_stock_root"
-              sequence="5"
+              sequence="15"
               action="action_sale_order_logistics"
               groups="stock.group_stock_user"/>
 </odoo>
