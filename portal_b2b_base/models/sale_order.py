@@ -57,6 +57,14 @@ class SaleOrder(models.Model):
         help='Token para acceso seguro desde el portal'
     )
 
+    # Relación con plantillas
+    template_id = fields.Many2one(
+        'sale.order.template',
+        string='Plantilla Origen',
+        readonly=True,
+        help='Plantilla desde la que se creó este pedido'
+    )
+
     # Campos de estado para distribuidores
     order_status = fields.Selection([
         ('new', 'Nuevo'),
@@ -249,10 +257,10 @@ class SaleOrder(models.Model):
     def create(self, vals_list):
         """Override para generar access_token automáticamente y asegurar order_status."""
         for vals in vals_list:
-            if 'access_token' not in vals or not vals['access_token']:
+            if 'access_token' not in vals or not vals.get('access_token'):
                 vals['access_token'] = self._generate_access_token()
             # Asegurar que order_status tenga un valor por defecto
-            if 'order_status' not in vals or not vals['order_status']:
+            if 'order_status' not in vals or not vals.get('order_status'):
                 vals['order_status'] = 'new'
         return super().create(vals_list)
 
@@ -260,6 +268,17 @@ class SaleOrder(models.Model):
     def _generate_access_token():
         """Genera un token de acceso único y seguro."""
         return secrets.token_urlsafe(32)
+
+    @api.model
+    def _ensure_access_tokens(self):
+        """Asegura que todos los pedidos tengan access_token."""
+        orders_without_token = self.search([
+            ('access_token', '=', False)
+        ])
+        if orders_without_token:
+            for order in orders_without_token:
+                order.access_token = self._generate_access_token()
+            _logger.info(f"Tokens generados para {len(orders_without_token)} pedidos")
 
     @api.model
     def _ensure_order_status_defaults(self):

@@ -425,6 +425,144 @@ $box-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     border-left: 4px solid $info-color;
 }
 
+// ========== PLANTILLAS DE PEDIDOS ==========
+
+.template-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+    
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border-color: $primary-color;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 1rem;
+        
+        i {
+            color: $primary-color;
+        }
+    }
+    
+    .template-stats {
+        padding: 0.75rem 0;
+        border-top: 1px solid #e9ecef;
+        border-bottom: 1px solid #e9ecef;
+        
+        .h5 {
+            color: $primary-color;
+            font-weight: 700;
+        }
+    }
+}
+
+// Responsive para cards de plantillas
+@media (max-width: 768px) {
+    .template-card {
+        margin-bottom: 1rem;
+    }
+}
+
+// ========== TIMELINE DE ESTADO ==========
+
+.order-timeline {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    padding: 2rem 0;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        top: 2.5rem;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #e9ecef;
+        z-index: 0;
+    }
+    
+    .timeline-item {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        
+        &.completed {
+            .timeline-marker {
+                background: $success-color;
+                border-color: $success-color;
+                color: white;
+            }
+            
+            .timeline-content h6 {
+                color: $success-color;
+            }
+        }
+        
+        .timeline-marker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            transition: all 0.3s ease;
+            
+            i {
+                font-size: 16px;
+            }
+        }
+        
+        .timeline-content {
+            h6 {
+                font-weight: 600;
+                margin-bottom: 0.25rem;
+                color: #6c757d;
+                transition: color 0.3s ease;
+            }
+            
+            small {
+                font-size: 0.85rem;
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .order-timeline {
+        flex-direction: column;
+        
+        &::before {
+            top: 0;
+            bottom: 0;
+            left: 20px;
+            width: 2px;
+            height: auto;
+        }
+        
+        .timeline-item {
+            text-align: left;
+            padding-left: 60px;
+            margin-bottom: 2rem;
+            
+            .timeline-marker {
+                position: absolute;
+                left: 0;
+                margin: 0;
+            }
+        }
+    }
+}
+
 // ========== OCULTAR BREADCRUMB DE PEDIDOS DE COMPRA ==========
 
 // Ocultar breadcrumb completo que contiene "Pedidos de compra"

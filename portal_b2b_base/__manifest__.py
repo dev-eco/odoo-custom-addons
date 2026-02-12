@@ -72,7 +72,7 @@ Licencia: LGPL-3
         'website',
     ],
     'data': [
-        # Seguridad
+        # Seguridad (PRIMERO)
         'security/security.xml',
         'security/ir.model.access.csv',
 
@@ -80,9 +80,13 @@ Licencia: LGPL-3
         'data/website_config.xml',
         'data/email_templates.xml',
 
+        # Wizards (ANTES de las vistas que los usan)
+        'wizard/sale_order_template_wizard_views.xml',
+
         # Vistas backend
         'views/res_partner_views.xml',
         'views/sale_order_views.xml',
+        'views/sale_order_template_views.xml',
 
         # Templates portal
         'views/portal_templates.xml',

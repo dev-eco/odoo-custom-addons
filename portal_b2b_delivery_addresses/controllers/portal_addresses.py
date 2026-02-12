@@ -10,6 +10,15 @@ _logger = logging.getLogger(__name__)
 class PortalAddresses(http.Controller):
     """Controlador de direcciones de entrega para portal B2B."""
     
+    def _prepare_portal_layout_values(self):
+        """Preparar valores seguros para el layout del portal."""
+        return {
+            'website': False,
+            'preview_object': False,
+            'editable': False,
+            'translatable': False,
+        }
+    
     @http.route(['/mis-direcciones', '/mis-direcciones/page/<int:page>'], 
                 type='http', auth='user', website=True)
     def portal_mis_direcciones(self, page=1, search=None, **kw):
@@ -54,7 +63,8 @@ class PortalAddresses(http.Controller):
         countries = request.env['res.country'].search([])
         default_country = request.env.ref('base.es', raise_if_not_found=False)
         
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'addresses': addresses,
             'page_name': 'mis_direcciones',
             'pager': pager,
@@ -62,7 +72,7 @@ class PortalAddresses(http.Controller):
             'countries': countries,
             'default_country': default_country,
             'states': [],
-        }
+        })
         
         return request.render('portal_b2b_delivery_addresses.portal_mis_direcciones', values)
 
@@ -83,13 +93,14 @@ class PortalAddresses(http.Controller):
                 ('country_id', '=', default_country.id)
             ], order='name')
         
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'page_name': 'crear_direccion',
             'countries': countries,
             'default_country': default_country,
             'states': states,
             'redirect_url': redirect or '/mis-direcciones',
-        }
+        })
         
         return request.render('portal_b2b_delivery_addresses.portal_crear_direccion', values)
 
@@ -115,11 +126,12 @@ class PortalAddresses(http.Controller):
                 ('country_id', '=', address.country_id.id)
             ], order='name')
         
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'address': address,
             'page_name': 'editar_direccion',
             'countries': countries,
             'states': states,
-        }
+        })
         
         return request.render('portal_b2b_delivery_addresses.portal_editar_direccion', values)

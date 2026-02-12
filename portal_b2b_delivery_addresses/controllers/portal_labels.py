@@ -10,6 +10,15 @@ _logger = logging.getLogger(__name__)
 class PortalLabels(http.Controller):
     """Controlador de etiquetas cliente final para portal B2B."""
     
+    def _prepare_portal_layout_values(self):
+        """Preparar valores seguros para el layout del portal."""
+        return {
+            'website': False,
+            'preview_object': False,
+            'editable': False,
+            'translatable': False,
+        }
+    
     @http.route(['/mis-etiquetas', '/mis-etiquetas/page/<int:page>'], 
                 type='http', auth='user', website=True)
     def portal_mis_etiquetas(self, page=1, search=None, **kw):
@@ -51,13 +60,14 @@ class PortalLabels(http.Controller):
             order='name asc'
         )
         
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'labels': labels,
             'label_count': label_count,
             'page_name': 'mis_etiquetas',
             'pager': pager,
             'search': search,
-        }
+        })
         
         return request.render('portal_b2b_delivery_addresses.portal_mis_etiquetas', values)
 
@@ -69,11 +79,12 @@ class PortalLabels(http.Controller):
         if not partner.is_distributor:
             return request.redirect('/mi-portal')
         
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'label': None,
             'page_name': 'crear_etiqueta',
             'redirect_url': redirect or '/mis-etiquetas',
-        }
+        })
         
         return request.render('portal_b2b_delivery_addresses.portal_crear_etiqueta', values)
 
@@ -91,9 +102,10 @@ class PortalLabels(http.Controller):
         if not label.exists() or label.partner_id != partner:
             return request.redirect('/mis-etiquetas')
         
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'label': label,
             'page_name': 'editar_etiqueta',
-        }
+        })
         
         return request.render('portal_b2b_delivery_addresses.portal_crear_etiqueta', values)

@@ -24,6 +24,18 @@ class PortalB2B(CustomerPortal):
     - Funcionalidades específicas B2B
     """
 
+    # ========== MÉTODO HELPER PARA VALORES SEGUROS ==========
+    
+    def _prepare_portal_layout_values(self):
+        """Preparar valores seguros para el layout del portal."""
+        values = {
+            'website': False,
+            'preview_object': False,
+            'editable': False,
+            'translatable': False,
+        }
+        return values
+
     # ========== REDIRECCIONES AUTOMÁTICAS (PRIORIDAD ALTA) ==========
 
     @http.route(['/my', '/my/home'], type='http', auth='user', website=True, priority=5)
@@ -79,34 +91,83 @@ class PortalB2B(CustomerPortal):
                          message=False, download=False, **kw):
         """
         Intercepta /my/orders/<id> para:
-        - Permitir descargas PDF (report_type='pdf')
+        - Permitir descargas PDF (report_type='pdf') con o sin token
         - Redirigir a /mis-pedidos/<id> para distribuidores (navegación normal)
         """
-        # Si es una descarga de PDF, usar la funcionalidad estándar
+        # Si es una descarga de PDF, manejar directamente
         if report_type in ('html', 'pdf', 'text'):
             _logger.debug(f"Descarga de pedido {order_id} en formato {report_type}")
-            return super().portal_order_page(
-                order_id=order_id,
-                report_type=report_type,
-                access_token=access_token,
-                message=message,
-                download=download,
-                **kw
-            )
+            
+            try:
+                # Intentar obtener el pedido con acceso público si hay token
+                if access_token:
+                    order_sudo = request.env['sale.order'].sudo().search([
+                        ('id', '=', order_id),
+                        ('access_token', '=', access_token)
+                    ], limit=1)
+                else:
+                    # Sin token, verificar que el usuario tenga acceso
+                    order_sudo = request.env['sale.order'].sudo().browse(order_id)
+                    
+                    # Verificar que el usuario autenticado sea el propietario
+                    if not request.env.user._is_public():
+                        partner = request.env.user.partner_id
+                        if order_sudo.partner_id.commercial_partner_id != partner.commercial_partner_id:
+                            _logger.warning(f"Usuario {request.env.user.login} intentó acceder a pedido {order_id} sin permiso")
+                            return request.redirect('/mis-pedidos')
+                    else:
+                        # Usuario público sin token
+                        _logger.warning(f"Intento de acceso público a pedido {order_id} sin token")
+                        return request.redirect('/web/login')
+                
+                if not order_sudo.exists():
+                    _logger.error(f"Pedido {order_id} no encontrado")
+                    return request.redirect('/mis-pedidos')
+                
+                # Generar PDF
+                if report_type == 'pdf':
+                    pdf_content, content_type = request.env.ref('sale.action_report_saleorder').sudo()._render_qweb_pdf([order_id])
+                    
+                    pdfhttpheaders = [
+                        ('Content-Type', 'application/pdf'),
+                        ('Content-Length', len(pdf_content)),
+                        ('Content-Disposition', f'attachment; filename="{order_sudo.name}.pdf"')
+                    ]
+                    
+                    return request.make_response(pdf_content, headers=pdfhttpheaders)
+                
+                # Para HTML o text, usar método estándar
+                return super().portal_order_page(
+                    order_id=order_id,
+                    report_type=report_type,
+                    access_token=access_token,
+                    message=message,
+                    download=download,
+                    **kw
+                )
+                
+            except Exception as e:
+                _logger.error(f"Error en descarga de pedido {order_id}: {str(e)}", exc_info=True)
+                return request.redirect('/mis-pedidos')
         
         # Si es acceso público con token, usar ruta estándar
         if access_token:
-            return super().portal_order_page(
-                order_id=order_id,
-                access_token=access_token,
-                message=message,
-                **kw
-            )
+            try:
+                return super().portal_order_page(
+                    order_id=order_id,
+                    access_token=access_token,
+                    message=message,
+                    **kw
+                )
+            except Exception as e:
+                _logger.error(f"Error con access_token: {str(e)}")
+                return request.redirect('/mis-pedidos')
         
         # Para distribuidores autenticados, redirigir a ruta en español
-        partner = request.env.user.partner_id
-        if partner.is_distributor:
-            return request.redirect(f'/mis-pedidos/{order_id}')
+        if request.env.user and not request.env.user._is_public():
+            partner = request.env.user.partner_id
+            if partner.is_distributor:
+                return request.redirect(f'/mis-pedidos/{order_id}')
         
         # Para usuarios normales, comportamiento estándar
         return super().portal_order_page(order_id=order_id, **kw)
@@ -144,32 +205,85 @@ class PortalB2B(CustomerPortal):
                                 message=False, download=False, **kw):
         """
         Intercepta /my/invoices/<id> para:
-        - Permitir descargas PDF
+        - Permitir descargas PDF con o sin token
         - Redirigir a /mis-facturas para distribuidores
         """
+        # Si es una descarga de PDF, manejar directamente
         if report_type in ('html', 'pdf', 'text'):
             _logger.debug(f"Descarga de factura {invoice_id} en formato {report_type}")
-            return super().portal_my_invoice_detail(
-                invoice_id=invoice_id,
-                report_type=report_type,
-                access_token=access_token,
-                message=message,
-                download=download,
-                **kw
-            )
+            
+            try:
+                # Intentar obtener la factura con acceso público si hay token
+                if access_token:
+                    invoice_sudo = request.env['account.move'].sudo().search([
+                        ('id', '=', invoice_id),
+                        ('access_token', '=', access_token)
+                    ], limit=1)
+                else:
+                    # Sin token, verificar que el usuario tenga acceso
+                    invoice_sudo = request.env['account.move'].sudo().browse(invoice_id)
+                    
+                    # Verificar que el usuario autenticado sea el propietario
+                    if not request.env.user._is_public():
+                        partner = request.env.user.partner_id
+                        if invoice_sudo.partner_id.commercial_partner_id != partner.commercial_partner_id:
+                            _logger.warning(f"Usuario {request.env.user.login} intentó acceder a factura {invoice_id} sin permiso")
+                            return request.redirect('/mis-facturas')
+                    else:
+                        # Usuario público sin token
+                        _logger.warning(f"Intento de acceso público a factura {invoice_id} sin token")
+                        return request.redirect('/web/login')
+                
+                if not invoice_sudo.exists():
+                    _logger.error(f"Factura {invoice_id} no encontrada")
+                    return request.redirect('/mis-facturas')
+                
+                # Generar PDF
+                if report_type == 'pdf':
+                    pdf_content, content_type = request.env.ref('account.account_invoices').sudo()._render_qweb_pdf([invoice_id])
+                    
+                    pdfhttpheaders = [
+                        ('Content-Type', 'application/pdf'),
+                        ('Content-Length', len(pdf_content)),
+                        ('Content-Disposition', f'attachment; filename="{invoice_sudo.name}.pdf"')
+                    ]
+                    
+                    return request.make_response(pdf_content, headers=pdfhttpheaders)
+                
+                # Para HTML o text, usar método estándar
+                return super().portal_my_invoice_detail(
+                    invoice_id=invoice_id,
+                    report_type=report_type,
+                    access_token=access_token,
+                    message=message,
+                    download=download,
+                    **kw
+                )
+                
+            except Exception as e:
+                _logger.error(f"Error en descarga de factura {invoice_id}: {str(e)}", exc_info=True)
+                return request.redirect('/mis-facturas')
         
+        # Si hay token pero no es descarga, usar ruta estándar
         if access_token:
-            return super().portal_my_invoice_detail(
-                invoice_id=invoice_id,
-                access_token=access_token,
-                message=message,
-                **kw
-            )
+            try:
+                return super().portal_my_invoice_detail(
+                    invoice_id=invoice_id,
+                    access_token=access_token,
+                    message=message,
+                    **kw
+                )
+            except Exception as e:
+                _logger.error(f"Error con access_token en factura: {str(e)}")
+                return request.redirect('/mis-facturas')
         
-        partner = request.env.user.partner_id
-        if partner.is_distributor:
-            return request.redirect('/mis-facturas')
+        # Para distribuidores autenticados sin descarga, redirigir a ruta en español
+        if request.env.user and not request.env.user._is_public():
+            partner = request.env.user.partner_id
+            if partner.is_distributor:
+                return request.redirect('/mis-facturas')
         
+        # Para usuarios normales, comportamiento estándar
         return super().portal_my_invoice_detail(invoice_id=invoice_id, **kw)
 
     # ========== PREPARACIÓN DE VALORES ==========
@@ -247,7 +361,12 @@ class PortalB2B(CustomerPortal):
     @http.route(['/mi-portal'], type='http', auth='user', website=True)
     def mi_portal_home(self, **kw):
         """Dashboard principal del portal B2B."""
-        values = self._prepare_home_portal_values(['order_count', 'invoice_count'])
+        values = self._prepare_portal_layout_values()
+        
+        # Añadir contadores y datos del portal
+        counters = self._prepare_home_portal_values(['order_count', 'invoice_count'])
+        values.update(counters)
+        
         return request.render('portal_b2b_base.portal_b2b_dashboard_home', values)
 
     @http.route(['/mis-pedidos', '/mis-pedidos/page/<int:page>'], 
@@ -472,7 +591,8 @@ class PortalB2B(CustomerPortal):
         except Exception as e:
             _logger.debug(f"Módulo distributor_label no disponible: {str(e)}")
 
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'page_name': 'crear_pedido',
             'partner': partner,
             'pricelist': pricelist,
@@ -484,7 +604,7 @@ class PortalB2B(CustomerPortal):
             'has_delivery_module': has_delivery_module,
             'distributor_labels': distributor_labels,
             'redirect_url': redirect or '/mis-pedidos',
-        }
+        })
 
         return request.render('portal_b2b_base.portal_crear_pedido', values)
 
@@ -896,7 +1016,8 @@ class PortalB2B(CustomerPortal):
         year_invoices = AccountMove.search(year_domain)
         total_year = sum(year_invoices.mapped('amount_total'))
 
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'invoices': invoices,
             'page_name': 'mis_facturas',
             'pager': pager,
@@ -907,7 +1028,7 @@ class PortalB2B(CustomerPortal):
             'date_begin': date_begin,
             'date_end': date_end,
             'total_year': float(total_year or 0.0),
-        }
+        })
 
         return request.render('portal_b2b_base.portal_mis_facturas', values)
 
@@ -919,11 +1040,12 @@ class PortalB2B(CustomerPortal):
         if not partner.is_distributor:
             return request.redirect('/mi-portal')
 
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'page_name': 'mi_cuenta',
             'partner': partner,
             'user': request.env.user,
-        }
+        })
 
         return request.render('portal_b2b_base.portal_mi_cuenta', values)
 
@@ -972,10 +1094,11 @@ class PortalB2B(CustomerPortal):
         if order.partner_id.commercial_partner_id != partner.commercial_partner_id:
             return request.redirect('/mis-pedidos')
 
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'order': order,
             'page_name': 'order_documents',
-        }
+        })
 
         return request.render('portal_b2b_base.portal_order_documents', values)
 

@@ -21,8 +21,8 @@
         // Ocultar breadcrumb de pedidos de compra
         ocultarBreadcrumbCompras();
 
-        // ⚠️ Widget de crédito DESACTIVADO temporalmente
-        // inicializarWidgetCredito();
+        // ✅ Widget de crédito ACTIVADO
+        inicializarWidgetCredito();
 
         try {
             // Solo inicializar si estamos en la página correcta
@@ -35,7 +35,11 @@
             if (currentPath.includes('/mi-cuenta')) {
                 inicializarMiCuenta();
             }
-            
+        
+            if (currentPath.includes('/crear-plantilla')) {
+                inicializarCrearPlantillaDesdePedido();
+            }
+        
             // Estos pueden estar en crear-pedido
             if (document.getElementById('delivery-address-select')) {
                 inicializarSelectorDirecciones();
@@ -364,10 +368,73 @@
         }
 
         /**
+         * Mostrar resumen del pedido
+         */
+        const btnShowSummary = document.getElementById('btn-show-summary');
+        if (btnShowSummary) {
+            btnShowSummary.addEventListener('click', function() {
+                if (orderLines.length === 0) {
+                    alert('Debe agregar al menos un producto');
+                    return;
+                }
+                
+                mostrarResumenPedido();
+                
+                // Mostrar sección de resumen
+                document.getElementById('order-summary-section').style.display = 'block';
+                
+                // Ocultar botón "Revisar" y mostrar botón "Crear"
+                btnShowSummary.style.display = 'none';
+                document.getElementById('btn-submit-order').style.display = 'inline-block';
+                
+                // Scroll al resumen
+                document.getElementById('order-summary-section').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            });
+        }
+
+        /**
+         * Función para mostrar resumen
+         */
+        function mostrarResumenPedido() {
+            const summaryLines = document.getElementById('summary-lines');
+            const summaryTotal = document.getElementById('summary-total');
+            
+            summaryLines.innerHTML = '';
+            let total = 0;
+            
+            orderLines.forEach(line => {
+                const subtotal = line.qty * line.price;
+                total += subtotal;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${escapeHtml(line.product_name)}</strong></td>
+                    <td class="text-center">${line.qty}</td>
+                    <td class="text-end">${line.price.toFixed(2)} €</td>
+                    <td class="text-end"><strong>${subtotal.toFixed(2)} €</strong></td>
+                `;
+                summaryLines.appendChild(row);
+            });
+            
+            summaryTotal.textContent = total.toFixed(2) + ' €';
+        }
+
+        /**
          * Submit del formulario crear pedido
          */
         formCrearPedido.addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            // ✅ VALIDAR CHECKBOX DE CONFIRMACIÓN
+            const confirmCheckbox = document.getElementById('confirm-order-checkbox');
+            if (!confirmCheckbox || !confirmCheckbox.checked) {
+                alert('Debe confirmar que ha revisado el pedido');
+                confirmCheckbox.focus();
+                return;
+            }
 
             if (orderLines.length === 0) {
                 alert('Debe agregar al menos un producto');
@@ -928,6 +995,109 @@
             subtree: true,
             attributes: false,
             characterData: false
+        });
+    }
+
+    /**
+     * Inicializa formulario de crear plantilla desde pedido
+     */
+    function inicializarCrearPlantillaDesdePedido() {
+        const formCreateTemplate = document.getElementById('form-create-template-from-order');
+        if (!formCreateTemplate) {
+            return;
+        }
+
+        console.log('Portal B2B: Inicializando formulario crear plantilla desde pedido');
+
+        formCreateTemplate.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const templateNameInput = document.getElementById('template-name');
+            const includeNotesCheckbox = document.getElementById('include-notes');
+            const includeDeliveryAddressCheckbox = document.getElementById('include-delivery-address');
+            const includeDistributorLabelCheckbox = document.getElementById('include-distributor-label');
+            const btnSubmit = document.getElementById('btn-submit-template');
+
+            if (!templateNameInput || !btnSubmit) {
+                console.error('Portal B2B: Elementos del formulario no encontrados');
+                return;
+            }
+
+            const templateName = templateNameInput.value.trim();
+
+            if (!templateName) {
+                alert('El nombre de la plantilla es obligatorio');
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando...';
+
+            try {
+                // Obtener order_id de la URL
+                const pathParts = window.location.pathname.split('/');
+                const orderIdIndex = pathParts.indexOf('mis-pedidos') + 1;
+                const orderId = parseInt(pathParts[orderIdIndex]);
+
+                if (!orderId) {
+                    throw new Error('No se pudo obtener el ID del pedido');
+                }
+
+                const response = await fetch(`/mis-pedidos/${orderId}/crear-plantilla/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            template_name: templateName,
+                            include_notes: includeNotesCheckbox ? includeNotesCheckbox.checked : false,
+                            include_delivery_address: includeDeliveryAddressCheckbox ? includeDeliveryAddressCheckbox.checked : false,
+                            include_distributor_label: includeDistributorLabelCheckbox ? includeDistributorLabelCheckbox.checked : false,
+                        },
+                        id: Math.floor(Math.random() * 1000000),
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    const errorMsg = data.error.data?.message || data.error.message || 'Error desconocido';
+                    alert(errorMsg);
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="fa fa-check me-2"></i>Crear Plantilla';
+                    return;
+                }
+
+                const result = data.result;
+
+                if (result.error) {
+                    alert(result.error);
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="fa fa-check me-2"></i>Crear Plantilla';
+                    return;
+                }
+
+                if (result.success && result.redirect_url) {
+                    window.location.href = result.redirect_url;
+                } else {
+                    alert('Plantilla creada exitosamente');
+                    window.location.href = '/mis-plantillas';
+                }
+
+            } catch (error) {
+                console.error('Portal B2B: Error al crear plantilla:', error);
+                alert('Error al crear la plantilla: ' + error.message);
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="fa fa-check me-2"></i>Crear Plantilla';
+            }
         });
     }
 

@@ -156,6 +156,15 @@
                     </group>
                 </page>
                 
+                <!-- Página Plantilla Origen (solo si viene de plantilla) -->
+                <page string="Plantilla Origen" 
+                      name="template_origin"
+                      invisible="not template_id">
+                    <group>
+                        <field name="template_id" readonly="1"/>
+                    </group>
+                </page>
+                
                 <!-- Página Documentos Distribuidor -->
                 <page string="📎 Documentos Distribuidor" 
                       name="distributor_documents"
