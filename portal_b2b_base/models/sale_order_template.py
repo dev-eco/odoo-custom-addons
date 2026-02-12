@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from datetime import timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -92,6 +93,35 @@ class SaleOrderTemplate(models.Model):
         string='Moneda',
         default=lambda self: self.env.company.currency_id,
         help='Moneda de la plantilla'
+    )
+
+    is_favorite = fields.Boolean(
+        string='Favorita',
+        default=False,
+        help='Marcar como plantilla favorita para acceso rápido'
+    )
+    
+    recurrence_enabled = fields.Boolean(
+        string='Pedido Recurrente',
+        default=False,
+        help='Activar creación automática de pedidos'
+    )
+    
+    recurrence_interval = fields.Integer(
+        string='Intervalo (días)',
+        default=30,
+        help='Días entre pedidos automáticos'
+    )
+    
+    recurrence_next_date = fields.Date(
+        string='Próximo Pedido',
+        help='Fecha del próximo pedido automático'
+    )
+    
+    recurrence_active = fields.Boolean(
+        string='Recurrencia Activa',
+        default=False,
+        help='Estado de la recurrencia automática'
     )
 
     @api.depends('line_ids', 'line_ids.quantity', 'line_ids.product_id')
@@ -198,6 +228,115 @@ class SaleOrderTemplate(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def action_toggle_favorite(self):
+        """Marca/desmarca como favorita."""
+        self.ensure_one()
+        self.is_favorite = not self.is_favorite
+        return True
+    
+    def action_enable_recurrence(self):
+        """Activa la recurrencia automática."""
+        self.ensure_one()
+        
+        if not self.recurrence_next_date:
+            self.recurrence_next_date = fields.Date.today() + timedelta(days=self.recurrence_interval)
+        
+        self.write({
+            'recurrence_enabled': True,
+            'recurrence_active': True,
+        })
+        
+        _logger.info(f"Recurrencia activada para plantilla {self.name}")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Recurrencia Activada'),
+                'message': _('Los pedidos se crearán automáticamente cada %d días') % self.recurrence_interval,
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+    
+    def action_disable_recurrence(self):
+        """Desactiva la recurrencia automática."""
+        self.ensure_one()
+        self.recurrence_active = False
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Recurrencia Desactivada'),
+                'message': _('No se crearán más pedidos automáticos'),
+                'type': 'info',
+                'sticky': False,
+            }
+        }
+    
+    @api.model
+    def cron_create_recurring_orders(self):
+        """
+        Cron para crear pedidos recurrentes automáticamente.
+        Ejecutar diariamente.
+        """
+        today = fields.Date.today()
+        
+        templates = self.search([
+            ('recurrence_enabled', '=', True),
+            ('recurrence_active', '=', True),
+            ('recurrence_next_date', '<=', today),
+        ])
+        
+        for template in templates:
+            try:
+                # Crear pedido desde plantilla
+                order = self.env['sale.order'].sudo().create({
+                    'partner_id': template.partner_id.id,
+                    'pricelist_id': template.partner_id.obtener_tarifa_aplicable().id,
+                    'note': f'Pedido recurrente generado automáticamente desde plantilla: {template.name}',
+                    'is_recurring': True,
+                    'template_id': template.id,
+                    'delivery_address_id': template.delivery_address_id.id if template.delivery_address_id else False,
+                    'distributor_label_id': template.distributor_label_id.id if template.distributor_label_id else False,
+                })
+                
+                # Crear líneas
+                for line in template.line_ids:
+                    self.env['sale.order.line'].sudo().create({
+                        'order_id': order.id,
+                        'product_id': line.product_id.id,
+                        'product_uom_qty': line.quantity,
+                    })
+                
+                # Actualizar próxima fecha
+                template.recurrence_next_date = today + timedelta(days=template.recurrence_interval)
+                
+                # Crear notificación
+                self.env['portal.notification'].sudo().create_notification(
+                    partner_id=template.partner_id.id,
+                    title=f'Pedido Recurrente Creado: {order.name}',
+                    message=f'Se ha creado automáticamente el pedido {order.name} desde la plantilla {template.name}',
+                    notification_type='success',
+                    action_url=f'/mis-pedidos/{order.id}',
+                    related_model='sale.order',
+                    related_id=order.id,
+                )
+                
+                _logger.info(f"Pedido recurrente {order.name} creado desde plantilla {template.name}")
+                
+            except Exception as e:
+                _logger.error(f"Error creando pedido recurrente desde plantilla {template.name}: {str(e)}")
+                
+                # Notificar error
+                self.env['portal.notification'].sudo().create_notification(
+                    partner_id=template.partner_id.id,
+                    title='Error en Pedido Recurrente',
+                    message=f'No se pudo crear el pedido automático desde la plantilla {template.name}. Por favor, contacte con su gestor.',
+                    notification_type='danger',
+                )
 
 
 class SaleOrderTemplateLine(models.Model):

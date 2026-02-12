@@ -202,3 +202,178 @@ class DistributorStatistics(models.Model):
                 'pending_payment': float(self.pending_payment),
             },
         }
+
+    def get_chart_data_orders_by_month(self):
+        """
+        Obtiene datos para gráfico de pedidos por mes.
+        
+        Returns:
+            dict: Datos formateados para Chart.js
+        """
+        self.ensure_one()
+        
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+        
+        # Últimos 12 meses
+        end_date = fields.Date.today()
+        start_date = end_date - timedelta(days=365)
+        
+        orders = self.env['sale.order'].search([
+            ('partner_id', '=', self.partner_id.id),
+            ('date_order', '>=', start_date),
+            ('date_order', '<=', end_date),
+            ('state', 'in', ['sale', 'done']),
+        ])
+        
+        # Agrupar por mes
+        monthly_data = defaultdict(lambda: {'count': 0, 'amount': 0.0})
+        
+        for order in orders:
+            month_key = order.date_order.strftime('%Y-%m')
+            monthly_data[month_key]['count'] += 1
+            monthly_data[month_key]['amount'] += float(order.amount_total)
+        
+        # Ordenar por fecha
+        sorted_months = sorted(monthly_data.keys())
+        
+        return {
+            'labels': [datetime.strptime(m, '%Y-%m').strftime('%b %Y') for m in sorted_months],
+            'datasets': [
+                {
+                    'label': 'Número de Pedidos',
+                    'data': [monthly_data[m]['count'] for m in sorted_months],
+                    'backgroundColor': 'rgba(54, 162, 235, 0.5)',
+                    'borderColor': 'rgba(54, 162, 235, 1)',
+                    'borderWidth': 2,
+                },
+                {
+                    'label': 'Importe Total (€)',
+                    'data': [monthly_data[m]['amount'] for m in sorted_months],
+                    'backgroundColor': 'rgba(75, 192, 192, 0.5)',
+                    'borderColor': 'rgba(75, 192, 192, 1)',
+                    'borderWidth': 2,
+                }
+            ]
+        }
+    
+    def get_chart_data_top_products(self, limit=10):
+        """
+        Obtiene datos para gráfico de productos más vendidos.
+        
+        Args:
+            limit: Número de productos a mostrar
+        
+        Returns:
+            dict: Datos formateados para Chart.js
+        """
+        self.ensure_one()
+        
+        order_lines = self.env['sale.order.line'].search([
+            ('order_id.partner_id', '=', self.partner_id.id),
+            ('order_id.date_order', '>=', self.period_start),
+            ('order_id.date_order', '<=', self.period_end),
+            ('order_id.state', 'in', ['sale', 'done']),
+        ])
+        
+        # Agrupar por producto
+        product_data = {}
+        for line in order_lines:
+            if line.product_id:
+                if line.product_id.id not in product_data:
+                    product_data[line.product_id.id] = {
+                        'name': line.product_id.name,
+                        'qty': 0,
+                        'amount': 0,
+                    }
+                product_data[line.product_id.id]['qty'] += line.product_uom_qty
+                product_data[line.product_id.id]['amount'] += float(line.price_subtotal)
+        
+        # Ordenar por cantidad
+        sorted_products = sorted(
+            product_data.values(),
+            key=lambda x: x['qty'],
+            reverse=True
+        )[:limit]
+        
+        return {
+            'labels': [p['name'] for p in sorted_products],
+            'datasets': [{
+                'label': 'Cantidad Vendida',
+                'data': [p['qty'] for p in sorted_products],
+                'backgroundColor': [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(153, 102, 255, 0.5)',
+                    'rgba(255, 159, 64, 0.5)',
+                    'rgba(199, 199, 199, 0.5)',
+                    'rgba(83, 102, 255, 0.5)',
+                    'rgba(255, 99, 255, 0.5)',
+                    'rgba(99, 255, 132, 0.5)',
+                ],
+            }]
+        }
+    
+    def get_kpi_summary(self):
+        """
+        Obtiene resumen de KPIs principales.
+        
+        Returns:
+            dict: KPIs formateados
+        """
+        self.ensure_one()
+        
+        from datetime import timedelta
+        
+        # Calcular variación respecto al período anterior
+        previous_period_days = (self.period_end - self.period_start).days
+        previous_start = self.period_start - timedelta(days=previous_period_days)
+        previous_end = self.period_start - timedelta(days=1)
+        
+        previous_orders = self.env['sale.order'].search([
+            ('partner_id', '=', self.partner_id.id),
+            ('date_order', '>=', previous_start),
+            ('date_order', '<=', previous_end),
+            ('state', 'in', ['sale', 'done']),
+        ])
+        
+        previous_amount = sum(previous_orders.mapped('amount_total'))
+        previous_count = len(previous_orders)
+        
+        # Calcular variaciones
+        amount_variation = 0
+        if previous_amount > 0:
+            amount_variation = ((self.total_amount - previous_amount) / previous_amount) * 100
+        
+        count_variation = 0
+        if previous_count > 0:
+            count_variation = ((self.confirmed_orders - previous_count) / previous_count) * 100
+        
+        return {
+            'total_orders': {
+                'value': self.total_orders,
+                'variation': count_variation,
+                'label': 'Total Pedidos',
+                'icon': 'fa-shopping-cart',
+            },
+            'total_amount': {
+                'value': float(self.total_amount),
+                'variation': amount_variation,
+                'label': 'Facturación Total',
+                'icon': 'fa-euro-sign',
+            },
+            'average_order': {
+                'value': float(self.average_order_value),
+                'variation': 0,
+                'label': 'Ticket Medio',
+                'icon': 'fa-chart-line',
+            },
+            'pending_payment': {
+                'value': float(self.pending_payment),
+                'variation': 0,
+                'label': 'Pendiente de Pago',
+                'icon': 'fa-clock',
+            },
+        }

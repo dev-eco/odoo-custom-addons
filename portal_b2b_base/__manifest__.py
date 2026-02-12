@@ -70,6 +70,7 @@ Licencia: LGPL-3
         'stock',
         'account',
         'website',
+        'mail',
     ],
     'data': [
         # Seguridad (PRIMERO)
@@ -79,6 +80,8 @@ Licencia: LGPL-3
         # Configuración del sitio web
         'data/website_config.xml',
         'data/email_templates.xml',
+        'data/sequences.xml',
+        'data/cron.xml',
 
         # Wizards (ANTES de las vistas que los usan)
         'wizard/sale_order_template_wizard_views.xml',
@@ -87,6 +90,8 @@ Licencia: LGPL-3
         'views/res_partner_views.xml',
         'views/sale_order_views.xml',
         'views/sale_order_template_views.xml',
+        'views/portal_message_views.xml',
+        'views/sale_return_views.xml',
 
         # Templates portal
         'views/portal_templates.xml',

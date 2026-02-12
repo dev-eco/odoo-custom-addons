@@ -18,3 +18,9 @@ access_portal_notification_portal_b2b,portal.notification portal b2b,model_porta
 access_portal_notification_internal,portal.notification internal,model_portal_notification,base.group_user,1,1,1,1
 access_portal_audit_log_portal_b2b,portal.audit.log portal b2b,model_portal_audit_log,portal_b2b_base.group_portal_b2b,1,0,0,0
 access_portal_audit_log_internal,portal.audit.log internal,model_portal_audit_log,base.group_user,1,1,1,1
+access_portal_message_portal_b2b,portal.message portal b2b,model_portal_message,portal_b2b_base.group_portal_b2b,1,1,1,0
+access_portal_message_internal,portal.message internal,model_portal_message,base.group_user,1,1,1,1
+access_sale_return_portal_b2b,sale.return portal b2b,model_sale_return,portal_b2b_base.group_portal_b2b,1,1,1,0
+access_sale_return_line_portal_b2b,sale.return.line portal b2b,model_sale_return_line,portal_b2b_base.group_portal_b2b,1,1,1,1
+access_sale_return_internal,sale.return internal,model_sale_return,base.group_user,1,1,1,1
+access_sale_return_line_internal,sale.return.line internal,model_sale_return_line,base.group_user,1,1,1,1

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Vista de árbol para sale.return -->
+        <record id="view_sale_return_tree" model="ir.ui.view">
+            <field name="name">sale.return.tree</field>
+            <field name="model">sale.return</field>
+            <field name="arch" type="xml">
+                <tree string="Devoluciones">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="order_id"/>
+                    <field name="reason"/>
+                    <field name="state"/>
+                    <field name="total_amount"/>
+                    <field name="return_date"/>
+                </tree>
+            </field>
+        </record>
+        
+        <!-- Vista de formulario para sale.return -->
+        <record id="view_sale_return_form" model="ir.ui.view">
+            <field name="name">sale.return.form</field>
+            <field name="model">sale.return</field>
+            <field name="arch" type="xml">
+                <form string="Devolución">
+                    <header>
+                        <button name="action_submit" type="object" string="Enviar Solicitud" 
+                                class="btn-primary" invisible="state != 'draft'"/>
+                        <button name="action_mark_received" type="object" string="Marcar Recibida" 
+                                invisible="state != 'submitted'"/>
+                        <button name="action_approve" type="object" string="Aprobar" 
+                                class="btn-success" invisible="state != 'received'"/>
+                        <button name="action_reject" type="object" string="Rechazar" 
+                                class="btn-danger" invisible="state not in ['submitted', 'received']"/>
+                        <button name="action_process" type="object" string="Procesar" 
+                                invisible="state != 'approved'"/>
+                        <button name="action_close" type="object" string="Cerrar" 
+                                class="btn-secondary" invisible="state not in ['approved', 'rejected']"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,submitted,received,approved,processed"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="partner_id" readonly="1"/>
+                                <field name="order_id"/>
+                                <field name="reason"/>
+                            </group>
+                            <group>
+                                <field name="return_date"/>
+                                <field name="received_date" readonly="1"/>
+                                <field name="approval_date" readonly="1"/>
+                                <field name="approval_user_id" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Descripción">
+                            <field name="reason_description" nolabel="1"/>
+                        </group>
+                        <group string="Notas Internas">
+                            <field name="notes" nolabel="1"/>
+                        </group>
+                        <group string="Líneas de Devolución">
+                            <field name="line_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="unit_price"/>
+                                    <field name="subtotal" readonly="1"/>
+                                    <field name="notes"/>
+                                </tree>
+                            </field>
+                        </group>
+                        <group>
+                            <field name="total_amount" readonly="1"/>
+                        </group>
+                        <group string="Documentos">
+                            <field name="attachment_ids" nolabel="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Acción para sale.return -->
+        <record id="action_sale_return" model="ir.actions.act_window">
+            <field name="name">Devoluciones de Venta</field>
+            <field name="res_model">sale.return</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No hay devoluciones registradas
+                </p>
+            </field>
+        </record>
+        
+        <!-- Menú para sale.return -->
+        <menuitem id="menu_sale_return" name="Devoluciones" 
+                  parent="sale.sale_order_menu" action="action_sale_return" 
+                  sequence="20"/>
+        
+    </data>
+</odoo>
