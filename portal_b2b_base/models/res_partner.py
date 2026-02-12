@@ -189,6 +189,39 @@ class ResPartner(models.Model):
                     _('El límite de crédito no puede ser negativo.')
                 )
 
+    def obtener_estado_credito_widget(self) -> dict:
+        """
+        Obtiene el estado de crédito formateado para el widget flotante.
+        
+        Returns:
+            dict: Estado de crédito con todos los valores necesarios
+        """
+        self.ensure_one()
+
+        if not self.is_distributor or self.credit_limit <= 0:
+            return {
+                'limit': 0.0,
+                'used': 0.0,
+                'pending': 0.0,
+                'available': 0.0,
+                'percentage_used': 0.0,
+                'currency_symbol': self.currency_id.symbol or '€',
+            }
+
+        # Calcular valores
+        deuda_pendiente = self.credit  # Facturas sin pagar
+        credito_disponible = self.available_credit
+        porcentaje_usado = (deuda_pendiente / self.credit_limit * 100) if self.credit_limit > 0 else 0
+
+        return {
+            'limit': float(self.credit_limit),
+            'used': float(deuda_pendiente),
+            'pending': 0.0,  # Reservado para pedidos pendientes en futuro
+            'available': float(max(credito_disponible, 0.0)),
+            'percentage_used': float(min(porcentaje_usado, 100.0)),
+            'currency_symbol': self.currency_id.symbol or '€',
+        }
+
     def action_grant_portal_access(self):
         """
         Acción para otorgar acceso al portal B2B.

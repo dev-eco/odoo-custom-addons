@@ -10,6 +10,128 @@ _logger = logging.getLogger(__name__)
 class DistributorDashboard(http.Controller):
     """Controlador unificado para el dashboard del distribuidor."""
     
+    @http.route(['/api/distributor/credit_status'], type='json', auth='user', methods=['POST'])
+    def get_credit_status(self, **kw):
+        """
+        API para obtener el estado de crédito del distribuidor.
+        
+        Usado por el widget flotante de crédito.
+        
+        Returns:
+            dict: Estado de crédito formateado para el widget
+        """
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            credit_data = partner.obtener_estado_credito_widget()
+            
+            return {
+                'success': True,
+                'data': credit_data
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error obteniendo estado de crédito: {str(e)}")
+            return {'error': str(e)}
+
+    @http.route(['/api/productos/<int:product_id>/stock'], type='json', auth='user', methods=['POST'])
+    def get_product_stock(self, product_id, **kw):
+        """
+        API para obtener información de stock de un producto.
+        
+        Args:
+            product_id: ID del producto
+            
+        Returns:
+            dict: Información de stock del producto
+        """
+        try:
+            product = request.env['product.template'].browse(product_id)
+            
+            if not product.exists():
+                return {'error': _('Producto no encontrado')}
+            
+            # Verificar acceso
+            partner = request.env.user.partner_id
+            if not partner.is_distributor:
+                return {'error': _('No autorizado')}
+            
+            stock_info = product.get_stock_info_for_portal()
+            
+            return {
+                'success': True,
+                'data': stock_info
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error obteniendo stock del producto {product_id}: {str(e)}")
+            return {'error': str(e)}
+
+    @http.route(['/api/productos/buscar'], type='json', auth='user', methods=['POST'])
+    def search_products(self, query='', limit=10, **kw):
+        """
+        API para búsqueda de productos con información de stock.
+        
+        Args:
+            query: Término de búsqueda
+            limit: Número máximo de resultados
+            
+        Returns:
+            dict: Lista de productos con stock
+        """
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            # Buscar productos
+            domain = [
+                '|', '|',
+                ('name', 'ilike', query),
+                ('default_code', 'ilike', query),
+                ('barcode', 'ilike', query),
+                ('sale_ok', '=', True),
+            ]
+            
+            products = request.env['product.template'].search(domain, limit=limit)
+            
+            # Obtener tarifa del distribuidor
+            pricelist = partner.obtener_tarifa_aplicable()
+            
+            products_data = []
+            for product in products:
+                # Calcular precio según tarifa
+                price = pricelist._get_product_price(
+                    product.product_variant_id,
+                    1.0,
+                    partner=partner
+                ) if pricelist else product.list_price
+                
+                products_data.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'default_code': product.default_code or '',
+                    'list_price': float(price),
+                    'qty_available': float(product.available_qty_for_portal),
+                    'stock_status': product.stock_status,
+                    'stock_status_label': dict(product._fields['stock_status'].selection).get(product.stock_status),
+                    'estimated_restock_date': product.estimated_restock_date.strftime('%d/%m/%Y') if product.estimated_restock_date else None,
+                    'is_make_to_order': product._is_make_to_order(),
+                })
+            
+            return {
+                'success': True,
+                'products': products_data
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error buscando productos: {str(e)}")
+            return {'error': str(e)}
+
     @http.route(['/api/distributor/dashboard'], type='json', auth='user', methods=['POST'])
     def get_dashboard_data(self, **kw):
         """

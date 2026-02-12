@@ -1259,3 +1259,364 @@ class PortalB2B(CustomerPortal):
         except Exception as e:
             _logger.error(f"Error al obtener historial de precios: {str(e)}")
             return {'error': _('Error al obtener historial')}
+# -*- coding: utf-8 -*-
+
+import logging
+from odoo import http, _
+from odoo.http import request
+from odoo.addons.portal.controllers.portal import CustomerPortal
+
+_logger = logging.getLogger(__name__)
+
+
+class PortalB2BOrders(CustomerPortal):
+    """Controlador de pedidos para portal B2B."""
+    
+    @http.route(['/mi-portal'], type='http', auth='user', website=True)
+    def portal_home(self, **kw):
+        """Dashboard principal del portal B2B."""
+        partner = request.env.user.partner_id
+        
+        values = {
+            'page_name': 'portal_home',
+            'partner': partner,
+            'is_distributor': partner.is_distributor if hasattr(partner, 'is_distributor') else False,
+            'credit_limit': partner.credit_limit if hasattr(partner, 'credit_limit') else 0,
+            'available_credit': partner.available_credit if hasattr(partner, 'available_credit') else 0,
+            'total_invoiced_year': partner.total_invoiced_year if hasattr(partner, 'total_invoiced_year') else 0,
+            'order_count': 0,
+            'invoice_count': 0,
+            'recent_orders': [],
+            'has_delivery_module': False,
+        }
+        
+        # Obtener contadores si es distribuidor
+        if values['is_distributor']:
+            values['order_count'] = request.env['sale.order'].search_count([
+                ('partner_id', '=', partner.id)
+            ])
+            values['invoice_count'] = request.env['account.move'].search_count([
+                ('partner_id', '=', partner.id),
+                ('move_type', '=', 'out_invoice'),
+                ('state', '=', 'posted')
+            ])
+            
+            # Obtener últimos 5 pedidos
+            recent_orders = request.env['sale.order'].search([
+                ('partner_id', '=', partner.id),
+                ('state', '!=', 'cancel')
+            ], order='date_order desc', limit=5)
+            values['recent_orders'] = recent_orders
+            
+            # Verificar si módulo de direcciones está instalado
+            try:
+                request.env['delivery.address']
+                values['has_delivery_module'] = True
+            except Exception:
+                values['has_delivery_module'] = False
+        
+        return request.render('portal_b2b_base.portal_b2b_dashboard_home', values)
+    
+    @http.route(['/mis-pedidos', '/mis-pedidos/page/<int:page>'], 
+                type='http', auth='user', website=True)
+    def portal_my_orders(self, page=1, date_begin=None, date_end=None, 
+                        sortby=None, search=None, search_in='name', **kw):
+        """Lista paginada de pedidos del distribuidor."""
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+
+        SaleOrder = request.env['sale.order']
+
+        searchbar_sortings = {
+            'date': {'label': 'Fecha Pedido', 'order': 'date_order desc'},
+            'name': {'label': 'Referencia', 'order': 'name desc'},
+            'state': {'label': 'Estado', 'order': 'state'},
+            'amount': {'label': 'Total', 'order': 'amount_total desc'},
+        }
+
+        searchbar_inputs = {
+            'name': {'input': 'name', 'label': 'Buscar en Referencia'},
+            'client_order_ref': {'input': 'client_order_ref', 'label': 'Buscar en Su Referencia'},
+            'all': {'input': 'all', 'label': 'Buscar en Todo'},
+        }
+
+        searchbar_filters = {
+            'all': {'label': 'Todos', 'domain': []},
+            'draft': {'label': 'Presupuestos', 'domain': [('state', 'in', ['draft', 'sent'])]},
+            'confirmed': {'label': 'Confirmados', 'domain': [('state', 'in', ['sale', 'done'])]},
+        }
+
+        if not sortby:
+            sortby = 'date'
+        order = searchbar_sortings[sortby]['order']
+
+        if not search_in:
+            search_in = 'name'
+
+        domain = [('partner_id', '=', partner.id), ('state', '!=', 'cancel')]
+
+        if date_begin and date_end:
+            domain += [('date_order', '>=', date_begin), ('date_order', '<=', date_end)]
+
+        if search and search_in:
+            if search_in == 'all':
+                domain += ['|', '|', 
+                          ('name', 'ilike', search),
+                          ('client_order_ref', 'ilike', search),
+                          ('partner_id.name', 'ilike', search)]
+            elif search_in == 'client_order_ref':
+                domain += [('client_order_ref', 'ilike', search)]
+            else:
+                domain += [(searchbar_inputs[search_in]['input'], 'ilike', search)]
+
+        order_count = SaleOrder.search_count(domain)
+
+        from odoo.addons.portal.controllers.portal import pager as portal_pager
+        pager = portal_pager(
+            url='/mis-pedidos',
+            url_args={'date_begin': date_begin, 'date_end': date_end, 'sortby': sortby, 
+                     'search_in': search_in, 'search': search},
+            total=order_count,
+            page=page,
+            step=20,
+        )
+
+        orders = SaleOrder.search(domain, order=order, limit=20, offset=pager['offset'])
+        
+        # Asegurar valores por defecto para campos computed
+        for order_item in orders:
+            try:
+                if not hasattr(order_item, 'order_status') or not order_item.order_status:
+                    order_item.order_status = 'new'
+                if not hasattr(order_item, 'picking_status') or not order_item.picking_status:
+                    order_item.picking_status = 'not_created'
+                if not hasattr(order_item, 'distributor_document_count'):
+                    order_item.distributor_document_count = 0
+            except Exception as e:
+                _logger.warning(f"Error procesando pedido {order_item.id}: {str(e)}")
+        
+        # Calcular total general
+        all_orders = SaleOrder.search(domain)
+        grand_total = sum(float(o.amount_total) for o in all_orders)
+
+        values = {
+            'orders': orders,
+            'order_count': order_count,
+            'grand_total': grand_total,
+            'page_name': 'mis_pedidos',
+            'pager': pager,
+            'default_url': '/mis-pedidos',
+            'searchbar_sortings': searchbar_sortings,
+            'searchbar_inputs': searchbar_inputs,
+            'searchbar_filters': searchbar_filters,
+            'sortby': sortby,
+            'search_in': search_in,
+            'search': search,
+            'date_begin': date_begin,
+            'date_end': date_end,
+        }
+
+        return request.render('portal_b2b_base.portal_mis_pedidos', values)
+
+    @http.route(['/mis-pedidos/<int:order_id>'], type='http', auth='user', website=True)
+    def portal_pedido_detalle(self, order_id, access_token=None, **kw):
+        """Detalle de un pedido específico."""
+        try:
+            order_sudo = self._document_check_access('sale.order', order_id, access_token)
+        except Exception:
+            return request.redirect('/mis-pedidos')
+
+        partner = request.env.user.partner_id
+        if order_sudo.partner_id != partner:
+            return request.redirect('/mis-pedidos')
+
+        productos_sin_stock = []
+
+        values = {
+            'order': order_sudo,
+            'page_name': 'pedido_detalle',
+            'productos_sin_stock': productos_sin_stock,
+            'can_cancel': order_sudo.state in ['draft', 'sent'],
+        }
+
+        return request.render('portal_b2b_base.portal_pedido_detalle', values)
+
+    @http.route(['/crear-pedido'], type='http', auth='user', website=True)
+    def portal_crear_pedido(self, redirect=None, **kw):
+        """Formulario para crear un nuevo pedido."""
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+
+        delivery_addresses = []
+        default_address = None
+        has_delivery_module = False
+        
+        try:
+            DeliveryAddress = request.env['delivery.address']
+            delivery_addresses = DeliveryAddress.search([
+                ('partner_id', '=', partner.id),
+                ('active', '=', True)
+            ], order='is_default desc, name asc')
+            
+            default_address = delivery_addresses.filtered(lambda a: a.is_default)[:1]
+            has_delivery_module = True
+        except Exception as e:
+            _logger.debug(f"Módulo delivery_addresses no disponible: {str(e)}")
+
+        distributor_labels = []
+        try:
+            DistributorLabel = request.env['distributor.label']
+            distributor_labels = DistributorLabel.search([
+                ('partner_id', '=', partner.id),
+                ('active', '=', True)
+            ], order='name asc')
+        except Exception as e:
+            _logger.debug(f"Módulo distributor_label no disponible: {str(e)}")
+
+        values = {
+            'page_name': 'crear_pedido',
+            'partner': partner,
+            'credit_limit': float(partner.credit_limit or 0.0),
+            'available_credit': float(partner.available_credit or 0.0),
+            'currency_id': partner.currency_id,
+            'delivery_addresses': delivery_addresses,
+            'default_address': default_address,
+            'has_delivery_module': has_delivery_module,
+            'distributor_labels': distributor_labels,
+            'redirect_url': redirect or '/mis-pedidos',
+        }
+
+        return request.render('portal_b2b_base.portal_crear_pedido', values)
+
+    @http.route(['/mis-facturas', '/mis-facturas/page/<int:page>'], 
+                type='http', auth='user', website=True)
+    def portal_mis_facturas(self, page=1, date_begin=None, date_end=None, 
+                           sortby=None, search=None, **kw):
+        """Lista paginada de facturas del distribuidor."""
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+
+        AccountMove = request.env['account.move']
+
+        searchbar_sortings = {
+            'date': {'label': 'Fecha Factura', 'order': 'invoice_date desc'},
+            'name': {'label': 'Número', 'order': 'name desc'},
+            'amount': {'label': 'Total', 'order': 'amount_total desc'},
+        }
+
+        if not sortby:
+            sortby = 'date'
+        order = searchbar_sortings[sortby]['order']
+
+        domain = [('partner_id', '=', partner.id), ('move_type', '=', 'out_invoice')]
+
+        if date_begin and date_end:
+            domain += [('invoice_date', '>=', date_begin), ('invoice_date', '<=', date_end)]
+
+        if search:
+            domain += [('name', 'ilike', search)]
+
+        invoice_count = AccountMove.search_count(domain)
+
+        from odoo.addons.portal.controllers.portal import pager as portal_pager
+        pager = portal_pager(
+            url='/mis-facturas',
+            url_args={'date_begin': date_begin, 'date_end': date_end, 
+                     'sortby': sortby, 'search': search},
+            total=invoice_count,
+            page=page,
+            step=20,
+        )
+
+        invoices = AccountMove.search(domain, order=order, limit=20, offset=pager['offset'])
+
+        from odoo import fields
+        current_year = fields.Date.today().year
+        year_domain = domain + [
+            ('invoice_date', '>=', f'{current_year}-01-01'),
+            ('invoice_date', '<=', f'{current_year}-12-31'),
+            ('state', '=', 'posted'),
+        ]
+        year_invoices = AccountMove.search(year_domain)
+        total_year = sum(year_invoices.mapped('amount_total'))
+
+        values = {
+            'invoices': invoices,
+            'page_name': 'mis_facturas',
+            'pager': pager,
+            'default_url': '/mis-facturas',
+            'searchbar_sortings': searchbar_sortings,
+            'sortby': sortby,
+            'search': search,
+            'date_begin': date_begin,
+            'date_end': date_end,
+            'total_year': float(total_year or 0.0),
+        }
+
+        return request.render('portal_b2b_base.portal_mis_facturas', values)
+
+    @http.route(['/mi-cuenta'], type='http', auth='user', website=True)
+    def portal_mi_cuenta(self, **kw):
+        """Página de gestión de cuenta del distribuidor."""
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+
+        values = {
+            'page_name': 'mi_cuenta',
+            'partner': partner,
+            'user': request.env.user,
+        }
+
+        return request.render('portal_b2b_base.portal_mi_cuenta', values)
+
+    @http.route(['/api/productos/buscar'], type='json', auth='user', methods=['POST'])
+    def api_productos_buscar(self, query='', limit=10, **kw):
+        """API para búsqueda de productos (autocompletado)."""
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return {'error': _('Usuario no autorizado')}
+
+        try:
+            if not query or not query.strip():
+                return {'products': []}
+
+            query = query.strip()
+            limit = int(limit) if limit else 10
+
+            domain = [
+                ('sale_ok', '=', True),
+                ('active', '=', True),
+                '|',
+                ('name', 'ilike', query),
+                ('default_code', 'ilike', query),
+            ]
+
+            products = request.env['product.product'].sudo().search(domain, limit=limit)
+            
+            result = []
+            for product in products:
+                price = float(product.list_price or 0.0)
+                
+                result.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'default_code': product.default_code or '',
+                    'list_price': price,
+                    'qty_available': float(product.qty_available) if product.type == 'product' else 999,
+                    'uom_name': product.uom_id.name,
+                })
+
+            return {'products': result}
+
+        except Exception as e:
+            _logger.error(f"Error en búsqueda de productos: {str(e)}", exc_info=True)
+            return {'error': _('Error en la búsqueda')}

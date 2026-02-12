@@ -1168,6 +1168,22 @@
         </t>
     </template>
 
+    <!-- ========================================== -->
+    <!-- WIDGET DE CRÉDITO FLOTANTE - DESACTIVADO -->
+    <!-- ========================================== -->
+    
+    <!-- 
+    ⚠️ WIDGET DESACTIVADO TEMPORALMENTE
+    
+    <template id="portal_layout_credit_widget" inherit_id="portal.portal_layout">
+        <xpath expr="//div[@id='wrap']" position="before">
+            <t t-if="request.env.user.partner_id.is_distributor">
+                <div id="credit-widget-root" class="d-print-none"></div>
+            </t>
+        </xpath>
+    </template>
+    -->
+
     <!-- Template: Mi Cuenta -->
     <template id="portal_mi_cuenta" name="Mi Cuenta">
         <t t-call="portal.portal_layout">

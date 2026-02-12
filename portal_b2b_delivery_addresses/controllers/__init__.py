@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 
-from . import delivery_portal
-from . import portal_order
+from . import portal_addresses
+from . import portal_labels

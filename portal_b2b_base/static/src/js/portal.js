@@ -21,6 +21,9 @@
         // Ocultar breadcrumb de pedidos de compra
         ocultarBreadcrumbCompras();
 
+        // ⚠️ Widget de crédito DESACTIVADO temporalmente
+        // inicializarWidgetCredito();
+
         try {
             // Solo inicializar si estamos en la página correcta
             const currentPath = window.location.pathname;
@@ -163,7 +166,7 @@
         }
 
         /**
-         * Muestra resultados de búsqueda de productos
+         * Muestra resultados de búsqueda de productos CON INDICADORES DE STOCK
          */
         function mostrarResultadosProductos(products) {
             productResults.innerHTML = '';
@@ -178,24 +181,62 @@
                 const item = document.createElement('a');
                 item.href = '#';
                 item.className = 'list-group-item list-group-item-action';
+                
+                // Determinar clase de stock
+                let stockClass = 'text-success';
+                let stockIcon = 'fa-check-circle';
+                let stockText = `Stock: ${product.qty_available}`;
+                
+                if (product.stock_status === 'out_of_stock') {
+                    stockClass = 'text-danger';
+                    stockIcon = 'fa-times-circle';
+                    stockText = 'Sin stock';
+                    if (product.estimated_restock_date) {
+                        stockText += ` - Disponible: ${product.estimated_restock_date}`;
+                    }
+                } else if (product.stock_status === 'low_stock') {
+                    stockClass = 'text-warning';
+                    stockIcon = 'fa-exclamation-triangle';
+                    stockText = `Stock bajo: ${product.qty_available}`;
+                } else if (product.stock_status === 'on_order') {
+                    stockClass = 'text-info';
+                    stockIcon = 'fa-clock-o';
+                    stockText = 'Bajo pedido (7 días)';
+                }
+                
                 item.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>
+                        <div class="flex-grow-1">
                             <strong>${escapeHtml(product.name)}</strong>
                             ${product.default_code ? `<br><small class="text-muted">Ref: ${escapeHtml(product.default_code)}</small>` : ''}
+                            <br>
+                            <small class="${stockClass}">
+                                <i class="fa ${stockIcon} me-1" aria-hidden="true"></i>
+                                ${stockText}
+                            </small>
                         </div>
                         <div class="text-end">
                             <div><strong>${product.list_price.toFixed(2)} €</strong></div>
-                            <small class="text-muted">Stock: ${product.qty_available}</small>
                         </div>
                     </div>
                 `;
 
+                // Deshabilitar si no hay stock (opcional)
+                if (product.stock_status === 'out_of_stock') {
+                    item.classList.add('disabled');
+                    item.style.opacity = '0.6';
+                    item.title = 'Producto sin stock';
+                }
+
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
-                    agregarProductoAPedido(product);
-                    productSearch.value = '';
-                    productResults.style.display = 'none';
+                    if (product.stock_status !== 'out_of_stock') {
+                        agregarProductoAPedido(product);
+                        productSearch.value = '';
+                        productResults.style.display = 'none';
+                    } else {
+                        alert(`Producto sin stock. ${product.estimated_restock_date ? 'Disponible el ' + product.estimated_restock_date : 'Fecha de reposición no disponible'}`);
+                    }
                 });
 
                 productResults.appendChild(item);
@@ -888,6 +929,393 @@
             attributes: false,
             characterData: false
         });
+    }
+
+    /**
+     * ============================================
+     * WIDGET DE CRÉDITO FLOTANTE
+     * ============================================
+     */
+
+    /**
+     * Inicializa el widget de crédito flotante
+     */
+    function inicializarWidgetCredito() {
+        // Verificar si el usuario es distribuidor
+        const creditWidgetRoot = document.getElementById('credit-widget-root');
+        if (!creditWidgetRoot) {
+            console.log('Portal B2B: Widget de crédito no disponible (usuario no es distribuidor)');
+            return;
+        }
+
+        console.log('Portal B2B: Inicializando widget de crédito');
+
+        // Estado del widget
+        const widgetState = {
+            limit: 0,
+            used: 0,
+            pending: 0,
+            available: 0,
+            percentage_used: 0,
+            currency_symbol: '€',
+            loading: true,
+            error: null,
+            collapsed: false,
+            intervalId: null
+        };
+
+        // Crear estructura HTML del widget
+        const widgetHTML = `
+            <div class="credit-widget-floating" id="credit-widget">
+                <div class="credit-widget-header" id="credit-widget-header">
+                    <div class="credit-widget-title-group">
+                        <i class="fa fa-check-circle" id="credit-status-icon"></i>
+                        <span class="credit-widget-title">Estado de Crédito</span>
+                    </div>
+                    <div class="credit-widget-actions">
+                        <button class="btn-refresh" id="credit-refresh-btn" title="Actualizar">
+                            <i class="fa fa-refresh"></i>
+                        </button>
+                        <button class="btn-collapse" id="credit-collapse-btn" title="Minimizar/Expandir">
+                            <i class="fa fa-chevron-up"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="credit-widget-content" id="credit-widget-content">
+                    <!-- Loading State -->
+                    <div class="credit-widget-loading" id="credit-loading">
+                        <i class="fa fa-spinner fa-spin"></i>
+                        <span>Cargando...</span>
+                    </div>
+                    
+                    <!-- Error State -->
+                    <div class="credit-widget-error" id="credit-error" style="display: none;">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <span id="credit-error-message"></span>
+                    </div>
+                    
+                    <!-- Data Content -->
+                    <div class="credit-widget-data" id="credit-data" style="display: none;">
+                        <!-- Progress Bar -->
+                        <div class="credit-progress-container">
+                            <div class="credit-progress-bar">
+                                <div class="credit-progress-fill" id="credit-progress-fill"></div>
+                            </div>
+                            <div class="credit-progress-label">
+                                <span id="credit-percentage">0</span>% usado
+                            </div>
+                        </div>
+                        
+                        <!-- Info Grid -->
+                        <div class="credit-info-grid">
+                            <div class="credit-info-item">
+                                <span class="credit-label">
+                                    <i class="fa fa-credit-card"></i>
+                                    Límite
+                                </span>
+                                <span class="credit-value" id="credit-limit">0,00 €</span>
+                            </div>
+                            
+                            <div class="credit-info-item">
+                                <span class="credit-label">
+                                    <i class="fa fa-money"></i>
+                                    Usado
+                                </span>
+                                <span class="credit-value text-muted" id="credit-used">0,00 €</span>
+                            </div>
+                            
+                            <div class="credit-info-item" id="credit-pending-container" style="display: none;">
+                                <span class="credit-label">
+                                    <i class="fa fa-clock-o"></i>
+                                    Pendiente
+                                </span>
+                                <span class="credit-value text-warning" id="credit-pending">0,00 €</span>
+                            </div>
+                            
+                            <div class="credit-info-item credit-available">
+                                <span class="credit-label">
+                                    <i class="fa fa-check-circle"></i>
+                                    Disponible
+                                </span>
+                                <span class="credit-value credit-value-large" id="credit-available">0,00 €</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Tooltip Info -->
+                        <div class="credit-tooltip-trigger">
+                            <i class="fa fa-info-circle"></i>
+                            <span>¿Qué significa esto?</span>
+                            
+                            <div class="credit-tooltip-content">
+                                <div class="tooltip-item">
+                                    <strong>Límite:</strong>
+                                    <p>Crédito máximo autorizado para tu cuenta</p>
+                                </div>
+                                <div class="tooltip-item">
+                                    <strong>Usado:</strong>
+                                    <p>Facturas pendientes de pago</p>
+                                </div>
+                                <div class="tooltip-item">
+                                    <strong>Pendiente:</strong>
+                                    <p>Pedidos enviados esperando confirmación</p>
+                                </div>
+                                <div class="tooltip-item">
+                                    <strong>Disponible:</strong>
+                                    <p>Crédito real que puedes usar para nuevos pedidos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Insertar widget en el DOM
+        creditWidgetRoot.innerHTML = widgetHTML;
+
+        // Referencias a elementos
+        const widget = document.getElementById('credit-widget');
+        const header = document.getElementById('credit-widget-header');
+        const content = document.getElementById('credit-widget-content');
+        const refreshBtn = document.getElementById('credit-refresh-btn');
+        const collapseBtn = document.getElementById('credit-collapse-btn');
+        const collapseIcon = collapseBtn.querySelector('i');
+        
+        const loadingEl = document.getElementById('credit-loading');
+        const errorEl = document.getElementById('credit-error');
+        const errorMessageEl = document.getElementById('credit-error-message');
+        const dataEl = document.getElementById('credit-data');
+        
+        const statusIcon = document.getElementById('credit-status-icon');
+        const progressFill = document.getElementById('credit-progress-fill');
+        const percentageEl = document.getElementById('credit-percentage');
+        const limitEl = document.getElementById('credit-limit');
+        const usedEl = document.getElementById('credit-used');
+        const pendingEl = document.getElementById('credit-pending');
+        const pendingContainer = document.getElementById('credit-pending-container');
+        const availableEl = document.getElementById('credit-available');
+
+        /**
+         * Formatea un número como moneda
+         */
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-ES', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        /**
+         * Determina el color del estado según el porcentaje
+         */
+        function getStatusColor(percentage) {
+            if (percentage >= 90) return 'danger';
+            if (percentage >= 70) return 'warning';
+            return 'success';
+        }
+
+        /**
+         * Determina el icono según el estado
+         */
+        function getStatusIcon(percentage) {
+            if (percentage >= 90) return 'fa-exclamation-triangle';
+            if (percentage >= 70) return 'fa-exclamation-circle';
+            return 'fa-check-circle';
+        }
+
+        /**
+         * Actualiza la UI con los datos del estado
+         */
+        function updateUI() {
+            // Ocultar loading y error
+            loadingEl.style.display = 'none';
+            errorEl.style.display = 'none';
+
+            if (widgetState.error) {
+                // Mostrar error
+                errorMessageEl.textContent = widgetState.error;
+                errorEl.style.display = 'flex';
+                dataEl.style.display = 'none';
+                return;
+            }
+
+            // Mostrar datos
+            dataEl.style.display = 'block';
+
+            // Actualizar valores
+            limitEl.textContent = formatCurrency(widgetState.limit);
+            usedEl.textContent = formatCurrency(widgetState.used);
+            pendingEl.textContent = formatCurrency(widgetState.pending);
+            availableEl.textContent = formatCurrency(widgetState.available);
+            percentageEl.textContent = widgetState.percentage_used.toFixed(1);
+
+            // Mostrar/ocultar pendiente
+            if (widgetState.pending > 0) {
+                pendingContainer.style.display = 'flex';
+            } else {
+                pendingContainer.style.display = 'none';
+            }
+
+            // Actualizar color disponible
+            availableEl.className = 'credit-value credit-value-large ' + 
+                (widgetState.available > 0 ? 'text-success' : 'text-danger');
+
+            // Actualizar barra de progreso
+            const percentage = Math.min(widgetState.percentage_used, 100);
+            const statusColor = getStatusColor(percentage);
+            progressFill.style.width = percentage + '%';
+            progressFill.className = 'credit-progress-fill bg-' + statusColor;
+
+            // Actualizar icono de estado
+            const iconClass = getStatusIcon(percentage);
+            statusIcon.className = 'fa ' + iconClass;
+
+            // Actualizar clase del widget
+            widget.className = 'credit-widget-floating status-' + statusColor + 
+                (widgetState.collapsed ? ' collapsed' : '');
+        }
+
+        /**
+         * Carga el estado de crédito desde el servidor
+         */
+        async function loadCreditStatus() {
+            try {
+                widgetState.loading = true;
+                widgetState.error = null;
+
+                // Mostrar spinner en botón refresh
+                const refreshIcon = refreshBtn.querySelector('i');
+                refreshIcon.classList.add('fa-spin');
+                refreshBtn.disabled = true;
+
+                const response = await fetch('/api/distributor/credit_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {},
+                        id: Math.floor(Math.random() * 1000000),
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Manejar error JSON-RPC
+                if (data.error) {
+                    const errorMsg = data.error.data?.message || data.error.message || 'Error desconocido';
+                    throw new Error(errorMsg);
+                }
+
+                const result = data.result;
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                if (result.success && result.data) {
+                    // Actualizar estado
+                    Object.assign(widgetState, result.data);
+                    widgetState.loading = false;
+                    widgetState.error = null;
+
+                    console.log('Portal B2B: Estado de crédito actualizado', widgetState);
+                } else {
+                    throw new Error('Respuesta inválida del servidor');
+                }
+
+            } catch (error) {
+                console.error('Portal B2B: Error al cargar estado de crédito:', error);
+                widgetState.error = 'Error de conexión. Reintentando...';
+                widgetState.loading = false;
+            } finally {
+                // Quitar spinner
+                const refreshIcon = refreshBtn.querySelector('i');
+                refreshIcon.classList.remove('fa-spin');
+                refreshBtn.disabled = false;
+
+                // Actualizar UI
+                updateUI();
+            }
+        }
+
+        /**
+         * Alterna el estado colapsado
+         */
+        function toggleCollapse() {
+            widgetState.collapsed = !widgetState.collapsed;
+            
+            if (widgetState.collapsed) {
+                content.style.display = 'none';
+                collapseIcon.className = 'fa fa-chevron-down';
+                widget.classList.add('collapsed');
+            } else {
+                content.style.display = 'block';
+                collapseIcon.className = 'fa fa-chevron-up';
+                widget.classList.remove('collapsed');
+            }
+        }
+
+        /**
+         * Inicia el polling automático
+         */
+        function startPolling() {
+            // Cargar inmediatamente
+            loadCreditStatus();
+
+            // Actualizar cada 30 segundos
+            widgetState.intervalId = setInterval(() => {
+                loadCreditStatus();
+            }, 30000);
+
+            console.log('Portal B2B: Polling de crédito iniciado (cada 30s)');
+        }
+
+        /**
+         * Detiene el polling
+         */
+        function stopPolling() {
+            if (widgetState.intervalId) {
+                clearInterval(widgetState.intervalId);
+                widgetState.intervalId = null;
+                console.log('Portal B2B: Polling de crédito detenido');
+            }
+        }
+
+        // Event Listeners
+        refreshBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            loadCreditStatus();
+        });
+
+        collapseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleCollapse();
+        });
+
+        header.addEventListener('click', function() {
+            toggleCollapse();
+        });
+
+        // Iniciar polling
+        startPolling();
+
+        // Limpiar al salir de la página
+        window.addEventListener('beforeunload', function() {
+            stopPolling();
+        });
+
+        console.log('Portal B2B: Widget de crédito inicializado correctamente');
     }
 
 })();
