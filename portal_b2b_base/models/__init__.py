@@ -3,3 +3,6 @@
 from . import res_partner
 from . import sale_order
 from . import sale_order_template
+from . import distributor_statistics
+from . import portal_notification
+from . import portal_audit_log

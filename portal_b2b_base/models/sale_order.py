@@ -525,3 +525,90 @@ class SaleOrder(models.Model):
                     raise ValidationError(
                         _('El archivo del albarán no puede exceder 10 MB. Tamaño actual: %.2f MB') % size_mb
                     )
+
+    def write(self, vals):
+        """Override para crear notificaciones automáticas."""
+        result = super().write(vals)
+        
+        # Notificar cambio de estado
+        if 'state' in vals:
+            for order in self:
+                if order.partner_id.is_distributor:
+                    self._notify_state_change(order, vals['state'])
+        
+        # Notificar cambio de order_status
+        if 'order_status' in vals:
+            for order in self:
+                if order.partner_id.is_distributor:
+                    self._notify_order_status_change(order, vals['order_status'])
+        
+        return result
+
+    def _notify_state_change(self, order, new_state):
+        """Crea notificación de cambio de estado."""
+        state_messages = {
+            'sale': {
+                'title': f'Pedido {order.name} Confirmado',
+                'message': f'Su pedido ha sido confirmado y está siendo procesado.',
+                'type': 'success',
+            },
+            'done': {
+                'title': f'Pedido {order.name} Completado',
+                'message': f'Su pedido ha sido completado exitosamente.',
+                'type': 'success',
+            },
+            'cancel': {
+                'title': f'Pedido {order.name} Cancelado',
+                'message': f'Su pedido ha sido cancelado.',
+                'type': 'warning',
+            },
+        }
+        
+        if new_state in state_messages:
+            msg = state_messages[new_state]
+            self.env['portal.notification'].sudo().create_notification(
+                partner_id=order.partner_id.id,
+                title=msg['title'],
+                message=msg['message'],
+                notification_type=msg['type'],
+                action_url=f'/mis-pedidos/{order.id}',
+                related_model='sale.order',
+                related_id=order.id,
+            )
+
+    def _notify_order_status_change(self, order, new_status):
+        """Crea notificación de cambio de estado de pedido."""
+        status_messages = {
+            'warehouse': {
+                'title': f'Pedido {order.name} en Almacén',
+                'message': f'Su pedido está siendo preparado en el almacén.',
+                'type': 'info',
+            },
+            'manufacturing': {
+                'title': f'Pedido {order.name} en Fabricación',
+                'message': f'Algunos productos de su pedido están en fabricación.',
+                'type': 'info',
+            },
+            'prepared': {
+                'title': f'Pedido {order.name} Preparado',
+                'message': f'Su pedido está preparado y listo para envío.',
+                'type': 'success',
+            },
+            'shipped': {
+                'title': f'Pedido {order.name} Enviado',
+                'message': f'Su pedido ha sido enviado y está en camino.',
+                'type': 'success',
+            },
+        }
+        
+        if new_status in status_messages:
+            msg = status_messages[new_status]
+            self.env['portal.notification'].sudo().create_notification(
+                partner_id=order.partner_id.id,
+                title=msg['title'],
+                message=msg['message'],
+                notification_type=msg['type'],
+                action_url=f'/mis-pedidos/{order.id}',
+                related_model='sale.order',
+                related_id=order.id,
+            )

@@ -1382,6 +1382,107 @@ class PortalB2B(CustomerPortal):
         except Exception as e:
             _logger.error(f"Error al obtener historial de precios: {str(e)}")
             return {'error': _('Error al obtener historial')}
+
+    @http.route(['/api/notificaciones/recientes'], type='json', auth='user', methods=['POST'])
+    def get_recent_notifications(self, limit=10, **kw):
+        """
+        API para obtener notificaciones recientes.
+        
+        Args:
+            limit: Número máximo de notificaciones
+            
+        Returns:
+            dict: Lista de notificaciones
+        """
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            notifications = request.env['portal.notification'].sudo().get_recent_notifications(
+                partner.id,
+                limit=limit
+            )
+            
+            unread_count = request.env['portal.notification'].sudo().get_unread_count(
+                partner.id
+            )
+            
+            return {
+                'success': True,
+                'notifications': notifications,
+                'unread_count': unread_count,
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error obteniendo notificaciones: {str(e)}")
+            return {'error': str(e)}
+
+    @http.route(['/api/notificaciones/<int:notification_id>/marcar-leida'], 
+                type='json', auth='user', methods=['POST'])
+    def mark_notification_read(self, notification_id, **kw):
+        """
+        Marca una notificación como leída.
+        
+        Args:
+            notification_id: ID de la notificación
+            
+        Returns:
+            dict: Resultado de la operación
+        """
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            notification = request.env['portal.notification'].sudo().browse(notification_id)
+            
+            if not notification.exists() or notification.partner_id != partner:
+                return {'error': _('Notificación no encontrada')}
+            
+            notification.action_mark_read()
+            
+            return {'success': True}
+            
+        except Exception as e:
+            _logger.error(f"Error marcando notificación como leída: {str(e)}")
+            return {'error': str(e)}
+
+    @http.route(['/mi-historial'], type='http', auth='user', website=True)
+    def portal_activity_history(self, page=1, **kw):
+        """Historial de actividad del distribuidor."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        # Paginación
+        from odoo.addons.portal.controllers.portal import pager as portal_pager
+        
+        log_count = request.env['portal.audit.log'].sudo().search_count([
+            ('partner_id', '=', partner.id)
+        ])
+        
+        pager = portal_pager(
+            url='/mi-historial',
+            total=log_count,
+            page=page,
+            step=50,
+        )
+        
+        logs = request.env['portal.audit.log'].sudo().search([
+            ('partner_id', '=', partner.id)
+        ], limit=50, offset=pager['offset'], order='create_date desc')
+        
+        values = {
+            'logs': logs,
+            'page_name': 'historial',
+            'pager': pager,
+        }
+        
+        return request.render('portal_b2b_base.portal_activity_history', values)
 # -*- coding: utf-8 -*-
 
 import logging
