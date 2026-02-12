@@ -1,0 +1,942 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Template: Lista de Direcciones de Entrega -->
+    <template id="portal_mis_direcciones" name="Mis Direcciones de Entrega">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Mis Direcciones de Entrega</t>
+            </t>
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-map-marker me-2" title="Direcciones" aria-hidden="true"/>
+                                            Mis Direcciones de Entrega
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <a href="/mis-direcciones/crear" class="btn btn-success btn-sm">
+                                            <i class="fa fa-plus me-2" title="Nuevo" aria-hidden="true"/>
+                                            Nueva Dirección
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Búsqueda -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <form method="get" class="d-flex">
+                                            <input type="text" 
+                                                   name="search" 
+                                                   class="form-control me-2" 
+                                                   placeholder="Buscar dirección..."
+                                                   t-att-value="search"/>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fa fa-search" title="Buscar" aria-hidden="true"/>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                
+                                <!-- Direcciones -->
+                                <t t-if="addresses">
+                                    <div class="row">
+                                        <t t-foreach="addresses" t-as="address">
+                                            <div class="col-md-6 mb-4">
+                                                <div class="card h-100 border-left-primary">
+                                                    <div class="card-header bg-light">
+                                                        <div class="row align-items-center">
+                                                            <div class="col">
+                                                                <h5 class="mb-0">
+                                                                    <t t-esc="address.name"/>
+                                                                    <t t-if="address.is_default">
+                                                                        <span class="badge bg-success ms-2">
+                                                                            <i class="fa fa-star me-1" title="Predeterminada" aria-hidden="true"/>
+                                                                            Predeterminada
+                                                                        </span>
+                                                                    </t>
+                                                                </h5>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <p class="mb-2">
+                                                            <strong><i class="fa fa-map-marker me-2" title="Dirección" aria-hidden="true"/></strong>
+                                                            <t t-esc="address.full_address"/>
+                                                        </p>
+                                                        
+                                                        <t t-if="address.contact_name">
+                                                            <p class="mb-2">
+                                                                <strong><i class="fa fa-user me-2" title="Contacto" aria-hidden="true"/></strong>
+                                                                <t t-esc="address.contact_name"/>
+                                                            </p>
+                                                        </t>
+                                                        
+                                                        <t t-if="address.contact_phone">
+                                                            <p class="mb-2">
+                                                                <strong><i class="fa fa-phone me-2" title="Teléfono" aria-hidden="true"/></strong>
+                                                                <t t-esc="address.contact_phone"/>
+                                                            </p>
+                                                        </t>
+                                                        
+                                                        <t t-if="address.require_appointment or address.tail_lift_required">
+                                                            <div class="alert alert-warning alert mb-2 py-2">
+                                                                <t t-if="address.require_appointment">
+                                                                    <p class="mb-1">
+                                                                        <i class="fa fa-calendar me-2" title="Cita" aria-hidden="true"/>
+                                                                        Requiere cita previa
+                                                                    </p>
+                                                                </t>
+                                                                <t t-if="address.tail_lift_required">
+                                                                    <p class="mb-0">
+                                                                        <i class="fa fa-truck me-2" title="Pluma" aria-hidden="true"/>
+                                                                        Requiere camión con pluma
+                                                                    </p>
+                                                                </t>
+                                                            </div>
+                                                        </t>
+                                                        
+                                                        <t t-if="address.delivery_notes">
+                                                            <p class="mb-0 text-muted small">
+                                                                <strong>Notas:</strong>
+                                                                <t t-esc="address.delivery_notes"/>
+                                                            </p>
+                                                        </t>
+                                                    </div>
+                                                    <div class="card-footer bg-light">
+                                                        <div class="btn-group btn-group-sm w-100" role="group">
+                                                            <a t-attf-href="/mis-direcciones/#{address.id}/editar" 
+                                                               class="btn btn-primary"
+                                                               title="Editar">
+                                                                <i class="fa fa-edit me-1" title="Editar" aria-hidden="true"/>
+                                                                Editar
+                                                            </a>
+                                                            
+                                                            <t t-if="not address.is_default">
+                                                                <form method="post" 
+                                                                      t-attf-action="/mis-direcciones/#{address.id}/por-defecto"
+                                                                      class="d-inline">
+                                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                    <button type="submit" 
+                                                                            class="btn btn-secondary"
+                                                                            title="Marcar como predeterminada">
+                                                                        <i class="fa fa-star me-1" title="Predeterminada" aria-hidden="true"/>
+                                                                        Por Defecto
+                                                                    </button>
+                                                                </form>
+                                                            </t>
+                                                            
+                                                            <form method="post" 
+                                                                  t-attf-action="/mis-direcciones/#{address.id}/eliminar"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('¿Está seguro de desactivar esta dirección?');">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" 
+                                                                        class="btn btn-danger"
+                                                                        title="Desactivar">
+                                                                    <i class="fa fa-trash me-1" title="Eliminar" aria-hidden="true"/>
+                                                                    Eliminar
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </div>
+                                    
+                                    <!-- Paginación -->
+                                    <div class="mt-3">
+                                        <t t-call="portal.pager"/>
+                                    </div>
+                                </t>
+                                
+                                <!-- Sin direcciones -->
+                                <t t-else="">
+                                    <div class="alert alert-info text-center">
+                                        <i class="fa fa-info-circle fa-3x mb-3" title="Información" aria-hidden="true"/>
+                                        <p class="mb-0">No tienes direcciones de entrega registradas.</p>
+                                        <a href="/mis-direcciones/crear" class="btn btn-primary mt-3">
+                                            <i class="fa fa-plus me-2" title="Nuevo" aria-hidden="true"/>
+                                            Crear primera dirección
+                                        </a>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Crear Dirección de Entrega -->
+    <template id="portal_crear_direccion" name="Crear Dirección de Entrega">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-8 offset-lg-2">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-direcciones">Mis Direcciones</a></li>
+                                <li class="breadcrumb-item active">Nueva Dirección</li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-plus-circle me-2" title="Crear" aria-hidden="true"/>
+                                    Nueva Dirección de Entrega
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <form id="form-crear-direccion">
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-name">Alias *</label>
+                                            <input type="text" 
+                                                   id="input-name"
+                                                   name="name" 
+                                                   class="form-control" 
+                                                   placeholder="Ej: Obra Madrid, Almacén Norte"
+                                                   required="required"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">Dirección</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label class="form-label" for="input-street">Calle *</label>
+                                            <input type="text" 
+                                                   id="input-street"
+                                                   name="street" 
+                                                   class="form-control" 
+                                                   placeholder="Calle y número"
+                                                   required="required"/>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label" for="input-street2">Piso/Puerta</label>
+                                            <input type="text" 
+                                                   id="input-street2"
+                                                   name="street2" 
+                                                   class="form-control" 
+                                                   placeholder="Piso, puerta, etc."/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-city">Ciudad *</label>
+                                            <input type="text" 
+                                                   id="input-city"
+                                                   name="city" 
+                                                   class="form-control" 
+                                                   placeholder="Ciudad"
+                                                   required="required"/>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label" for="input-zip">Código Postal *</label>
+                                            <input type="text" 
+                                                   id="input-zip"
+                                                   name="zip" 
+                                                   class="form-control" 
+                                                   placeholder="CP"
+                                                   required="required"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-country">País *</label>
+                                            <select id="input-country"
+                                                    name="country_id" 
+                                                    class="form-control" 
+                                                    required="required"
+                                                    onchange="actualizarProvincias()">
+                                                <option value="">Seleccionar país...</option>
+                                                <t t-foreach="countries" t-as="country">
+                                                    <option t-att-value="country.id"
+                                                            t-att-selected="country == default_country">
+                                                        <t t-esc="country.name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-state">Provincia</label>
+                                            <select id="input-state"
+                                                    name="state_id" 
+                                                    class="form-control">
+                                                <option value="">Seleccionar provincia...</option>
+                                                <t t-foreach="states" t-as="state">
+                                                    <option t-att-value="state.id">
+                                                        <t t-esc="state.name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">Contacto en Destino</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-contact-name">Nombre Contacto</label>
+                                            <input type="text" 
+                                                   id="input-contact-name"
+                                                   name="contact_name" 
+                                                   class="form-control" 
+                                                   placeholder="Nombre de la persona"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-contact-phone">Teléfono Contacto</label>
+                                            <input type="tel"
+                                                   id="input-contact-phone"
+                                                   name="contact_phone" 
+                                                   class="form-control" 
+                                                   placeholder="Teléfono"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">Requisitos de Entrega</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" 
+                                                       id="input-appointment"
+                                                       name="require_appointment" 
+                                                       class="form-check-input"
+                                                       value="true"/>
+                                                <label class="form-check-label" for="input-appointment">
+                                                    Requiere cita previa
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" 
+                                                       id="input-tail-lift"
+                                                       name="tail_lift_required" 
+                                                       class="form-check-input"
+                                                       value="true"/>
+                                                <label class="form-check-label" for="input-tail-lift">
+                                                    Requiere camión con pluma
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label" for="input-notes">Instrucciones Especiales</label>
+                                        <textarea id="input-notes"
+                                                  name="delivery_notes" 
+                                                  class="form-control" 
+                                                  rows="3"
+                                                  placeholder="Notas para el transportista (horarios, accesos, etc.)"/>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <a href="/mis-direcciones" class="btn btn-secondary me-2">
+                                            <i class="fa fa-times me-2" title="Cancelar" aria-hidden="true"/>
+                                            Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-success" id="btn-submit-address">
+                                            <i class="fa fa-check me-2" title="Confirmar" aria-hidden="true"/>
+                                            Crear Dirección
+                                        </button>
+                                    </div>
+                                    
+                                </form>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Editar Dirección de Entrega -->
+    <template id="portal_editar_direccion" name="Editar Dirección de Entrega">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-8 offset-lg-2">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-direcciones">Mis Direcciones</a></li>
+                                <li class="breadcrumb-item active"><t t-esc="address.name"/></li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-edit me-2" title="Editar" aria-hidden="true"/>
+                                    Editar Dirección: <t t-esc="address.name"/>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <t t-if="address.is_default">
+                                    <div class="alert alert-success mb-4">
+                                        <i class="fa fa-star me-2" title="Predeterminada" aria-hidden="true"/>
+                                        <strong>Esta es tu dirección predeterminada.</strong>
+                                    </div>
+                                </t>
+                                
+                                <form id="form-editar-direccion">
+                                    <input type="hidden" name="address_id" t-att-value="address.id"/>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-name">Alias *</label>
+                                            <input type="text" 
+                                                   id="input-name"
+                                                   name="name" 
+                                                   class="form-control" 
+                                                   t-att-value="address.name"
+                                                   required="required"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">Dirección</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label class="form-label" for="input-street">Calle *</label>
+                                            <input type="text" 
+                                                   id="input-street"
+                                                   name="street" 
+                                                   class="form-control" 
+                                                   t-att-value="address.street"
+                                                   required="required"/>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label" for="input-street2">Piso/Puerta</label>
+                                            <input type="text" 
+                                                   id="input-street2"
+                                                   name="street2" 
+                                                   class="form-control" 
+                                                   t-att-value="address.street2 or ''"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-city">Ciudad *</label>
+                                            <input type="text" 
+                                                   id="input-city"
+                                                   name="city" 
+                                                   class="form-control" 
+                                                   t-att-value="address.city"
+                                                   required="required"/>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label" for="input-zip">Código Postal *</label>
+                                            <input type="text" 
+                                                   id="input-zip"
+                                                   name="zip" 
+                                                   class="form-control" 
+                                                   t-att-value="address.zip"
+                                                   required="required"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-country">País *</label>
+                                            <select id="input-country"
+                                                    name="country_id" 
+                                                    class="form-control" 
+                                                    required="required"
+                                                    onchange="actualizarProvincias()">
+                                                <option value="">Seleccionar país...</option>
+                                                <t t-foreach="countries" t-as="country">
+                                                    <option t-att-value="country.id"
+                                                            t-att-selected="country == address.country_id">
+                                                        <t t-esc="country.name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-state">Provincia</label>
+                                            <select id="input-state"
+                                                    name="state_id" 
+                                                    class="form-control">
+                                                <option value="">Seleccionar provincia...</option>
+                                                <t t-foreach="states" t-as="state">
+                                                    <option t-att-value="state.id"
+                                                            t-att-selected="state == address.state_id">
+                                                        <t t-esc="state.name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">Contacto en Destino</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-contact-name">Nombre Contacto</label>
+                                            <input type="text" 
+                                                   id="input-contact-name"
+                                                   name="contact_name" 
+                                                   class="form-control" 
+                                                   t-att-value="address.contact_name or ''"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-contact-phone">Teléfono Contacto</label>
+                                            <input type="tel" 
+                                                   id="input-contact-phone"
+                                                   name="contact_phone" 
+                                                   class="form-control" 
+                                                   t-att-value="address.contact_phone or ''"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">Requisitos de Entrega</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" 
+                                                       id="input-appointment"
+                                                       name="require_appointment" 
+                                                       class="form-check-input"
+                                                       value="true"
+                                                       t-att-checked="address.require_appointment"/>
+                                                <label class="form-check-label" for="input-appointment">
+                                                    Requiere cita previa
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" 
+                                                       id="input-tail-lift"
+                                                       name="tail_lift_required" 
+                                                       class="form-check-input"
+                                                       value="true"
+                                                       t-att-checked="address.tail_lift_required"/>
+                                                <label class="form-check-label" for="input-tail-lift">
+                                                    Requiere camión con pluma
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label" for="input-notes">Instrucciones Especiales</label>
+                                        <textarea id="input-notes"
+                                                  name="delivery_notes" 
+                                                  class="form-control" 
+                                                  rows="3"><t t-esc="address.delivery_notes or ''"/></textarea>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <a href="/mis-direcciones" class="btn btn-secondary me-2">
+                                            <i class="fa fa-times me-2" title="Cancelar" aria-hidden="true"/>
+                                            Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-primary" id="btn-submit-address">
+                                            <i class="fa fa-save me-2" title="Guardar" aria-hidden="true"/>
+                                            Guardar Cambios
+                                        </button>
+                                    </div>
+                                    
+                                </form>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Lista de Etiquetas Cliente Final -->
+    <template id="portal_mis_etiquetas" name="Mis Etiquetas Cliente Final">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Mis Etiquetas Cliente Final</t>
+            </t>
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-tags me-2" title="Etiquetas" aria-hidden="true"/>
+                                            Mis Etiquetas Cliente Final
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <a href="/mis-etiquetas/crear" class="btn btn-success btn-sm">
+                                            <i class="fa fa-plus me-2" title="Nueva" aria-hidden="true"/>
+                                            Nueva Etiqueta
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Búsqueda -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <form method="get" class="d-flex">
+                                            <input type="text" 
+                                                   name="search" 
+                                                   class="form-control me-2" 
+                                                   placeholder="Buscar etiqueta..."
+                                                   t-att-value="search"/>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fa fa-search" title="Buscar" aria-hidden="true"/>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <span class="badge bg-info fs-6">
+                                            Total: <t t-esc="label_count"/> etiquetas
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Etiquetas -->
+                                <t t-if="labels">
+                                    <div class="row">
+                                        <t t-foreach="labels" t-as="label">
+                                            <div class="col-md-6 col-lg-4 mb-4">
+                                                <div class="card h-100 border-left-secondary">
+                                                    <div class="card-header bg-light">
+                                                        <h5 class="mb-0">
+                                                            <i class="fa fa-tag me-2" aria-hidden="true"/>
+                                                            <t t-esc="label.name"/>
+                                                        </h5>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <p class="mb-2">
+                                                            <strong><i class="fa fa-building me-2" aria-hidden="true"/></strong>
+                                                            <t t-esc="label.customer_name"/>
+                                                        </p>
+                                                        
+                                                        <t t-if="label.customer_reference">
+                                                            <p class="mb-2">
+                                                                <strong><i class="fa fa-barcode me-2" aria-hidden="true"/></strong>
+                                                                Ref: <t t-esc="label.customer_reference"/>
+                                                            </p>
+                                                        </t>
+                                                        
+                                                        <t t-if="label.customer_phone">
+                                                            <p class="mb-2">
+                                                                <strong><i class="fa fa-phone me-2" aria-hidden="true"/></strong>
+                                                                <t t-esc="label.customer_phone"/>
+                                                            </p>
+                                                        </t>
+                                                        
+                                                        <div class="mt-3">
+                                                            <t t-if="label.print_on_delivery_note">
+                                                                <span class="badge bg-info me-1">
+                                                                    <i class="fa fa-print me-1" aria-hidden="true"/>
+                                                                    Imprime en albarán
+                                                                </span>
+                                                            </t>
+                                                            <t t-if="label.hide_company_info">
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fa fa-eye-slash me-1" aria-hidden="true"/>
+                                                                    Oculta info empresa
+                                                                </span>
+                                                            </t>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-footer bg-light">
+                                                        <div class="btn-group btn-group-sm w-100" role="group">
+                                                            <a t-attf-href="/mis-etiquetas/#{label.id}/editar" 
+                                                               class="btn btn-primary"
+                                                               title="Editar">
+                                                                <i class="fa fa-edit me-1" aria-hidden="true"/>
+                                                                Editar
+                                                            </a>
+                                                            
+                                                            <a t-attf-href="/crear-pedido?label_id=#{label.id}" 
+                                                               class="btn btn-success"
+                                                               title="Crear pedido">
+                                                                <i class="fa fa-plus me-1" aria-hidden="true"/>
+                                                                Pedido
+                                                            </a>
+                                                            
+                                                            <form method="post" 
+                                                                  t-attf-action="/mis-etiquetas/#{label.id}/eliminar"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('¿Está seguro de desactivar esta etiqueta?');">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" 
+                                                                        class="btn btn-danger"
+                                                                        title="Desactivar">
+                                                                    <i class="fa fa-trash" aria-hidden="true"/>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </div>
+                                    
+                                    <!-- Paginación -->
+                                    <div class="mt-3">
+                                        <t t-call="portal.pager"/>
+                                    </div>
+                                </t>
+                                
+                                <!-- Sin etiquetas -->
+                                <t t-else="">
+                                    <div class="alert alert-info alert text-center">
+                                        <i class="fa fa-info-circle fa-3x mb-3" title="Información" aria-hidden="true"/>
+                                        <p class="mb-0">No tienes etiquetas de cliente final registradas.</p>
+                                        <a href="/mis-etiquetas/crear" class="btn btn-primary mt-3">
+                                            <i class="fa fa-plus me-2" aria-hidden="true"/>
+                                            Crear primera etiqueta
+                                        </a>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Crear/Editar Etiqueta -->
+    <template id="portal_crear_etiqueta" name="Crear Etiqueta Cliente Final">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-10 offset-lg-1">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-etiquetas">Mis Etiquetas</a></li>
+                                <li class="breadcrumb-item active">
+                                    <t t-if="label">Editar Etiqueta</t>
+                                    <t t-else="">Nueva Etiqueta</t>
+                                </li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-tag me-2" aria-hidden="true"/>
+                                    <t t-if="label">Editar Etiqueta: <t t-esc="label.name"/></t>
+                                    <t t-else="">Nueva Etiqueta Cliente Final</t>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <div id="label-message" style="display: none;"></div>
+                                
+                                <form id="form-etiqueta" enctype="multipart/form-data">
+                                    <input type="hidden" name="label_id" t-att-value="label.id if label else ''"/>
+                                    
+                                    <!-- Información Básica -->
+                                    <h5 class="mt-3 mb-3">
+                                        <i class="fa fa-info-circle me-2" aria-hidden="true"/>
+                                        Información Básica
+                                    </h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-name">Nombre Etiqueta *</label>
+                                            <input type="text" 
+                                                   id="input-name"
+                                                   name="name" 
+                                                   class="form-control" 
+                                                   placeholder="Ej: Cliente ABC - Madrid"
+                                                   t-att-value="label.name if label else ''"
+                                                   required="required"/>
+                                            <small class="form-text text-muted">Nombre identificativo interno</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-customer-name">Nombre Cliente Final *</label>
+                                            <input type="text" 
+                                                   id="input-customer-name"
+                                                   name="customer_name" 
+                                                   class="form-control" 
+                                                   placeholder="Ej: ABC Construcciones S.L."
+                                                   t-att-value="label.customer_name if label else ''"
+                                                   required="required"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-customer-ref">Referencia Cliente</label>
+                                            <input type="text" 
+                                                   id="input-customer-ref"
+                                                   name="customer_reference" 
+                                                   class="form-control" 
+                                                   placeholder="Ej: CLI-001"
+                                                   t-att-value="label.customer_reference if label else ''"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label" for="input-tax-id">NIF/CIF</label>
+                                            <input type="text" 
+                                                   id="input-tax-id"
+                                                   name="tax_id" 
+                                                   class="form-control" 
+                                                   placeholder="Ej: B12345678"
+                                                   t-att-value="label.tax_id if label else ''"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Datos de Contacto -->
+                                    <h5 class="mt-4 mb-3">
+                                        <i class="fa fa-address-book me-2" aria-hidden="true"/>
+                                        Datos de Contacto
+                                    </h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label" for="input-phone">Teléfono</label>
+                                            <input type="tel" 
+                                                   id="input-phone"
+                                                   name="customer_phone" 
+                                                   class="form-control" 
+                                                   placeholder="Ej: 912345678"
+                                                   t-att-value="label.customer_phone if label else ''"/>
+                                        </div>
+                                        <div class="col-md-8 mb-3">
+                                            <label class="form-label" for="input-email">Email</label>
+                                            <input type="email" 
+                                                   id="input-email"
+                                                   name="customer_email" 
+                                                   class="form-control" 
+                                                   placeholder="Ej: contacto@cliente.com"
+                                                   t-att-value="label.customer_email if label else ''"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label" for="input-address">Dirección Completa</label>
+                                        <textarea id="input-address"
+                                                  name="customer_address" 
+                                                  class="form-control" 
+                                                  rows="2" 
+                                                  placeholder="Dirección completa del cliente final"><t t-if="label" t-esc="label.customer_address or ''"/></textarea>
+                                    </div>
+                                    
+                                    <!-- Configuración -->
+                                    <h5 class="mt-4 mb-3">
+                                        <i class="fa fa-cog me-2" aria-hidden="true"/>
+                                        Configuración
+                                    </h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" 
+                                                       id="input-print-delivery"
+                                                       name="print_on_delivery_note" 
+                                                       class="form-check-input"
+                                                       value="true"
+                                                       t-att-checked="label.print_on_delivery_note if label else 'checked'"/>
+                                                <label class="form-check-label" for="input-print-delivery">
+                                                    <strong>Imprimir en Albarán</strong>
+                                                    <br/>
+                                                    <small class="text-muted">Incluir información en albarán de entrega</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" 
+                                                       id="input-hide-company"
+                                                       name="hide_company_info" 
+                                                       class="form-check-input"
+                                                       value="true"
+                                                       t-att-checked="label.hide_company_info if label else ''"/>
+                                                <label class="form-check-label" for="input-hide-company">
+                                                    <strong>Ocultar Info Empresa</strong>
+                                                    <br/>
+                                                    <small class="text-muted">No mostrar datos de nuestra empresa en documentos</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Notas -->
+                                    <div class="mb-3">
+                                        <label class="form-label" for="input-notes">Notas Adicionales</label>
+                                        <textarea id="input-notes"
+                                                  name="notes" 
+                                                  class="form-control" 
+                                                  rows="3" 
+                                                  placeholder="Información adicional..."><t t-if="label" t-esc="label.notes or ''"/></textarea>
+                                    </div>
+                                    
+                                    <!-- Botones -->
+                                    <div class="text-end mt-4">
+                                        <a href="/mis-etiquetas" class="btn btn-secondary me-2">
+                                            <i class="fa fa-times me-2" aria-hidden="true"/>
+                                            Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-success" id="btn-submit-label">
+                                            <i class="fa fa-check me-2" aria-hidden="true"/>
+                                            <t t-if="label">Guardar Cambios</t>
+                                            <t t-else="">Crear Etiqueta</t>
+                                        </button>
+                                    </div>
+                                    
+                                </form>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+</odoo>

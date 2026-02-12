@@ -1,0 +1,345 @@
+/**
+ * Portal B2B Theme - Bootstrap Overrides
+ * Personaliza componentes de Bootstrap 5
+ */
+
+// Las variables ya están importadas en custom.scss, no reimportar aquí
+
+// ========== BOTONES ==========
+
+.btn {
+    font-weight: $font-weight-medium;
+    border-radius: $border-radius;
+    transition: $transition-base;
+    box-shadow: $box-shadow-sm;
+    
+    &:hover:not(:disabled):not(.disabled) {
+        transform: translateY(-2px);
+        box-shadow: $box-shadow;
+    }
+    
+    &:active:not(:disabled):not(.disabled) {
+        transform: translateY(0);
+        box-shadow: $box-shadow-sm;
+    }
+    
+    &:focus {
+        box-shadow: 0 0 0 0.2rem rgba($primary, 0.25);
+    }
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: $font-size-sm;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: $font-size-lg;
+}
+
+// ========== CARDS ==========
+
+.card {
+    border: none;
+    border-radius: $card-border-radius;
+    box-shadow: $card-box-shadow;
+    transition: $transition-base;
+    
+    &:hover {
+        box-shadow: $box-shadow-lg;
+        transform: translateY(-4px);
+    }
+    
+    .card-header {
+        background-color: $light;
+        border-bottom: 2px solid $border-color;
+        font-weight: $font-weight-semibold;
+        padding: $card-spacer-y $card-spacer-x;
+        border-radius: $card-border-radius $card-border-radius 0 0;
+    }
+    
+    .card-body {
+        padding: $card-spacer-y $card-spacer-x;
+    }
+    
+    .card-footer {
+        background-color: $light;
+        border-top: 1px solid $border-color;
+        padding: $card-spacer-y $card-spacer-x;
+        border-radius: 0 0 $card-border-radius $card-border-radius;
+    }
+}
+
+.card-border-left {
+    border-left: 4px solid;
+    
+    &.border-primary {
+        border-left-color: $primary;
+    }
+    
+    &.border-success {
+        border-left-color: $success;
+    }
+    
+    &.border-danger {
+        border-left-color: $danger;
+    }
+    
+    &.border-warning {
+        border-left-color: $warning;
+    }
+    
+    &.border-info {
+        border-left-color: $info;
+    }
+}
+
+// ========== FORMULARIOS ==========
+
+.form-control {
+    border: 1px solid $input-border-color;
+    border-radius: $input-border-radius;
+    padding: $input-padding-y $input-padding-x;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    
+    &:focus {
+        border-color: $input-focus-border-color;
+        box-shadow: $input-focus-box-shadow;
+    }
+    
+    &[readonly] {
+        background-color: $light;
+        color: $text-muted;
+    }
+}
+
+.form-label {
+    font-weight: $font-weight-medium;
+    color: $headings-color;
+    margin-bottom: 0.5rem;
+}
+
+.form-check-input {
+    &:checked {
+        background-color: $primary;
+        border-color: $primary;
+    }
+    
+    &:focus {
+        box-shadow: 0 0 0 0.2rem rgba($primary, 0.25);
+    }
+}
+
+// ========== TABLAS ==========
+
+.table {
+    margin-bottom: 0;
+    
+    thead {
+        background-color: $light;
+        
+        th {
+            font-weight: $font-weight-semibold;
+            text-transform: uppercase;
+            font-size: $font-size-sm;
+            color: $text-muted;
+            padding: $table-cell-padding-y $table-cell-padding-x;
+            border-bottom: 2px solid $border-color;
+        }
+    }
+    
+    tbody {
+        tr {
+            transition: background-color 0.2s ease;
+            
+            &:hover {
+                background-color: $table-hover-bg;
+            }
+            
+            td {
+                padding: $table-cell-padding-y $table-cell-padding-x;
+                vertical-align: middle;
+            }
+        }
+    }
+    
+    &.table-striped tbody tr:nth-of-type(odd) {
+        background-color: $table-striped-bg;
+    }
+}
+
+// ========== BADGES ==========
+
+.badge {
+    padding: $badge-padding-y $badge-padding-x;
+    font-size: 0.875rem;
+    font-weight: $font-weight-medium;
+    border-radius: $badge-border-radius;
+}
+
+// ========== ALERTAS ==========
+
+.alert {
+    border: none;
+    border-left: $alert-border-left-width solid;
+    border-radius: $alert-border-radius;
+    padding: $alert-padding-y $alert-padding-x;
+    
+    &.alert-primary {
+        background-color: lighten($primary, 45%);
+        color: darken($primary, 20%);
+        border-left-color: $primary;
+    }
+    
+    &.alert-success {
+        background-color: lighten($success, 45%);
+        color: darken($success, 20%);
+        border-left-color: $success;
+    }
+    
+    &.alert-danger {
+        background-color: lighten($danger, 40%);
+        color: darken($danger, 20%);
+        border-left-color: $danger;
+    }
+    
+    &.alert-warning {
+        background-color: lighten($warning, 40%);
+        color: darken($warning, 30%);
+        border-left-color: $warning;
+    }
+    
+    &.alert-info {
+        background-color: lighten($info, 45%);
+        color: darken($info, 20%);
+        border-left-color: $info;
+    }
+}
+
+// ========== BREADCRUMB ==========
+
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: $spacer * 1.5;
+    
+    .breadcrumb-item {
+        &.active {
+            color: $text-muted;
+            font-weight: $font-weight-medium;
+        }
+        
+        a {
+            color: $primary;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            
+            &:hover {
+                color: darken($primary, 10%);
+                text-decoration: underline;
+            }
+        }
+        
+        + .breadcrumb-item::before {
+            color: $text-muted;
+        }
+    }
+}
+
+// ========== PAGINACIÓN ==========
+
+.pagination {
+    .page-link {
+        color: $primary;
+        border-color: $border-color;
+        border-radius: $border-radius-sm;
+        margin: 0 0.25rem;
+        transition: $transition-base;
+        
+        &:hover {
+            background-color: $light;
+            border-color: $primary;
+        }
+        
+        &:focus {
+            box-shadow: 0 0 0 0.2rem rgba($primary, 0.25);
+        }
+    }
+    
+    .page-item.active .page-link {
+        background-color: $primary;
+        border-color: $primary;
+    }
+    
+    .page-item.disabled .page-link {
+        color: $text-muted;
+        background-color: $light;
+    }
+}
+
+// ========== MODALES ==========
+
+.modal-content {
+    border: none;
+    border-radius: $border-radius-lg;
+    box-shadow: $box-shadow-xl;
+}
+
+.modal-header {
+    border-bottom: 2px solid $border-color;
+    padding: $spacer * 1.5;
+    
+    .modal-title {
+        font-weight: $font-weight-semibold;
+    }
+}
+
+.modal-body {
+    padding: $spacer * 1.5;
+}
+
+.modal-footer {
+    border-top: 1px solid $border-color;
+    padding: $spacer * 1.5;
+}
+
+// ========== TOOLTIPS ==========
+
+.tooltip {
+    .tooltip-inner {
+        background-color: $dark;
+        border-radius: $border-radius-sm;
+        padding: 0.5rem 0.75rem;
+        font-size: $font-size-sm;
+    }
+}
+
+// ========== DROPDOWNS ==========
+
+.dropdown-menu {
+    border: none;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow-lg;
+    padding: 0.5rem 0;
+    
+    .dropdown-item {
+        padding: 0.5rem 1rem;
+        transition: background-color 0.2s ease;
+        
+        &:hover,
+        &:focus {
+            background-color: $light;
+            color: $primary;
+        }
+        
+        &.active {
+            background-color: $primary;
+            color: white;
+        }
+    }
+    
+    .dropdown-divider {
+        margin: 0.5rem 0;
+    }
+}

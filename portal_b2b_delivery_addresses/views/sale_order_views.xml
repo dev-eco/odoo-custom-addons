@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vista TREE con columna de notificación de documentos -->
+    <record id="view_order_tree_delivery_documents" model="ir.ui.view">
+        <field name="name">sale.order.tree.delivery.documents</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            
+            <!-- Añadir columna de documentos ANTES de la columna de estado -->
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="distributor_document_count" string="📎 Docs" optional="show"/>
+                <field name="has_new_distributor_documents" invisible="1"/>
+                <field name="distributor_documents_reviewed" invisible="1"/>
+            </xpath>
+            
+            <!-- Decoración de filas con documentos nuevos -->
+            <xpath expr="//tree" position="attributes">
+                <attribute name="decoration-danger">has_new_distributor_documents</attribute>
+                <attribute name="decoration-info">distributor_document_count > 0 and not has_new_distributor_documents</attribute>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <!-- Vista FORMULARIO con notificación visual discreta -->
+    <record id="view_order_form_delivery_addresses" model="ir.ui.view">
+        <field name="name">sale.order.form.delivery_addresses</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            
+            
+            <!-- Notificación visual de documentos nuevos (MEJORADA) -->
+            <xpath expr="//sheet" position="before">
+                <!-- Alerta de documentos NUEVOS sin revisar -->
+                <div class="alert alert-warning mb-0"
+                     role="alert"
+                     invisible="has_new_distributor_documents == False"
+                     style="border-left: 4px solid #ff9800;">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-exclamation-triangle fa-2x me-3 text-warning" 
+                           title="Documentos nuevos"
+                           aria-hidden="true"/>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading mb-1">
+                                ⚠️ Documentos Nuevos del Distribuidor
+                            </h5>
+                            <p class="mb-2">
+                                El distribuidor <strong><field name="partner_id" readonly="1"/></strong> 
+                                ha subido <strong><field name="distributor_document_count" readonly="1"/> documento(s)</strong> 
+                                que requieren revisión.
+                            </p>
+                            <div class="btn-group">
+                                <button name="action_view_distributor_documents" 
+                                        type="object" 
+                                        class="btn btn-sm btn-primary">
+                                    <i class="fa fa-eye me-1" aria-hidden="true"/>
+                                    Ver Documentos
+                                </button>
+                                <button name="action_mark_documents_reviewed" 
+                                        type="object" 
+                                        class="btn btn-sm btn-warning">
+                                    <i class="fa fa-check me-1" aria-hidden="true"/>
+                                    Marcar Revisados
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Indicador de documentos YA revisados -->
+                <div class="alert alert-success mb-0" 
+                     role="alert"
+                     invisible="has_new_distributor_documents == True or distributor_document_count == 0"
+                     style="border-left: 4px solid #4caf50;">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-check-circle fa-2x me-3 text-success" 
+                           title="Documentos revisados"
+                           aria-hidden="true"/>
+                        <div class="flex-grow-1">
+                            <strong>✓ Documentos Revisados</strong>
+                            <p class="mb-0 small text-muted">
+                                Hay <field name="distributor_document_count" readonly="1"/> documento(s) del distribuidor ya revisados.
+                            </p>
+                        </div>
+                        <button name="action_view_distributor_documents" 
+                                type="object" 
+                                class="btn btn-sm btn-success">
+                            <i class="fa fa-eye me-1" aria-hidden="true"/>
+                            Ver Documentos
+                        </button>
+                    </div>
+                </div>
+            </xpath>
+            
+            <!-- Campos ocultos necesarios para los computed -->
+            <xpath expr="//sheet" position="inside">
+                <field name="has_new_distributor_documents" invisible="1"/>
+                <field name="distributor_documents_reviewed" invisible="1"/>
+            </xpath>
+            
+            <!-- Añadir campos de dirección de entrega DENTRO del grupo partner_details -->
+            <xpath expr="//group[@name='partner_details']" position="inside">
+                <field name="delivery_address_id" 
+                       options="{'no_create': True}"
+                       domain="[('partner_id', '=', partner_id), ('active', '=', True)]"
+                       invisible="partner_id == False"
+                       string="Dirección de Entrega B2B"
+                       context="{'default_partner_id': partner_id}"/>
+                <field name="delivery_address_display" 
+                       readonly="1"
+                       invisible="delivery_address_id == False"
+                       string="Dirección Completa"
+                       class="text-muted"/>
+                <field name="partner_shipping_id" 
+                       readonly="1"
+                       invisible="delivery_address_id == False"
+                       string="Contacto de Entrega (Sincronizado)"
+                       class="text-info"/>
+            </xpath>
+
+            <!-- Página de documentos distribuidor -->
+            <xpath expr="//notebook" position="inside">
+                
+                <!-- Página Cliente Final -->
+                <page string="Cliente Final" 
+                      name="cliente_final" 
+                      invisible="delivery_address_id == False">
+                    <group>
+                        <group string="Etiqueta Cliente Final">
+                            <field name="distributor_label_id"
+                                   options="{'no_create': True}"
+                                   domain="[('partner_id', '=', partner_id), ('active', '=', True)]"
+                                   string="Etiqueta"/>
+                            <field name="customer_delivery_reference"
+                                   placeholder="Ej: ALB-2024-001"
+                                   string="Referencia Albarán Cliente"/>
+                        </group>
+                        <group string="Configuración de Documentos">
+                            <field name="hide_company_info_on_report"
+                                   widget="boolean"
+                                   string="Ocultar Info Empresa en PDF"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Información del Cliente Final" 
+                           invisible="distributor_label_id == False">
+                        <field name="final_customer_name" 
+                               readonly="1"
+                               string="Nombre Cliente Final"/>
+                        <field name="final_customer_reference" 
+                               readonly="1"
+                               string="Referencia Cliente Final"/>
+                    </group>
+                </page>
+                
+                <!-- Página Documentos Distribuidor -->
+                <page string="📎 Documentos Distribuidor" 
+                      name="distributor_documents"
+                      invisible="distributor_document_count == 0">
+                    
+                    <group>
+                        <group string="Albaranes Cliente Final">
+                            <field name="distributor_delivery_note_ids" 
+                                   widget="many2many_binary" 
+                                   nolabel="1"/>
+                        </group>
+                        <group string="Facturas Cliente Final">
+                            <field name="distributor_invoice_ids" 
+                                   widget="many2many_binary" 
+                                   nolabel="1"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="Etiquetas Envío">
+                            <field name="distributor_label_ids" 
+                                   widget="many2many_binary" 
+                                   nolabel="1"/>
+                        </group>
+                        <group string="Facturas Transporte">
+                            <field name="distributor_transport_invoice_ids" 
+                                   widget="many2many_binary" 
+                                   nolabel="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Otros Documentos">
+                        <field name="distributor_other_docs_ids" 
+                               widget="many2many_binary" 
+                               nolabel="1"/>
+                    </group>
+                </page>
+                
+            </xpath>
+            
+        </field>
+    </record>
+
+</odoo>

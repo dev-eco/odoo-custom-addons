@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sale_order_portal_b2b,sale.order portal b2b,sale.model_sale_order,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_sale_order_line_portal_b2b,sale.order.line portal b2b,sale.model_sale_order_line,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_account_move_portal_b2b,account.move portal b2b,account.model_account_move,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_account_move_line_portal_b2b,account.move.line portal b2b,account.model_account_move_line,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_product_product_portal_b2b,product.product portal b2b,product.model_product_product,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_product_template_portal_b2b,product.template portal b2b,product.model_product_template,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_product_pricelist_portal_b2b,product.pricelist portal b2b,product.model_product_pricelist,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_res_partner_portal_b2b,res.partner portal b2b,base.model_res_partner,portal_b2b_base.group_portal_b2b,1,0,0,0
+access_ir_attachment_portal_b2b,ir.attachment portal b2b,base.model_ir_attachment,portal_b2b_base.group_portal_b2b,1,1,1,1

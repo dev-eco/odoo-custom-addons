@@ -3,3 +3,5 @@ access_sale_payment_method_user,sale.payment.method.user,model_sale_payment_meth
 access_sale_payment_method_manager,sale.payment.method.manager,model_sale_payment_method,sales_team.group_sale_manager,1,1,1,1
 access_sale_order_payment_user,sale.order.payment.user,sale.model_sale_order,sales_team.group_sale_salesman,1,1,1,0
 access_sale_order_payment_manager,sale.order.payment.manager,sale.model_sale_order,sales_team.group_sale_manager,1,1,1,1
+access_account_move_payment_user,account.move.payment.user,account.model_account_move,account.group_account_invoice,1,1,1,0
+access_account_move_payment_manager,account.move.payment.manager,account.model_account_move,account.group_account_manager,1,1,1,1

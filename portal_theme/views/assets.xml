@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Assets para Portal B2B Theme -->
+        <!-- En Odoo 17, los assets se definen en __manifest__.py -->
+        <!-- Este archivo se mantiene vacío para compatibilidad -->
+    </data>
+</odoo>

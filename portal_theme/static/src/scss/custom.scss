@@ -1,0 +1,535 @@
+/**
+ * Portal B2B Theme - Archivo Principal
+ * Importa todos los estilos del tema
+ */
+
+@import 'primary_variables';
+@import 'bootstrap_overrides';
+@import 'portal_layout';
+@import 'portal_components';
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.o_portal_sidebar .breadcrumb,
+nav[aria-label="breadcrumb"] a[href^="/my/"] {
+    display: none !important;
+}
+
+.breadcrumb a[href^="/my/"] {
+    display: none !important;
+}
+
+.text-primary {
+    color: $primary !important;
+}
+
+.text-success {
+    color: $success !important;
+}
+
+.text-danger {
+    color: $danger !important;
+}
+
+.text-warning {
+    color: $warning !important;
+}
+
+.text-info {
+    color: $info !important;
+}
+
+.text-muted {
+    color: $text-muted !important;
+}
+
+.bg-primary {
+    background-color: $primary !important;
+}
+
+.bg-light {
+    background-color: $light !important;
+}
+
+.bg-dark {
+    background-color: $dark !important;
+}
+
+.border-primary {
+    border-color: $primary !important;
+}
+
+.border-left-primary {
+    border-left: 4px solid $primary !important;
+}
+
+.border-left-success {
+    border-left: 4px solid $success !important;
+}
+
+.border-left-danger {
+    border-left: 4px solid $danger !important;
+}
+
+.border-left-warning {
+    border-left: 4px solid $warning !important;
+}
+
+.border-left-info {
+    border-left: 4px solid $info !important;
+}
+
+.shadow-sm {
+    box-shadow: $box-shadow-sm !important;
+}
+
+.shadow {
+    box-shadow: $box-shadow !important;
+}
+
+.shadow-lg {
+    box-shadow: $box-shadow-lg !important;
+}
+
+.shadow-xl {
+    box-shadow: $box-shadow-xl !important;
+}
+
+.gap-1 {
+    gap: 0.25rem !important;
+}
+
+.gap-2 {
+    gap: 0.5rem !important;
+}
+
+.gap-3 {
+    gap: 1rem !important;
+}
+
+.gap-4 {
+    gap: 1.5rem !important;
+}
+
+.gap-5 {
+    gap: 3rem !important;
+}
+
+.transition {
+    transition: $transition-base !important;
+}
+
+.opacity-50 {
+    opacity: 0.5 !important;
+}
+
+.opacity-75 {
+    opacity: 0.75 !important;
+}
+
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
+.cursor-default {
+    cursor: default !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.d-grid {
+    display: grid !important;
+}
+
+.d-none {
+    display: none !important;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.overflow-hidden {
+    overflow: hidden !important;
+}
+
+.overflow-auto {
+    overflow: auto !important;
+}
+
+.position-relative {
+    position: relative !important;
+}
+
+.position-absolute {
+    position: absolute !important;
+}
+
+.position-fixed {
+    position: fixed !important;
+}
+
+.w-100 {
+    width: 100% !important;
+}
+
+.h-100 {
+    height: 100% !important;
+}
+
+.min-h-100vh {
+    min-height: 100vh !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.text-justify {
+    text-align: justify !important;
+}
+
+.font-weight-light {
+    font-weight: $font-weight-light !important;
+}
+
+.font-weight-normal {
+    font-weight: $font-weight-normal !important;
+}
+
+.font-weight-medium {
+    font-weight: $font-weight-medium !important;
+}
+
+.font-weight-semibold {
+    font-weight: $font-weight-semibold !important;
+}
+
+.font-weight-bold {
+    font-weight: $font-weight-bold !important;
+}
+
+.font-italic {
+    font-style: italic !important;
+}
+
+.text-uppercase {
+    text-transform: uppercase !important;
+}
+
+.text-lowercase {
+    text-transform: lowercase !important;
+}
+
+.text-capitalize {
+    text-transform: capitalize !important;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.text-break {
+    word-break: break-word !important;
+}
+
+.text-decoration-none {
+    text-decoration: none !important;
+}
+
+.text-decoration-underline {
+    text-decoration: underline !important;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
+
+.portal-theme-credit-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none !important;
+    color: white;
+    box-shadow: $box-shadow-lg;
+    
+    .text-muted {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    h4, h5, h6 {
+        color: white;
+    }
+    
+    .row {
+        align-items: center;
+    }
+    
+    small {
+        color: rgba(255, 255, 255, 0.9);
+    }
+}
+
+.portal-theme-card {
+    border: none !important;
+    border-radius: $border-radius-lg;
+    box-shadow: $box-shadow-lg;
+    transition: $transition-base;
+    overflow: hidden;
+    
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: $box-shadow-xl;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+        color: white;
+        border-radius: $border-radius-lg $border-radius-lg 0 0;
+        border: none !important;
+        padding: 1.25rem 1.5rem;
+        
+        h4, h5, h6 {
+            color: white;
+            margin-bottom: 0;
+        }
+        
+        i {
+            color: white;
+        }
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid $border-color;
+        padding: 1rem 1.5rem;
+    }
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    
+    &:hover {
+        transform: translateY(-8px);
+        box-shadow: $box-shadow-lg;
+    }
+}
+
+.portal-b2b-theme {
+    .btn-primary {
+        background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($primary, 5%) 0%, darken($primary, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+        
+        &:active:not(:disabled) {
+            transform: translateY(0);
+        }
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, $success 0%, darken($success, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($success, 5%) 0%, darken($success, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+        
+        &:active:not(:disabled) {
+            transform: translateY(0);
+        }
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, $secondary 0%, darken($secondary, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($secondary, 5%) 0%, darken($secondary, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, $danger 0%, darken($danger, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($danger, 5%) 0%, darken($danger, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+    }
+}
+
+.portal-b2b-theme {
+    .table {
+        thead {
+            background: linear-gradient(135deg, $light 0%, darken($light, 5%) 100%);
+            
+            th {
+                border-bottom: 2px solid $border-color;
+                font-weight: $font-weight-semibold;
+                color: $text-muted;
+                text-transform: uppercase;
+                font-size: $font-size-sm;
+            }
+        }
+        
+        tbody {
+            tr {
+                transition: background-color 0.2s ease;
+                
+                &:hover {
+                    background-color: lighten($primary, 45%);
+                }
+                
+                td {
+                    vertical-align: middle;
+                }
+            }
+        }
+    }
+}
+
+.portal-b2b-theme {
+    .badge {
+        font-weight: $font-weight-semibold;
+        padding: 0.5em 0.85em;
+        border-radius: $border-radius-pill;
+        font-size: 0.875rem;
+    }
+}
+
+// ========== FORZAR OCULTACIÓN DE ELEMENTOS ODOO ESTÁNDAR ==========
+
+body .o_portal_submenu.breadcrumb,
+body ol.o_portal_submenu.breadcrumb,
+body .d-flex .o_portal_submenu.breadcrumb {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+body .d-flex:has(.o_portal_submenu.breadcrumb) {
+    display: none !important;
+}
+
+body .breadcrumb-item a[href^="/my/"],
+body .breadcrumb-item a[href="/my"],
+body .breadcrumb-item a[href="/my/home"],
+body .breadcrumb-item a[href="/my/purchase"] {
+    display: none !important;
+}
+
+body .breadcrumb-item:has(a[href^="/my/"]:only-child) {
+    display: none !important;
+}
+
+body .breadcrumb-item a[href="/my/home"] i.fa-home {
+    display: none !important;
+}
+
+body .breadcrumb-item:has(a[href="/my/home"] i.fa-home) {
+    display: none !important;
+}
+
+body .breadcrumb-item:empty {
+    display: none !important;
+}
+
+body .breadcrumb-item:has(a[href^="/my/"]:only-child) + .breadcrumb-item::before {
+    display: none !important;
+}
+
+// ========== MEJORAS DASHBOARD ==========
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, $primary 0%, darken($primary, 15%) 100%) !important;
+}
+
+.section-title {
+    font-weight: 600;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.5rem !important;
+}
+
+.card {
+    .card-header.bg-light {
+        background-color: #f8f9fa !important;
+        border-bottom: 2px solid #e9ecef;
+    }
+}
+
+// Iconos más grandes en cards
+.fa-4x {
+    font-size: 4em;
+}
+
+// Mejorar badges
+.badge.fs-6 {
+    font-size: 1rem !important;
+    padding: 0.5rem 1rem;
+}
+
+// Opacity utilities
+.opacity-75 {
+    opacity: 0.75 !important;
+}
+
+.opacity-50 {
+    opacity: 0.5 !important;
+}

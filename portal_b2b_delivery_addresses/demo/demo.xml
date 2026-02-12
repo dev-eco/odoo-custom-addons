@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Datos de demostración para Direcciones de Entrega -->
+        <!-- Los datos de demostración están deshabilitados por defecto -->
+        <!-- Descomenta las secciones siguientes para cargar datos de prueba -->
+        
+        <!--
+        <record id="demo_delivery_address_1" model="delivery.address">
+            <field name="partner_id" ref="portal_b2b_base.demo_distributor_1"/>
+            <field name="name">Almacén Principal</field>
+            <field name="street">Calle Principal, 123</field>
+            <field name="city">Madrid</field>
+            <field name="zip">28001</field>
+            <field name="country_id" ref="base.es"/>
+            <field name="is_default">True</field>
+        </record>
+        
+        <record id="demo_delivery_address_2" model="delivery.address">
+            <field name="partner_id" ref="portal_b2b_base.demo_distributor_1"/>
+            <field name="name">Obra Barcelona</field>
+            <field name="street">Avenida Diagonal, 456</field>
+            <field name="city">Barcelona</field>
+            <field name="zip">08002</field>
+            <field name="country_id" ref="base.es"/>
+            <field name="require_appointment">True</field>
+        </record>
+        -->
+    </data>
+</odoo>

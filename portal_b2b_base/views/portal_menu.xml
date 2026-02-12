@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Dashboard principal del portal B2B -->
+    <template id="portal_b2b_dashboard_home" name="Portal B2B Dashboard Home">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container-fluid mt-4 px-4">
+                
+                <!-- Cabecera con información del distribuidor -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm bg-gradient-primary text-white">
+                            <div class="card-body py-4">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h2 class="mb-2">
+                                            <i class="fa fa-user-circle me-2" aria-hidden="true"/>
+                                            Bienvenido, <t t-esc="request.env.user.partner_id.name"/>
+                                        </h2>
+                                        <p class="mb-0 opacity-75">
+                                            <i class="fa fa-building me-2" aria-hidden="true"/>
+                                            Panel de Control del Distribuidor
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="d-flex flex-column align-items-end">
+                                            <small class="opacity-75">Última conexión</small>
+                                            <strong><t t-esc="datetime.datetime.now().strftime('%d/%m/%Y %H:%M')"/></strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información de crédito (solo distribuidores) -->
+                <t t-if="is_distributor">
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fa fa-credit-card fa-3x text-primary" aria-hidden="true"/>
+                                    </div>
+                                    <h6 class="text-muted text-uppercase mb-2">Límite de Crédito</h6>
+                                    <h3 class="mb-0 text-primary">
+                                        <t t-esc="'%.2f' % (credit_limit or 0.0)"/> €
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fa fa-money fa-3x" t-attf-class="fa fa-money fa-3x #{(available_credit or 0.0) &lt; 0 and 'text-danger' or 'text-success'}" aria-hidden="true"/>
+                                    </div>
+                                    <h6 class="text-muted text-uppercase mb-2">Crédito Disponible</h6>
+                                    <h3 class="mb-0" t-attf-class="#{(available_credit or 0.0) &lt; 0 and 'text-danger' or 'text-success'}">
+                                        <t t-esc="'%.2f' % (available_credit or 0.0)"/> €
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fa fa-line-chart fa-3x text-info" aria-hidden="true"/>
+                                    </div>
+                                    <h6 class="text-muted text-uppercase mb-2">Facturado Año Actual</h6>
+                                    <h3 class="mb-0 text-info">
+                                        <t t-esc="'%.2f' % (total_invoiced_year or 0.0)"/> €
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                
+                <!-- Sección: Gestión de Pedidos -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h4 class="mb-3 section-title">
+                            <i class="fa fa-shopping-cart me-2 text-primary" aria-hidden="true"/>
+                            Gestión de Pedidos
+                        </h4>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="/crear-pedido" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm h-100 hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="fa fa-plus-circle fa-4x text-success" aria-hidden="true"/>
+                                    </div>
+                                    <h5 class="card-title mb-2">Crear Pedido</h5>
+                                    <p class="card-text text-muted small mb-0">
+                                        Realiza un nuevo pedido de productos
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="/mis-pedidos" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm h-100 hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="fa fa-list-alt fa-4x text-primary" aria-hidden="true"/>
+                                    </div>
+                                    <h5 class="card-title mb-2">Mis Pedidos</h5>
+                                    <p class="card-text text-muted small mb-0">
+                                        Consulta y gestiona tus pedidos
+                                    </p>
+                                    <t t-if="order_count is not None and order_count > 0">
+                                        <span class="badge bg-primary mt-2 fs-6">
+                                            <t t-esc="order_count"/> pedidos
+                                        </span>
+                                    </t>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="/mis-pedidos/exportar" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm h-100 hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="fa fa-file-excel-o fa-4x text-success" aria-hidden="true"/>
+                                    </div>
+                                    <h5 class="card-title mb-2">Exportar Pedidos</h5>
+                                    <p class="card-text text-muted small mb-0">
+                                        Descarga tus pedidos en Excel
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Sección: Facturación -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h4 class="mb-3 section-title">
+                            <i class="fa fa-file-text me-2 text-info" aria-hidden="true"/>
+                            Facturación
+                        </h4>
+                    </div>
+                    
+                    <div class="col-lg-6 col-md-6 mb-3">
+                        <a href="/mis-facturas" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm h-100 hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="fa fa-file-text fa-4x text-info" aria-hidden="true"/>
+                                    </div>
+                                    <h5 class="card-title mb-2">Mis Facturas</h5>
+                                    <p class="card-text text-muted small mb-0">
+                                        Consulta tus facturas y pagos
+                                    </p>
+                                    <t t-if="invoice_count is not None and invoice_count > 0">
+                                        <span class="badge bg-info mt-2 fs-6">
+                                            <t t-esc="invoice_count"/> facturas
+                                        </span>
+                                    </t>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-6 col-md-6 mb-3">
+                        <a href="/mi-cuenta" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm h-100 hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="fa fa-user fa-4x text-secondary" aria-hidden="true"/>
+                                    </div>
+                                    <h5 class="card-title mb-2">Mi Cuenta</h5>
+                                    <p class="card-text text-muted small mb-0">
+                                        Actualiza tus datos de contacto
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Sección: Configuración (si módulo instalado) -->
+                <t t-if="has_delivery_module">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4 class="mb-3 section-title">
+                                <i class="fa fa-cogs me-2 text-warning" aria-hidden="true"/>
+                                Configuración
+                            </h4>
+                        </div>
+                        
+                        <div class="col-lg-6 col-md-6 mb-3">
+                            <a href="/mis-direcciones" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100 hover-lift">
+                                    <div class="card-body text-center py-4">
+                                        <div class="mb-3">
+                                            <i class="fa fa-map-marker fa-4x text-warning" aria-hidden="true"/>
+                                        </div>
+                                        <h5 class="card-title mb-2">Mis Direcciones</h5>
+                                        <p class="card-text text-muted small mb-0">
+                                            Gestiona direcciones de entrega
+                                        </p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="col-lg-6 col-md-6 mb-3">
+                            <a href="/mis-etiquetas" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100 hover-lift">
+                                    <div class="card-body text-center py-4">
+                                        <div class="mb-3">
+                                            <i class="fa fa-tags fa-4x text-secondary" aria-hidden="true"/>
+                                        </div>
+                                        <h5 class="card-title mb-2">Etiquetas Cliente Final</h5>
+                                        <p class="card-text text-muted small mb-0">
+                                            Gestiona tus clientes finales
+                                        </p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Pedidos Recientes -->
+                <t t-if="recent_orders">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light border-0">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h5 class="mb-0">
+                                                <i class="fa fa-clock-o me-2 text-primary" aria-hidden="true"/>
+                                                Pedidos Recientes
+                                            </h5>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <a href="/mis-pedidos" class="btn btn-sm btn-primary">
+                                                Ver Todos
+                                                <i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Pedido</th>
+                                                    <th>Su Referencia</th>
+                                                    <th>Fecha</th>
+                                                    <th>Estado</th>
+                                                    <th>Estado Pedido</th>
+                                                    <th>Estado Albarán</th>
+                                                    <th class="text-end">Total</th>
+                                                    <th class="text-center">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="recent_orders" t-as="order">
+                                                    <tr>
+                                                        <td>
+                                                            <strong t-esc="order.name"/>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="order.client_order_ref">
+                                                                <span class="badge bg-info" t-esc="order.client_order_ref"/>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">-</span>
+                                                            </t>
+                                                        </td>
+                                                        <td>
+                                                            <span t-field="order.date_order" t-options="{'widget': 'date'}"/>
+                                                        </td>
+                                                        <td>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'secondary' if order.state in ['draft', 'sent'] else
+                                                                'success' if order.state == 'sale' else
+                                                                'info' if order.state == 'done' else
+                                                                'danger'
+                                                            }">
+                                                                <t t-if="order.state == 'draft'">Presupuesto</t>
+                                                                <t t-elif="order.state == 'sent'">Presupuesto Enviado</t>
+                                                                <t t-elif="order.state == 'sale'">Pedido de Venta</t>
+                                                                <t t-elif="order.state == 'done'">Bloqueado</t>
+                                                                <t t-elif="order.state == 'cancel'">Cancelado</t>
+                                                                <t t-else=""><t t-esc="order.state"/></t>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'success' if order.order_status == 'shipped' else
+                                                                'info' if order.order_status == 'prepared' else
+                                                                'primary' if order.order_status == 'manufacturing' else
+                                                                'warning' if order.order_status == 'warehouse' else
+                                                                'secondary'
+                                                            }">
+                                                                <t t-if="order.order_status == 'new'">Nuevo</t>
+                                                                <t t-elif="order.order_status == 'warehouse'">Almacén</t>
+                                                                <t t-elif="order.order_status == 'manufacturing'">Fabricación</t>
+                                                                <t t-elif="order.order_status == 'prepared'">Preparado</t>
+                                                                <t t-elif="order.order_status == 'shipped'">Salida</t>
+                                                                <t t-else="">-</t>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'success' if order.picking_status == 'done' else
+                                                                'info' if order.picking_status == 'assigned' else
+                                                                'warning' if order.picking_status == 'partially_available' else
+                                                                'danger' if order.picking_status in ['not_created', 'waiting'] else
+                                                                'secondary'
+                                                            }">
+                                                                <t t-if="order.picking_status == 'not_created'">No Creado</t>
+                                                                <t t-elif="order.picking_status == 'waiting'">Esperando</t>
+                                                                <t t-elif="order.picking_status == 'partially_available'">Parcialmente Disponible</t>
+                                                                <t t-elif="order.picking_status == 'assigned'">Reservado</t>
+                                                                <t t-elif="order.picking_status == 'done'">Realizado</t>
+                                                                <t t-elif="order.picking_status == 'cancelled'">Cancelado</t>
+                                                                <t t-else="">-</t>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong t-field="order.amount_total" 
+                                                                    t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <a t-attf-href="/mis-pedidos/#{order.id}" 
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                <i class="fa fa-eye" aria-hidden="true"/>
+                                                                Ver
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                
+            </div>
+            
+        </t>
+    </template>
+
+</odoo>

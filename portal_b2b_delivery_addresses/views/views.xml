@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vistas backend para Direcciones de Entrega -->
+        <!-- Los modelos principales (delivery.address, distributor.label) tienen sus vistas en otros archivos -->
+        <!-- Este archivo se mantiene para compatibilidad futura -->
+        
+        <!-- Incluir reporte personalizado -->
+        <xi:include href="sale_order_report.xml"/>
+    </data>
+</odoo>

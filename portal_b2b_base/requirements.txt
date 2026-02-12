@@ -1,0 +1,10 @@
+# Dependencias de Python para Portal B2B Base
+# Odoo 17 Community Edition
+
+# Odoo base (ya incluido en instalación)
+# odoo>=17.0,<17.1
+
+# Dependencias adicionales opcionales
+requests>=2.28.0
+python-dateutil>=2.8.2
+pytz>=2023.3

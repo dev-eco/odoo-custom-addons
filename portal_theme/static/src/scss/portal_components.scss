@@ -1,0 +1,400 @@
+/**
+ * Portal B2B Theme - Componentes Reutilizables
+ * Define componentes específicos del portal
+ */
+
+// Las variables ya están importadas en custom.scss, no reimportar aquí
+
+// ========== STAT CARD ==========
+
+.stat-card {
+    background: white;
+    border-radius: $border-radius;
+    padding: 1.5rem;
+    box-shadow: $box-shadow;
+    text-align: center;
+    transition: $transition-base;
+    
+    &:hover {
+        box-shadow: $box-shadow-lg;
+        transform: translateY(-4px);
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        color: $primary;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: $font-weight-bold;
+        color: $headings-color;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: $font-size-sm;
+        color: $text-muted;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+}
+
+// ========== FEATURE CARD ==========
+
+.feature-card {
+    background: white;
+    border-radius: $border-radius;
+    padding: 2rem;
+    box-shadow: $box-shadow;
+    transition: $transition-base;
+    
+    &:hover {
+        box-shadow: $box-shadow-lg;
+        transform: translateY(-4px);
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background-color: lighten($primary, 45%);
+        border-radius: $border-radius;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: $primary;
+        margin-bottom: 1rem;
+    }
+    
+    h4 {
+        margin-bottom: 0.75rem;
+    }
+    
+    p {
+        color: $text-muted;
+        margin-bottom: 0;
+    }
+}
+
+// ========== TESTIMONIAL CARD ==========
+
+.testimonial-card {
+    background: white;
+    border-radius: $border-radius;
+    padding: 2rem;
+    box-shadow: $box-shadow;
+    border-left: 4px solid $primary;
+    
+    .testimonial-text {
+        font-style: italic;
+        color: $body-color;
+        margin-bottom: 1.5rem;
+        
+        &::before {
+            content: '"';
+            font-size: 3rem;
+            color: lighten($primary, 30%);
+            line-height: 0;
+            vertical-align: -0.45em;
+            margin-right: 0.25rem;
+        }
+    }
+    
+    .testimonial-author {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: lighten($primary, 40%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: $font-weight-bold;
+            color: $primary;
+        }
+        
+        .author-info {
+            .author-name {
+                font-weight: $font-weight-semibold;
+                margin-bottom: 0.25rem;
+            }
+            
+            .author-title {
+                font-size: $font-size-sm;
+                color: $text-muted;
+            }
+        }
+    }
+}
+
+// ========== TIMELINE ==========
+
+.timeline {
+    position: relative;
+    padding: 2rem 0;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 100%;
+        background-color: $border-color;
+    }
+    
+    .timeline-item {
+        margin-bottom: 2rem;
+        
+        &:nth-child(odd) {
+            text-align: right;
+            padding-right: 50%;
+            padding-left: 0;
+        }
+        
+        &:nth-child(even) {
+            text-align: left;
+            padding-left: 50%;
+            padding-right: 0;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background-color: $primary;
+            border: 4px solid white;
+            border-radius: 50%;
+            box-shadow: $box-shadow;
+            top: 0;
+        }
+        
+        .timeline-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: $border-radius;
+            box-shadow: $box-shadow;
+            
+            h4 {
+                margin-bottom: 0.5rem;
+            }
+            
+            .timeline-date {
+                font-size: $font-size-sm;
+                color: $text-muted;
+                margin-bottom: 0.75rem;
+            }
+        }
+    }
+}
+
+// ========== PRICING CARD ==========
+
+.pricing-card {
+    background: white;
+    border-radius: $border-radius;
+    padding: 2rem;
+    box-shadow: $box-shadow;
+    text-align: center;
+    transition: $transition-base;
+    
+    &:hover {
+        box-shadow: $box-shadow-lg;
+        transform: translateY(-4px);
+    }
+    
+    &.pricing-featured {
+        border: 2px solid $primary;
+        transform: scale(1.05);
+        
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: $primary;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: $border-radius-pill;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-semibold;
+        }
+    }
+    
+    .pricing-title {
+        font-size: 1.5rem;
+        font-weight: $font-weight-semibold;
+        margin-bottom: 1rem;
+    }
+    
+    .pricing-price {
+        font-size: 3rem;
+        font-weight: $font-weight-bold;
+        color: $primary;
+        margin-bottom: 0.5rem;
+        
+        .pricing-currency {
+            font-size: 1.5rem;
+        }
+        
+        .pricing-period {
+            font-size: $font-size-base;
+            color: $text-muted;
+            font-weight: $font-weight-normal;
+        }
+    }
+    
+    .pricing-features {
+        list-style: none;
+        padding: 1.5rem 0;
+        margin: 1.5rem 0;
+        border-top: 1px solid $border-color;
+        border-bottom: 1px solid $border-color;
+        text-align: left;
+        
+        li {
+            padding: 0.75rem 0;
+            color: $text-muted;
+            
+            &::before {
+                content: '✓';
+                color: $success;
+                font-weight: $font-weight-bold;
+                margin-right: 0.75rem;
+            }
+        }
+    }
+}
+
+// ========== PROGRESS BAR CUSTOM ==========
+
+.progress-custom {
+    height: 8px;
+    background-color: $border-color;
+    border-radius: $border-radius-pill;
+    overflow: hidden;
+    
+    .progress-bar-custom {
+        height: 100%;
+        background: linear-gradient(90deg, $primary, lighten($primary, 10%));
+        border-radius: $border-radius-pill;
+        transition: width 0.6s ease;
+    }
+}
+
+// ========== BADGE CUSTOM ==========
+
+.badge-custom {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: $border-radius-pill;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    
+    &.badge-primary {
+        background-color: lighten($primary, 40%);
+        color: darken($primary, 20%);
+    }
+    
+    &.badge-success {
+        background-color: lighten($success, 40%);
+        color: darken($success, 20%);
+    }
+    
+    &.badge-danger {
+        background-color: lighten($danger, 40%);
+        color: darken($danger, 20%);
+    }
+    
+    &.badge-warning {
+        background-color: lighten($warning, 40%);
+        color: darken($warning, 30%);
+    }
+}
+
+// ========== DIVIDER ==========
+
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, $border-color, transparent);
+    margin: 2rem 0;
+}
+
+// ========== EMPTY STATE ==========
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    
+    .empty-icon {
+        font-size: 4rem;
+        color: lighten($primary, 30%);
+        margin-bottom: 1rem;
+    }
+    
+    h3 {
+        color: $headings-color;
+        margin-bottom: 0.5rem;
+    }
+    
+    p {
+        color: $text-muted;
+        margin-bottom: 1.5rem;
+    }
+}
+
+// ========== LOADING SPINNER ==========
+
+.spinner-custom {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid $border-color;
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+// ========== RESPONSIVE ==========
+
+@media (max-width: 768px) {
+    .timeline {
+        &::before {
+            left: 0;
+        }
+        
+        .timeline-item {
+            &:nth-child(odd),
+            &:nth-child(even) {
+                text-align: left;
+                padding-left: 50px;
+                padding-right: 0;
+            }
+            
+            .timeline-marker {
+                left: 0;
+                transform: translateX(-50%);
+            }
+        }
+    }
+    
+    .pricing-card {
+        &.pricing-featured {
+            transform: scale(1);
+        }
+    }
+}

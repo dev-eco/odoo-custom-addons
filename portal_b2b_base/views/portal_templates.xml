@@ -1,0 +1,1252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Template: Lista de Pedidos (REGENERADA COMPLETA) -->
+    <template id="portal_mis_pedidos" name="Mis Pedidos">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Mis Pedidos</t>
+            </t>
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-shopping-cart me-2" title="Pedidos" aria-hidden="true"/>
+                                            Mis Pedidos
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <span class="badge bg-light text-dark fs-6 me-2">
+                                            Total: <t t-esc="'%.2f' % (grand_total or 0.0)"/> €
+                                        </span>
+                                        <a href="/crear-pedido" class="btn btn-success btn-sm">
+                                            <i class="fa fa-plus me-2" title="Nuevo" aria-hidden="true"/>
+                                            Nuevo Pedido
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Filtros y búsqueda -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <form method="get" class="d-flex">
+                                            <div class="input-group me-2">
+                                                <input type="text" 
+                                                       name="search" 
+                                                       class="form-control" 
+                                                       placeholder="Buscar pedido..."
+                                                       t-att-value="search or ''"/>
+                                                <select name="search_in" class="form-select" style="max-width: 200px;">
+                                                    <option value="name" t-att-selected="'selected' if search_in == 'name' else None">Referencia</option>
+                                                    <option value="client_order_ref" t-att-selected="'selected' if search_in == 'client_order_ref' else None">Su Referencia</option>
+                                                    <option value="all" t-att-selected="'selected' if search_in == 'all' else None">Todo</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fa fa-search" title="Buscar" aria-hidden="true"/>
+                                            </button>
+                                            <!-- Mantener otros parámetros -->
+                                            <input type="hidden" name="sortby" t-att-value="sortby or ''"/>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <a href="/mis-pedidos/exportar" class="btn btn-info btn-sm">
+                                            <i class="fa fa-file-excel-o me-2" aria-hidden="true"/>
+                                            Exportar Excel
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tabla de pedidos -->
+                                <t t-if="orders">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Referencia</th>
+                                                    <th>Su Referencia</th>
+                                                    <th>Fecha</th>
+                                                    <th>Estado</th>
+                                                    <th>Estado Pedido</th>
+                                                    <th>Estado Albarán</th>
+                                                    <th>Cliente Final</th>
+                                                    <th>Dirección Entrega</th>
+                                                    <th>📎 Docs</th>
+                                                    <th class="text-end">Total</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="orders" t-as="order">
+                                                    <tr>
+                                                        <td>
+                                                            <a t-attf-href="/mis-pedidos/#{order.id}">
+                                                                <strong t-esc="order.name or ''"/>
+                                                            </a>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="order.client_order_ref">
+                                                                <span class="badge bg-info" t-esc="order.client_order_ref"/>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">-</span>
+                                                            </t>
+                                                        </td>
+                                                        <td t-esc="order.date_order" t-options="{'widget': 'date'}"/>
+                                                        <td>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'secondary' if order.state in ['draft', 'sent'] else
+                                                                'success' if order.state == 'sale' else
+                                                                'info' if order.state == 'done' else
+                                                                'danger'
+                                                            }">
+                                                                <t t-if="order.state == 'draft'">Presupuesto</t>
+                                                                <t t-elif="order.state == 'sent'">Presupuesto Enviado</t>
+                                                                <t t-elif="order.state == 'sale'">Pedido de Venta</t>
+                                                                <t t-elif="order.state == 'done'">Bloqueado</t>
+                                                                <t t-elif="order.state == 'cancel'">Cancelado</t>
+                                                                <t t-else=""><t t-esc="order.state or 'draft'"/></t>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <t t-set="order_status_value" t-value="order.order_status or 'new'"/>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'success' if order_status_value == 'shipped' else
+                                                                'info' if order_status_value == 'prepared' else
+                                                                'primary' if order_status_value == 'manufacturing' else
+                                                                'warning' if order_status_value == 'warehouse' else
+                                                                'secondary'
+                                                            }">
+                                                                <t t-if="order_status_value == 'new'">Nuevo</t>
+                                                                <t t-elif="order_status_value == 'warehouse'">Almacén</t>
+                                                                <t t-elif="order_status_value == 'manufacturing'">Fabricación</t>
+                                                                <t t-elif="order_status_value == 'prepared'">Preparado</t>
+                                                                <t t-elif="order_status_value == 'shipped'">Salida</t>
+                                                                <t t-else=""><t t-esc="order_status_value"/></t>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <t t-set="picking_status_value" t-value="order.picking_status or 'not_created'"/>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'success' if picking_status_value == 'done' else
+                                                                'info' if picking_status_value == 'assigned' else
+                                                                'warning' if picking_status_value == 'partially_available' else
+                                                                'danger' if picking_status_value in ['not_created', 'waiting'] else
+                                                                'secondary'
+                                                            }">
+                                                                <t t-if="picking_status_value == 'not_created'">No Creado</t>
+                                                                <t t-elif="picking_status_value == 'waiting'">Esperando</t>
+                                                                <t t-elif="picking_status_value == 'partially_available'">Parcialmente Disponible</t>
+                                                                <t t-elif="picking_status_value == 'assigned'">Reservado</t>
+                                                                <t t-elif="picking_status_value == 'done'">Realizado</t>
+                                                                <t t-elif="picking_status_value == 'cancelled'">Cancelado</t>
+                                                                <t t-else=""><t t-esc="picking_status_value"/></t>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <t t-set="final_customer" t-value="''"/>
+                                                            
+                                                            <!-- Método robusto con manejo de errores -->
+                                                            <t t-try="">
+                                                                <t t-set="final_customer_value" t-value="order.final_customer_name or ''"/>
+                                                                <t t-if="final_customer_value">
+                                                                    <t t-set="final_customer" t-value="final_customer_value"/>
+                                                                </t>
+                                                                <t t-catch="">
+                                                                    <!-- Fallback a distributor_customer_name -->
+                                                                    <t t-try="">
+                                                                        <t t-set="distributor_customer_value" t-value="order.distributor_customer_name or ''"/>
+                                                                        <t t-if="distributor_customer_value">
+                                                                            <t t-set="final_customer" t-value="distributor_customer_value"/>
+                                                                        </t>
+                                                                        <t t-catch="">
+                                                                            <!-- Si todo falla, dejar vacío -->
+                                                                        </t>
+                                                                    </t>
+                                                                </t>
+                                                            </t>
+                                                            
+                                                            <!-- Mostrar cliente final si existe -->
+                                                            <t t-if="final_customer">
+                                                                <small class="text-primary">
+                                                                    <i class="fa fa-user me-1" aria-hidden="true"/>
+                                                                    <t t-esc="final_customer"/>
+                                                                </small>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">Stock propio</span>
+                                                            </t>
+                                                        </td>
+                                                        <td>
+                                                            <t t-set="delivery_address" t-value="''"/>
+                                                            
+                                                            <!-- Método robusto para dirección de entrega -->
+                                                            <t t-try="">
+                                                                <t t-set="delivery_address_obj" t-value="order.delivery_address_id"/>
+                                                                <t t-if="delivery_address_obj and delivery_address_obj.name">
+                                                                    <t t-set="delivery_address" t-value="delivery_address_obj.name"/>
+                                                                </t>
+                                                                <t t-catch="">
+                                                                    <!-- Fallback a partner_shipping_id -->
+                                                                    <t t-if="order.partner_shipping_id and order.partner_shipping_id != order.partner_id">
+                                                                        <t t-set="shipping_partner" t-value="order.partner_shipping_id"/>
+                                                                        <t t-if="shipping_partner and shipping_partner.name">
+                                                                            <t t-set="delivery_address" t-value="shipping_partner.name"/>
+                                                                        </t>
+                                                                    </t>
+                                                                </t>
+                                                            </t>
+                                                            
+                                                            <!-- Mostrar dirección si existe -->
+                                                            <t t-if="delivery_address">
+                                                                <small class="text-info">
+                                                                    <i class="fa fa-map-marker me-1" aria-hidden="true"/>
+                                                                    <t t-esc="delivery_address"/>
+                                                                </small>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">Estándar</span>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <t t-set="doc_count" t-value="0"/>
+                                                            
+                                                            <!-- Método robusto para documentos -->
+                                                            <t t-try="">
+                                                                <t t-set="doc_count_value" t-value="order.distributor_document_count or 0"/>
+                                                                <t t-set="doc_count" t-value="int(doc_count_value)"/>
+                                                                <t t-catch="">
+                                                                    <t t-set="doc_count" t-value="0"/>
+                                                                </t>
+                                                            </t>
+                                                            
+                                                            <t t-if="doc_count > 0">
+                                                                <a t-attf-href="/mis-pedidos/#{order.id}/documentos" 
+                                                                   class="btn btn-sm btn-info" 
+                                                                   title="Ver documentos">
+                                                                    <t t-esc="doc_count"/>
+                                                                </a>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <a t-attf-href="/mis-pedidos/#{order.id}/documentos" 
+                                                                   class="btn btn-sm btn-outline-secondary" 
+                                                                   title="Subir documentos">
+                                                                    <i class="fa fa-upload" aria-hidden="true"/>
+                                                                </a>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong t-field="order.amount_total"
+                                                                    t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <a t-attf-href="/mis-pedidos/#{order.id}"
+                                                               class="btn btn-sm btn-primary me-1"
+                                                               title="Ver detalle">
+                                                                <i class="fa fa-eye" aria-hidden="true"/>
+                                                            </a>
+                                                            <a t-attf-href="/mis-pedidos/#{order.id}/repetir"
+                                                               class="btn btn-sm btn-secondary"
+                                                               title="Repetir pedido">
+                                                                <i class="fa fa-copy" aria-hidden="true"/>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Paginación -->
+                                    <div class="mt-3">
+                                        <t t-call="portal.pager"/>
+                                    </div>
+                                </t>
+                                
+                                <!-- Sin pedidos -->
+                                <t t-else="">
+                                    <div class="alert alert-info text-center">
+                                        <i class="fa fa-info-circle fa-3x mb-3" title="Información" aria-hidden="true"/>
+                                        <p class="mb-0">No se encontraron pedidos.</p>
+                                        <a href="/crear-pedido" class="btn btn-primary mt-3">
+                                            Crear primer pedido
+                                        </a>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Crear Pedido -->
+    <template id="portal_crear_pedido" name="Crear Pedido">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-10 offset-lg-1">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item active">Crear Pedido</li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-plus-circle me-2" aria-hidden="true"/>
+                                    Crear Nuevo Pedido
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Información de crédito -->
+                                <t t-if="credit_limit > 0">
+                                    <div class="alert alert-info mb-4">
+                                        <div class="row text-center">
+                                            <div class="col-md-4">
+                                                <small>Límite de Crédito</small>
+                                                <h5><t t-esc="'%.2f' % credit_limit"/> €</h5>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small>Crédito Disponible</small>
+                                                <h5 t-attf-class="#{available_credit &lt; 0 and 'text-danger' or 'text-success'}">
+                                                    <t t-esc="'%.2f' % available_credit"/> €
+                                                </h5>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small>Moneda</small>
+                                                <h5><t t-esc="currency_id.name if currency_id else 'EUR'"/></h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                                
+                                <!-- Mensaje de error/éxito -->
+                                <div id="order-message" style="display: none;"></div>
+                                
+                                <form id="form-crear-pedido">
+                                    
+                                    <!--========== BÚSQUEDA DE PRODUCTOS ==========-->
+                                    <div class="mb-4">
+                                        <h5>Buscar Productos</h5>
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <input type="text" 
+                                                       id="product-search" 
+                                                       class="form-control" 
+                                                       placeholder="Buscar por nombre o referencia..."/>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button type="button" 
+                                                        id="btn-search-product" 
+                                                        class="btn btn-primary w-100">
+                                                    <i class="fa fa-search me-2" aria-hidden="true"/>
+                                                    Buscar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="product-results" class="list-group mt-2" style="display: none;"></div>
+                                    </div>
+                                    
+                                    <!--========== LÍNEAS DEL PEDIDO ==========-->
+                                    <div class="mb-4">
+                                        <h5>Productos del Pedido</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped" id="order-lines-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Producto</th>
+                                                        <th class="text-center">Cantidad</th>
+                                                        <th class="text-end">Precio Unit.</th>
+                                                        <th class="text-end">Subtotal</th>
+                                                        <th class="text-center">Acción</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="order-lines-body">
+                                                    <tr id="empty-lines-message">
+                                                        <td colspan="5" class="text-center text-muted">
+                                                            No hay productos agregados. Use el buscador arriba.
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr class="table-active">
+                                                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                                        <td class="text-end"><strong id="order-total">0.00 €</strong></td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <!--========== DIRECCIÓN DE ENTREGA ==========-->
+                                    <t t-if="has_delivery_module and delivery_addresses">
+                                        <div class="mb-4">
+                                            <h5>Dirección de Entrega</h5>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <select id="delivery-address-select" 
+                                                            name="delivery_address_id" 
+                                                            class="form-control">
+                                                        <option value="">Usar dirección del distribuidor</option>
+                                                        <t t-foreach="delivery_addresses" t-as="address">
+                                                            <option t-att-value="address.id"
+                                                                    t-att-selected="address == default_address"
+                                                                    t-att-data-full-address="address.full_address"
+                                                                    t-att-data-require-appointment="address.require_appointment"
+                                                                    t-att-data-tail-lift="address.tail_lift_required">
+                                                                <t t-esc="address.name"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="address-info" style="display: none;" class="mt-3">
+                                                <div class="alert alert-info">
+                                                    <strong>Dirección:</strong>
+                                                    <div id="address-full"></div>
+                                                    
+                                                    <div id="address-requirements" style="display: none;" class="mt-2">
+                                                        <div id="appointment-warning" style="display: none;">
+                                                            <i class="fa fa-calendar me-2" aria-hidden="true"/>
+                                                            Requiere cita previa
+                                                        </div>
+                                                        <div id="tail-lift-warning" style="display: none;">
+                                                            <i class="fa fa-truck me-2" aria-hidden="true"/>
+                                                            Requiere camión con pluma
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                    
+                                    <!--========== ETIQUETA CLIENTE FINAL ==========-->
+                                    <t t-if="distributor_labels">
+                                        <div class="mb-4">
+                                            <h5>Cliente Final</h5>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <select id="distributor-label-select" 
+                                                            name="distributor_label_id" 
+                                                            class="form-control">
+                                                        <option value="">Stock propio</option>
+                                                        <t t-foreach="distributor_labels" t-as="label">
+                                                            <option t-att-value="label.id"
+                                                                    t-att-data-customer-name="label.customer_name"
+                                                                    t-att-data-customer-ref="label.customer_reference"
+                                                                    t-att-data-hide-company="label.hide_company_info and '1' or '0'"
+                                                                    t-att-data-print-delivery="label.print_on_delivery_note and '1' or '0'">
+                                                                <t t-esc="label.name"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="label-info" style="display: none;" class="mt-3">
+                                                <div class="alert alert-secondary">
+                                                    <strong>Cliente Final:</strong>
+                                                    <div id="label-customer-name"></div>
+                                                    
+                                                    <div id="label-customer-ref-container" style="display: none;">
+                                                        <strong>Referencia:</strong>
+                                                        <span id="label-customer-ref"></span>
+                                                    </div>
+                                                    
+                                                    <div id="label-settings" style="display: none;" class="mt-2">
+                                                        <div id="label-print-delivery" style="display: none;">
+                                                            <i class="fa fa-print me-2" aria-hidden="true"/>
+                                                            Se imprimirá en albarán
+                                                        </div>
+                                                        <div id="label-hide-company" style="display: none;">
+                                                            <i class="fa fa-eye-slash me-2" aria-hidden="true"/>
+                                                            Se ocultará info de empresa
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="customer-delivery-ref-group" style="display: none;" class="mt-3">
+                                                <label class="form-label">Referencia Albarán Cliente</label>
+                                                <input type="text" 
+                                                       id="customer-delivery-ref" 
+                                                       name="customer_delivery_reference" 
+                                                       class="form-control" 
+                                                       placeholder="Ej: ALB-2024-001"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                    
+                                    <!--========== INFORMACIÓN ADICIONAL ==========-->
+                                    <div class="mb-4">
+                                        <h5>Información Adicional</h5>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Su Referencia</label>
+                                                <input type="text" 
+                                                       id="client-order-ref" 
+                                                       name="client_order_ref" 
+                                                       class="form-control" 
+                                                       placeholder="Su número de pedido"/>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Horario/Restricciones Entrega</label>
+                                                <input type="text" 
+                                                       id="delivery-schedule" 
+                                                       name="delivery_schedule" 
+                                                       class="form-control" 
+                                                       placeholder="Ej: Solo mañanas, cita previa"/>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Notas del Pedido</label>
+                                            <textarea id="order-notes" 
+                                                      name="notes" 
+                                                      class="form-control" 
+                                                      rows="3" 
+                                                      placeholder="Información adicional..."></textarea>
+                                        </div>
+                                    </div>
+                                    
+                                    <!--========== BOTONES ==========-->
+                                    <div class="text-end">
+                                        <a href="/mis-pedidos" class="btn btn-secondary me-2">
+                                            <i class="fa fa-times me-2" aria-hidden="true"/>
+                                            Cancelar
+                                        </a>
+                                        <button type="submit" 
+                                                id="btn-submit-order" 
+                                                class="btn btn-success">
+                                            <i class="fa fa-check me-2" aria-hidden="true"/>
+                                            Crear Pedido
+                                        </button>
+                                    </div>
+                                    
+                                </form>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Detalle de Pedido -->
+    <template id="portal_pedido_detalle" name="Detalle de Pedido">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-10 offset-lg-1">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-pedidos">Mis Pedidos</a></li>
+                                <li class="breadcrumb-item active"><t t-esc="order.name"/></li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-shopping-cart me-2" aria-hidden="true"/>
+                                            <t t-esc="order.name"/>
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <span t-attf-class="badge bg-#{
+                                            'secondary' if order.state in ['draft', 'sent'] else
+                                            'success' if order.state == 'sale' else
+                                            'info' if order.state == 'done' else
+                                            'danger'
+                                        } fs-6">
+                                            <t t-if="order.state == 'draft'">Presupuesto</t>
+                                            <t t-elif="order.state == 'sent'">Presupuesto Enviado</t>
+                                            <t t-elif="order.state == 'sale'">Pedido de Venta</t>
+                                            <t t-elif="order.state == 'done'">Bloqueado</t>
+                                            <t t-elif="order.state == 'cancel'">Cancelado</t>
+                                            <t t-else=""><t t-esc="order.state"/></t>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Información general -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <p><strong>Fecha:</strong> <t t-esc="order.date_order" t-options="{'widget': 'date'}"/></p>
+                                        <p><strong>Su Referencia:</strong> <t t-esc="order.client_order_ref or '-'"/></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Estado Pedido:</strong> 
+                                            <span t-attf-class="badge bg-#{
+                                                'success' if order.order_status == 'shipped' else
+                                                'info' if order.order_status == 'prepared' else
+                                                'primary' if order.order_status == 'manufacturing' else
+                                                'warning' if order.order_status == 'warehouse' else
+                                                'secondary'
+                                            }">
+                                                <t t-if="order.order_status == 'new'">Nuevo</t>
+                                                <t t-elif="order.order_status == 'warehouse'">Almacén</t>
+                                                <t t-elif="order.order_status == 'manufacturing'">Fabricación</t>
+                                                <t t-elif="order.order_status == 'prepared'">Preparado</t>
+                                                <t t-elif="order.order_status == 'shipped'">Salida</t>
+                                                <t t-else="">-</t>
+                                            </span>
+                                        </p>
+                                        <p><strong>Estado Albarán:</strong>
+                                            <span t-attf-class="badge bg-#{
+                                                'success' if order.picking_status == 'done' else
+                                                'info' if order.picking_status == 'assigned' else
+                                                'warning' if order.picking_status == 'partially_available' else
+                                                'danger' if order.picking_status in ['not_created', 'waiting'] else
+                                                'secondary'
+                                            }">
+                                                <t t-if="order.picking_status == 'not_created'">No Creado</t>
+                                                <t t-elif="order.picking_status == 'waiting'">Esperando</t>
+                                                <t t-elif="order.picking_status == 'partially_available'">Parcialmente Disponible</t>
+                                                <t t-elif="order.picking_status == 'assigned'">Reservado</t>
+                                                <t t-elif="order.picking_status == 'done'">Realizado</t>
+                                                <t t-elif="order.picking_status == 'cancelled'">Cancelado</t>
+                                                <t t-else="">-</t>
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Productos -->
+                                <h5 class="mt-4 mb-3">Productos</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th class="text-center">Cantidad</th>
+                                                <th class="text-end">Precio Unit.</th>
+                                                <th class="text-end">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="order.order_line" t-as="line">
+                                                <tr>
+                                                    <td>
+                                                        <strong><t t-esc="line.product_id.name"/></strong>
+                                                        <t t-if="line.product_id.default_code">
+                                                            <br/><small class="text-muted">Ref: <t t-esc="line.product_id.default_code"/></small>
+                                                        </t>
+                                                    </td>
+                                                    <td class="text-center"><t t-esc="line.product_uom_qty"/></td>
+                                                    <td class="text-end"><t t-esc="'%.2f' % line.price_unit"/> €</td>
+                                                    <td class="text-end"><strong><t t-esc="'%.2f' % line.price_subtotal"/> €</strong></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-active">
+                                                <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                                <td class="text-end"><strong><t t-esc="'%.2f' % order.amount_untaxed"/> €</strong></td>
+                                            </tr>
+                                            <tr class="table-active">
+                                                <td colspan="3" class="text-end"><strong>Impuestos:</strong></td>
+                                                <td class="text-end"><strong><t t-esc="'%.2f' % order.amount_tax"/> €</strong></td>
+                                            </tr>
+                                            <tr class="table-active">
+                                                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                                <td class="text-end"><strong><t t-esc="'%.2f' % order.amount_total"/> €</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                
+                                <!-- Productos sin stock -->
+                                <t t-if="productos_sin_stock">
+                                    <div class="alert alert-warning mt-4">
+                                        <h5 class="alert-heading">
+                                            <i class="fa fa-exclamation-triangle me-2" aria-hidden="true"/>
+                                            Productos sin Stock
+                                        </h5>
+                                        <ul class="mb-0">
+                                            <t t-foreach="productos_sin_stock" t-as="prod">
+                                                <li>
+                                                    <strong><t t-esc="prod['producto']"/></strong>
+                                                    - Solicitado: <t t-esc="prod['solicitado']"/>, 
+                                                    Disponible: <t t-esc="prod['disponible']"/>, 
+                                                    Faltante: <t t-esc="prod['faltante']"/>
+                                                </li>
+                                            </t>
+                                        </ul>
+                                    </div>
+                                </t>
+                                
+                                <!-- Notas -->
+                                <t t-if="order.note">
+                                    <div class="alert alert-info mt-4">
+                                        <h5 class="alert-heading">Notas</h5>
+                                        <p class="mb-0" t-esc="order.note" style="white-space: pre-wrap;"/>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="row">
+                            <div class="col-12">
+                                <a href="/mis-pedidos" class="btn btn-secondary me-2">
+                                    <i class="fa fa-arrow-left me-2" aria-hidden="true"/>
+                                    Volver a Mis Pedidos
+                                </a>
+                                <a t-attf-href="/mis-pedidos/#{order.id}/documentos" class="btn btn-primary me-2">
+                                    <i class="fa fa-file-text me-2" aria-hidden="true"/>
+                                    Gestionar Documentos
+                                    <t t-if="order.distributor_document_count > 0">
+                                        <span class="badge bg-light text-primary ms-1">
+                                            <t t-esc="order.distributor_document_count"/>
+                                        </span>
+                                    </t>
+                                </a>
+                                <t t-if="can_cancel">
+                                    <form method="post" t-attf-action="/mis-pedidos/#{order.id}/cancelar" 
+                                          class="d-inline"
+                                          onsubmit="return confirm('¿Está seguro de cancelar este pedido?');">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fa fa-times me-2" aria-hidden="true"/>
+                                            Cancelar Pedido
+                                        </button>
+                                    </form>
+                                </t>
+                                <a t-attf-href="/mis-pedidos/#{order.id}/repetir" class="btn btn-primary">
+                                    <i class="fa fa-copy me-2" aria-hidden="true"/>
+                                    Repetir Pedido
+                                </a>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Mis Facturas -->
+    <template id="portal_mis_facturas" name="Mis Facturas">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Mis Facturas</t>
+            </t>
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-file-text me-2" aria-hidden="true"/>
+                                            Mis Facturas
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <span class="badge bg-light text-dark fs-6">
+                                            Año Actual: <t t-esc="'%.2f' % total_year"/> €
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Búsqueda -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <form method="get" class="d-flex">
+                                            <input type="text" 
+                                                   name="search" 
+                                                   class="form-control me-2" 
+                                                   placeholder="Buscar factura..."
+                                                   t-att-value="search"/>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fa fa-search" aria-hidden="true"/>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tabla de facturas -->
+                                <t t-if="invoices">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Número</th>
+                                                    <th>Fecha</th>
+                                                    <th>Vencimiento</th>
+                                                    <th>Estado</th>
+                                                    <th class="text-end">Total</th>
+                                                    <th class="text-center">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="invoices" t-as="invoice">
+                                                    <tr>
+                                                        <td><strong t-esc="invoice.name"/></td>
+                                                        <td t-esc="invoice.invoice_date" t-options="{'widget': 'date'}"/>
+                                                        <td t-esc="invoice.invoice_date_due" t-options="{'widget': 'date'}"/>
+                                                        <td>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'success' if invoice.payment_state == 'paid' else
+                                                                'warning' if invoice.payment_state == 'partial' else
+                                                                'danger'
+                                                            }">
+                                                                <t t-if="invoice.payment_state == 'paid'">Pagada</t>
+                                                                <t t-elif="invoice.payment_state == 'partial'">Parcialmente Pagada</t>
+                                                                <t t-elif="invoice.payment_state == 'not_paid'">Pendiente</t>
+                                                                <t t-else=""><t t-esc="invoice.payment_state"/></t>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong t-field="invoice.amount_total"
+                                                                    t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <a t-attf-href="/mis-facturas/#{invoice.id}?report_type=pdf" 
+                                                               class="btn btn-sm btn-primary"
+                                                               title="Descargar PDF"
+                                                               download="true">
+                                                                <i class="fa fa-download" aria-hidden="true"/>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Paginación -->
+                                    <div class="mt-3">
+                                        <t t-call="portal.pager"/>
+                                    </div>
+                                </t>
+                                
+                                <!-- Sin facturas -->
+                                <t t-else="">
+                                    <div class="alert alert-info text-center">
+                                        <i class="fa fa-info-circle fa-3x mb-3" aria-hidden="true"/>
+                                        <p class="mb-0">No tienes facturas registradas.</p>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Gestión de Documentos del Pedido -->
+    <template id="portal_order_documents" name="Documentos del Pedido">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-10 offset-lg-1">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-pedidos">Mis Pedidos</a></li>
+                                <li class="breadcrumb-item"><a t-attf-href="/mis-pedidos/#{order.id}"><t t-esc="order.name"/></a></li>
+                                <li class="breadcrumb-item active">Documentos</li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-file-text me-2" aria-hidden="true"/>
+                                    Documentos - <t t-esc="order.name"/>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Mensajes de estado -->
+                                <div id="upload-messages"></div>
+                                
+                                <!-- Formularios de subida -->
+                                <div class="row">
+                                    
+                                    <!-- Albarán Cliente Final -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-left-success">
+                                            <div class="card-header">
+                                                <h5 class="mb-0">
+                                                    <i class="fa fa-file-pdf-o me-2" aria-hidden="true"/>
+                                                    Albarán Cliente Final
+                                                </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <form method="post" 
+                                                      t-attf-action="/mis-pedidos/#{order.id}/subir-documento" 
+                                                      enctype="multipart/form-data">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <input type="hidden" name="document_type" value="delivery_note"/>
+                                                    
+                                                    <div class="mb-3">
+                                                        <input type="file" 
+                                                               name="file" 
+                                                               class="form-control" 
+                                                               accept=".pdf,.jpg,.jpeg,.png"
+                                                               required="required"/>
+                                                        <small class="form-text text-muted">
+                                                            Formatos: PDF, JPG, PNG. Máximo 10MB.
+                                                        </small>
+                                                    </div>
+                                                    
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fa fa-upload me-2" aria-hidden="true"/>
+                                                        Subir Albarán
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Etiqueta Cliente Final -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-left-info">
+                                            <div class="card-header">
+                                                <h5 class="mb-0">
+                                                    <i class="fa fa-tag me-2" aria-hidden="true"/>
+                                                    Etiqueta Cliente Final
+                                                </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <form method="post" 
+                                                      t-attf-action="/mis-pedidos/#{order.id}/subir-documento" 
+                                                      enctype="multipart/form-data">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <input type="hidden" name="document_type" value="label"/>
+                                                    
+                                                    <div class="mb-3">
+                                                        <input type="file" 
+                                                               name="file" 
+                                                               class="form-control" 
+                                                               accept=".pdf,.jpg,.jpeg,.png"
+                                                               required="required"/>
+                                                    </div>
+                                                    
+                                                    <button type="submit" class="btn btn-info btn-sm">
+                                                        <i class="fa fa-upload me-2" aria-hidden="true"/>
+                                                        Subir Etiqueta
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Factura Cliente Final -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-left-warning">
+                                            <div class="card-header">
+                                                <h5 class="mb-0">
+                                                    <i class="fa fa-file-text me-2" aria-hidden="true"/>
+                                                    Factura Cliente Final
+                                                </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <form method="post" 
+                                                      t-attf-action="/mis-pedidos/#{order.id}/subir-documento" 
+                                                      enctype="multipart/form-data">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <input type="hidden" name="document_type" value="invoice"/>
+                                                    
+                                                    <div class="mb-3">
+                                                        <input type="file" 
+                                                               name="file" 
+                                                               class="form-control" 
+                                                               accept=".pdf,.jpg,.jpeg,.png"
+                                                               required="required"/>
+                                                    </div>
+                                                    
+                                                    <button type="submit" class="btn btn-warning btn-sm">
+                                                        <i class="fa fa-upload me-2" aria-hidden="true"/>
+                                                        Subir Factura
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Otros Documentos -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-left-secondary">
+                                            <div class="card-header">
+                                                <h5 class="mb-0">
+                                                    <i class="fa fa-file me-2" aria-hidden="true"/>
+                                                    Otros Documentos
+                                                </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <form method="post" 
+                                                      t-attf-action="/mis-pedidos/#{order.id}/subir-documento" 
+                                                      enctype="multipart/form-data">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <input type="hidden" name="document_type" value="other"/>
+                                                    
+                                                    <div class="mb-3">
+                                                        <input type="file" 
+                                                               name="file" 
+                                                               class="form-control" 
+                                                               accept=".pdf,.jpg,.jpeg,.png"
+                                                               required="required"/>
+                                                    </div>
+                                                    
+                                                    <button type="submit" class="btn btn-secondary btn-sm">
+                                                        <i class="fa fa-upload me-2" aria-hidden="true"/>
+                                                        Subir Documento
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <!-- Documentos ya subidos -->
+                                <t t-if="order.distributor_document_count > 0">
+                                    <hr/>
+                                    <h5>Documentos Subidos</h5>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Documento</th>
+                                                    <th>Tipo</th>
+                                                    <th>Fecha</th>
+                                                    <th>Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="order.distributor_delivery_note_ids" t-as="doc">
+                                                    <tr>
+                                                        <td><t t-esc="doc.name"/></td>
+                                                        <td><span class="badge bg-success">Albarán</span></td>
+                                                        <td><t t-esc="doc.create_date" t-options="{'widget': 'datetime'}"/></td>
+                                                        <td>
+                                                            <form method="post" 
+                                                                  t-attf-action="/mis-pedidos/#{order.id}/eliminar-documento/#{doc.id}"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('¿Eliminar documento?');">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                                    <i class="fa fa-trash" aria-hidden="true"/>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                                <t t-foreach="order.distributor_invoice_ids" t-as="doc">
+                                                    <tr>
+                                                        <td><t t-esc="doc.name"/></td>
+                                                        <td><span class="badge bg-warning">Factura</span></td>
+                                                        <td><t t-esc="doc.create_date" t-options="{'widget': 'datetime'}"/></td>
+                                                        <td>
+                                                            <form method="post" 
+                                                                  t-attf-action="/mis-pedidos/#{order.id}/eliminar-documento/#{doc.id}"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('¿Eliminar documento?');">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                                    <i class="fa fa-trash" aria-hidden="true"/>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                                <t t-foreach="order.distributor_label_ids" t-as="doc">
+                                                    <tr>
+                                                        <td><t t-esc="doc.name"/></td>
+                                                        <td><span class="badge bg-info">Etiqueta</span></td>
+                                                        <td><t t-esc="doc.create_date" t-options="{'widget': 'datetime'}"/></td>
+                                                        <td>
+                                                            <form method="post" 
+                                                                  t-attf-action="/mis-pedidos/#{order.id}/eliminar-documento/#{doc.id}"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('¿Eliminar documento?');">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                                    <i class="fa fa-trash" aria-hidden="true"/>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                                <t t-foreach="order.distributor_transport_invoice_ids" t-as="doc">
+                                                    <tr>
+                                                        <td><t t-esc="doc.name"/></td>
+                                                        <td><span class="badge bg-secondary">Transporte</span></td>
+                                                        <td><t t-esc="doc.create_date" t-options="{'widget': 'datetime'}"/></td>
+                                                        <td>
+                                                            <form method="post" 
+                                                                  t-attf-action="/mis-pedidos/#{order.id}/eliminar-documento/#{doc.id}"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('¿Eliminar documento?');">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                                    <i class="fa fa-trash" aria-hidden="true"/>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                                <t t-foreach="order.distributor_other_docs_ids" t-as="doc">
+                                                    <tr>
+                                                        <td><t t-esc="doc.name"/></td>
+                                                        <td><span class="badge bg-dark">Otro</span></td>
+                                                        <td><t t-esc="doc.create_date" t-options="{'widget': 'datetime'}"/></td>
+                                                        <td>
+                                                            <form method="post" 
+                                                                  t-attf-action="/mis-pedidos/#{order.id}/eliminar-documento/#{doc.id}"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('¿Eliminar documento?');">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                                    <i class="fa fa-trash" aria-hidden="true"/>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Mi Cuenta -->
+    <template id="portal_mi_cuenta" name="Mi Cuenta">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-8 offset-lg-2">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item active">Mi Cuenta</li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-user me-2" aria-hidden="true"/>
+                                    Mi Cuenta
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <div id="account-message" style="display: none;"></div>
+                                
+                                <form id="form-update-account">
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Nombre</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   t-att-value="partner.name"
+                                                   readonly="readonly"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" 
+                                                   id="input-email"
+                                                   class="form-control" 
+                                                   t-att-value="partner.email"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Teléfono</label>
+                                            <input type="tel" 
+                                                   id="input-phone"
+                                                   class="form-control" 
+                                                   t-att-value="partner.phone or ''"/>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Móvil</label>
+                                            <input type="tel" 
+                                                   id="input-mobile"
+                                                   class="form-control" 
+                                                   t-att-value="partner.mobile or ''"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-save me-2" aria-hidden="true"/>
+                                            Guardar Cambios
+                                        </button>
+                                    </div>
+                                    
+                                </form>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+</odoo>
