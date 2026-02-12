@@ -21,8 +21,8 @@
         // Ocultar breadcrumb de pedidos de compra
         ocultarBreadcrumbCompras();
 
-        // ✅ Widget de crédito ACTIVADO
-        inicializarWidgetCredito();
+        // ❌ Widget de crédito DESACTIVADO
+        // inicializarWidgetCredito();
 
         try {
             // Solo inicializar si estamos en la página correcta

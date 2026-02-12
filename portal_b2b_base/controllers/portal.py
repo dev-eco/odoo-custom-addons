@@ -503,6 +503,17 @@ class PortalB2B(CustomerPortal):
             )
             return request.redirect('/mis-pedidos')
 
+        # ✅ LOGGING
+        try:
+            request.env['portal.audit.log'].log_action(
+                action='view_order',
+                model_name='sale.order',
+                record_id=order_id,
+                description=f'Visualización del pedido {order_sudo.name}'
+            )
+        except Exception as log_error:
+            _logger.warning(f"Error logging action: {str(log_error)}")
+
         productos_sin_stock = order_sudo.obtener_productos_sin_stock()
 
         values = {
@@ -722,6 +733,17 @@ class PortalB2B(CustomerPortal):
             _logger.info(
                 f"Pedido {order.name} creado desde portal por {request.env.user.login}"
             )
+
+            # ✅ LOGGING
+            try:
+                request.env['portal.audit.log'].log_action(
+                    action='create_order',
+                    model_name='sale.order',
+                    record_id=order.id,
+                    description=f'Pedido {order.name} creado con {len(valid_lines)} líneas'
+                )
+            except Exception as log_error:
+                _logger.warning(f"Error logging action: {str(log_error)}")
 
             return {
                 'success': True,
@@ -1184,9 +1206,20 @@ class PortalB2B(CustomerPortal):
             )
 
             _logger.info(
-                f"Documento '{doc_name}' subido al pedido {order_sudo.name} "
+                f"Documento '{doc_name}' subido al pedido {order.name} "
                 f"por {partner.name}"
             )
+
+            # ✅ LOGGING
+            try:
+                request.env['portal.audit.log'].log_action(
+                    action='upload_document',
+                    model_name='sale.order',
+                    record_id=order_id,
+                    description=f'Documento subido: {doc_name}'
+                )
+            except Exception as log_error:
+                _logger.warning(f"Error logging action: {str(log_error)}")
 
             return request.redirect(
                 f'/mis-pedidos/{order_id}/documentos?uploaded=success'
@@ -1451,7 +1484,7 @@ class PortalB2B(CustomerPortal):
             return {'error': str(e)}
 
     @http.route(['/mi-historial'], type='http', auth='user', website=True)
-    def portal_activity_history(self, page=1, **kw):
+    def portal_activity_history(self, page=1, action_filter=None, **kw):
         """Historial de actividad del distribuidor."""
         partner = request.env.user.partner_id
         
@@ -1461,28 +1494,89 @@ class PortalB2B(CustomerPortal):
         # Paginación
         from odoo.addons.portal.controllers.portal import pager as portal_pager
         
-        log_count = request.env['portal.audit.log'].sudo().search_count([
-            ('partner_id', '=', partner.id)
-        ])
+        # Domain base
+        domain = [('partner_id', '=', partner.id)]
+        
+        # Filtro por acción
+        if action_filter:
+            domain.append(('action', '=', action_filter))
+        
+        log_count = request.env['portal.audit.log'].search_count(domain)
         
         pager = portal_pager(
             url='/mi-historial',
+            url_args={'action_filter': action_filter},
             total=log_count,
             page=page,
             step=50,
         )
         
-        logs = request.env['portal.audit.log'].sudo().search([
-            ('partner_id', '=', partner.id)
-        ], limit=50, offset=pager['offset'], order='create_date desc')
+        logs = request.env['portal.audit.log'].search(
+            domain,
+            limit=50,
+            offset=pager['offset'],
+            order='create_date desc'
+        )
         
-        values = {
+        values = self._prepare_portal_layout_values()
+        values.update({
             'logs': logs,
+            'log_count': log_count,
             'page_name': 'historial',
             'pager': pager,
-        }
+            'action_filter': action_filter,
+        })
         
         return request.render('portal_b2b_base.portal_activity_history', values)
+
+    @http.route(['/mi-portal/estadisticas'], type='http', auth='user', website=True)
+    def portal_statistics_dashboard(self, period='month', **kwargs):
+        """Dashboard de estadísticas del distribuidor."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        # Obtener datos del dashboard
+        from datetime import datetime, timedelta
+        today = datetime.today().date()
+        
+        if period == 'week':
+            start_date = today - timedelta(days=7)
+        elif period == 'month':
+            start_date = today - timedelta(days=30)
+        elif period == 'quarter':
+            start_date = today - timedelta(days=90)
+        elif period == 'year':
+            start_date = today - timedelta(days=365)
+        else:
+            start_date = today - timedelta(days=30)
+        
+        # Buscar o crear estadísticas
+        stats_model = request.env['distributor.statistics']
+        stats = stats_model.search([
+            ('partner_id', '=', partner.id),
+            ('period_start', '=', start_date),
+            ('period_end', '=', today)
+        ], limit=1)
+        
+        if not stats:
+            stats = stats_model.create({
+                'partner_id': partner.id,
+                'period_start': start_date,
+                'period_end': today
+            })
+        
+        dashboard_data = stats.get_statistics_for_portal()
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'dashboard_data': dashboard_data,
+            'period': period,
+            'page_name': 'statistics',
+        })
+        
+        return request.render('portal_b2b_base.portal_statistics_dashboard', values)
 # -*- coding: utf-8 -*-
 
 import logging

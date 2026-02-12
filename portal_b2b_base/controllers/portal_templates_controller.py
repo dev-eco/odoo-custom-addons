@@ -138,6 +138,17 @@ class PortalTemplates(http.Controller):
                 f"por usuario {request.env.user.login}"
             )
 
+            # ✅ LOGGING
+            try:
+                request.env['portal.audit.log'].log_action(
+                    action='use_template',
+                    model_name='sale.order.template',
+                    record_id=template.id,
+                    description=f'Plantilla {template.name} usada para crear pedido {order.name}'
+                )
+            except Exception as log_error:
+                _logger.warning(f"Error logging action: {str(log_error)}")
+
             return request.redirect(f'/mis-pedidos/{order.id}')
 
         except Exception as e:
