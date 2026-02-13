@@ -51,6 +51,23 @@ class ResPartner(models.Model):
         help='Total facturado en el año en curso'
     )
 
+    allowed_product_categories = fields.Many2many(
+        'product.category',
+        'partner_product_category_rel',
+        'partner_id',
+        'category_id',
+        string='Categorías Permitidas',
+        help='Categorías de productos que este distribuidor puede ver y comprar. '
+             'Si está vacío, puede ver todas las categorías.'
+    )
+
+    allow_all_categories = fields.Boolean(
+        string='Permitir Todas las Categorías',
+        default=True,
+        help='Si está marcado, el distribuidor puede ver todos los productos. '
+             'Si no, solo verá productos de las categorías seleccionadas.'
+    )
+
     @api.depends('user_ids', 'user_ids.groups_id')
     def _compute_is_distributor(self) -> None:
         """
@@ -221,6 +238,60 @@ class ResPartner(models.Model):
             'percentage_used': float(min(porcentaje_usado, 100.0)),
             'currency_symbol': self.currency_id.symbol or '€',
         }
+
+    def get_allowed_product_domain(self):
+        """
+        Obtiene el dominio de productos permitidos para este distribuidor.
+        
+        Returns:
+            list: Dominio de Odoo para filtrar productos
+        """
+        self.ensure_one()
+        
+        # Si permite todas las categorías o no tiene restricciones
+        if self.allow_all_categories or not self.allowed_product_categories:
+            return [('sale_ok', '=', True), ('active', '=', True)]
+        
+        # Filtrar por categorías permitidas (incluyendo subcategorías)
+        category_ids = self.allowed_product_categories.ids
+        
+        # Obtener todas las subcategorías recursivamente
+        all_category_ids = self._get_child_categories(category_ids)
+        
+        return [
+            ('sale_ok', '=', True),
+            ('active', '=', True),
+            ('categ_id', 'in', all_category_ids)
+        ]
+
+    def _get_child_categories(self, category_ids):
+        """
+        Obtiene todas las categorías hijas recursivamente.
+        
+        Args:
+            category_ids: Lista de IDs de categorías padre
+            
+        Returns:
+            list: Lista de IDs incluyendo padres e hijos
+        """
+        if not category_ids:
+            return []
+        
+        all_ids = set(category_ids)
+        
+        # Buscar categorías hijas
+        child_categories = self.env['product.category'].search([
+            ('parent_id', 'in', list(all_ids))
+        ])
+        
+        if child_categories:
+            # Recursión para obtener nietos, bisnietos, etc.
+            child_ids = child_categories.ids
+            all_ids.update(child_ids)
+            grandchild_ids = self._get_child_categories(child_ids)
+            all_ids.update(grandchild_ids)
+        
+        return list(all_ids)
 
     def action_grant_portal_access(self):
         """

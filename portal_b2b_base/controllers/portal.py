@@ -2011,13 +2011,17 @@ class PortalB2B(CustomerPortal):
             query = query.strip()
             limit = int(limit) if limit else 10
 
-            domain = [
-                ('sale_ok', '=', True),
-                ('active', '=', True),
+            # Obtener dominio base con restricciones de categoría
+            base_domain = partner.get_allowed_product_domain()
+
+            # Añadir filtro de búsqueda
+            search_domain = [
                 '|',
                 ('name', 'ilike', query),
                 ('default_code', 'ilike', query),
             ]
+
+            domain = base_domain + search_domain
 
             products = request.env['product.product'].sudo().search(domain, limit=limit)
             
@@ -2139,11 +2143,8 @@ class PortalB2B(CustomerPortal):
             limit = int(limit)
             offset = (page - 1) * limit
 
-            # Construir dominio
-            domain = [
-                ('sale_ok', '=', True),
-                ('active', '=', True),
-            ]
+            # Construir dominio con restricciones de categoría
+            domain = partner.get_allowed_product_domain()
 
             if search:
                 domain += [
@@ -2242,10 +2243,18 @@ class PortalB2B(CustomerPortal):
             return {'error': _('Usuario no autorizado')}
 
         try:
-            # Obtener categorías que tienen productos en venta
-            categories = request.env['product.category'].sudo().search([
-                ('product_count', '>', 0)
-            ], order='name asc')
+            # Obtener categorías permitidas para el distribuidor
+            if partner.allow_all_categories or not partner.allowed_product_categories:
+                # Todas las categorías con productos
+                categories = request.env['product.category'].sudo().search([
+                    ('product_count', '>', 0)
+                ], order='name asc')
+            else:
+                # Solo categorías permitidas (incluyendo hijas)
+                allowed_category_ids = partner._get_child_categories(
+                    partner.allowed_product_categories.ids
+                )
+                categories = request.env['product.category'].sudo().browse(allowed_category_ids)
 
             result = []
             for category in categories:

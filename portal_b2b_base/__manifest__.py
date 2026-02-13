@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Portal B2B Base',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.0.1',
     'category': 'Sales/Sales',
     'summary': 'Portal B2B para distribuidores - Módulo base con gestión de pedidos y control de crédito',
     'description': """
@@ -76,6 +76,9 @@ Licencia: LGPL-3
         # Seguridad (PRIMERO)
         'security/security.xml',
         'security/ir.model.access.csv',
+        
+        # Reglas de productos (SIN referencias a campos nuevos)
+        'security/product_security.xml',
 
         # Configuración del sitio web
         'data/website_config.xml',
