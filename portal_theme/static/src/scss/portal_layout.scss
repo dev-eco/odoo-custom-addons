@@ -1,0 +1,325 @@
+/**
+ * Portal B2B Theme - Layout y Estructura
+ * Define la estructura general del portal
+ */
+
+// Las variables ya están importadas en custom.scss, no reimportar aquí
+
+// ========== BODY Y ESTRUCTURA GENERAL ==========
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: $font-family-sans-serif;
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+    color: $body-color;
+    background-color: $body-bg;
+}
+
+// ========== TIPOGRAFÍA ==========
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: $font-weight-semibold;
+    color: $headings-color;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+h1 {
+    font-size: $h1-font-size;
+}
+
+h2 {
+    font-size: $h2-font-size;
+}
+
+h3 {
+    font-size: $h3-font-size;
+}
+
+h4 {
+    font-size: $h4-font-size;
+}
+
+h5 {
+    font-size: $h5-font-size;
+}
+
+h6 {
+    font-size: $h6-font-size;
+}
+
+p {
+    margin-bottom: 1rem;
+    
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+a {
+    color: $primary;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    
+    &:hover {
+        color: darken($primary, 10%);
+        text-decoration: underline;
+    }
+}
+
+// ========== CONTENEDOR PRINCIPAL ==========
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+// ========== HEADER/NAVBAR ==========
+
+.navbar {
+    background-color: white;
+    box-shadow: $box-shadow;
+    padding: 1rem 0;
+    
+    .navbar-brand {
+        font-weight: $font-weight-bold;
+        font-size: 1.5rem;
+        color: $primary !important;
+        
+        &:hover {
+            color: darken($primary, 10%) !important;
+        }
+    }
+    
+    .nav-link {
+        color: $body-color !important;
+        font-weight: $font-weight-medium;
+        transition: color 0.2s ease;
+        
+        &:hover {
+            color: $primary !important;
+        }
+        
+        &.active {
+            color: $primary !important;
+            border-bottom: 2px solid $primary;
+        }
+    }
+}
+
+// ========== MAIN CONTENT ==========
+
+main {
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
+}
+
+// ========== SIDEBAR ==========
+
+.sidebar {
+    background-color: $light;
+    border-radius: $border-radius;
+    padding: 1.5rem;
+    
+    .sidebar-title {
+        font-weight: $font-weight-semibold;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid $border-color;
+    }
+    
+    .sidebar-item {
+        padding: 0.75rem 0;
+        
+        a {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            border-radius: $border-radius-sm;
+            transition: background-color 0.2s ease;
+            
+            &:hover {
+                background-color: white;
+                text-decoration: none;
+            }
+            
+            &.active {
+                background-color: $primary;
+                color: white;
+            }
+        }
+    }
+}
+
+// ========== FOOTER ==========
+
+footer {
+    background-color: $dark;
+    color: white;
+    padding: 3rem 0 1rem;
+    margin-top: 3rem;
+    
+    a {
+        color: lighten($primary, 20%);
+        
+        &:hover {
+            color: lighten($primary, 30%);
+        }
+    }
+    
+    .footer-section {
+        margin-bottom: 2rem;
+        
+        h5 {
+            color: white;
+            font-weight: $font-weight-semibold;
+            margin-bottom: 1rem;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 0;
+            
+            li {
+                margin-bottom: 0.5rem;
+                
+                a {
+                    text-decoration: none;
+                }
+            }
+        }
+    }
+    
+    .footer-bottom {
+        border-top: 1px solid rgba(white, 0.1);
+        padding-top: 1rem;
+        text-align: center;
+        color: rgba(white, 0.7);
+        font-size: $font-size-sm;
+    }
+}
+
+// ========== HERO SECTION ==========
+
+.hero {
+    background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+    color: white;
+    padding: 4rem 0;
+    text-align: center;
+    
+    h1 {
+        color: white;
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    p {
+        font-size: $font-size-lg;
+        margin-bottom: 2rem;
+    }
+}
+
+// ========== SECTION SPACING ==========
+
+section {
+    padding: 2rem 0;
+    
+    &.section-light {
+        background-color: $light;
+    }
+    
+    &.section-dark {
+        background-color: $dark;
+        color: white;
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: white;
+        }
+    }
+}
+
+// ========== GRID LAYOUT ==========
+
+.row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    
+    &.row-2 {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    }
+    
+    &.row-3 {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    
+    &.row-4 {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+// ========== RESPONSIVE ==========
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    h3 {
+        font-size: 1.25rem;
+    }
+    
+    .hero {
+        padding: 2rem 0;
+        
+        h1 {
+            font-size: 2rem;
+        }
+        
+        p {
+            font-size: $font-size-base;
+        }
+    }
+    
+    .sidebar {
+        margin-bottom: 2rem;
+    }
+    
+    .row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.25rem;
+    }
+    
+    h3 {
+        font-size: 1.1rem;
+    }
+    
+    .container {
+        padding: 0 0.75rem;
+    }
+    
+    main {
+        padding: 1rem 0;
+    }
+    
+    section {
+        padding: 1.5rem 0;
+    }
+}

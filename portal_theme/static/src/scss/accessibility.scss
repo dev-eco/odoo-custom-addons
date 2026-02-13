@@ -1,0 +1,371 @@
+/**
+ * Portal B2B Theme - Accesibilidad (A11Y)
+ * Estilos para mejorar la accesibilidad
+ */
+
+// ========== ALTO CONTRASTE ==========
+
+.high-contrast {
+    // Colores de alto contraste
+    --contrast-bg: #000000;
+    --contrast-text: #ffffff;
+    --contrast-primary: #ffff00;
+    --contrast-secondary: #00ffff;
+    --contrast-success: #00ff00;
+    --contrast-warning: #ff8800;
+    --contrast-danger: #ff0000;
+    --contrast-border: #ffffff;
+    
+    background-color: var(--contrast-bg) !important;
+    color: var(--contrast-text) !important;
+    
+    // Textos
+    h1, h2, h3, h4, h5, h6,
+    p, span, div, label {
+        color: var(--contrast-text) !important;
+    }
+    
+    // Enlaces
+    a {
+        color: var(--contrast-primary) !important;
+        text-decoration: underline !important;
+        
+        &:hover,
+        &:focus {
+            color: var(--contrast-secondary) !important;
+            background-color: var(--contrast-text) !important;
+            outline: 3px solid var(--contrast-primary) !important;
+        }
+    }
+    
+    // Botones
+    .btn {
+        border: 2px solid var(--contrast-border) !important;
+        font-weight: bold !important;
+        
+        &.btn-primary {
+            background-color: var(--contrast-primary) !important;
+            color: var(--contrast-bg) !important;
+            border-color: var(--contrast-primary) !important;
+        }
+        
+        &.btn-success {
+            background-color: var(--contrast-success) !important;
+            color: var(--contrast-bg) !important;
+            border-color: var(--contrast-success) !important;
+        }
+        
+        &.btn-warning {
+            background-color: var(--contrast-warning) !important;
+            color: var(--contrast-bg) !important;
+            border-color: var(--contrast-warning) !important;
+        }
+        
+        &.btn-danger {
+            background-color: var(--contrast-danger) !important;
+            color: var(--contrast-text) !important;
+            border-color: var(--contrast-danger) !important;
+        }
+        
+        &:focus {
+            outline: 3px solid var(--contrast-primary) !important;
+            outline-offset: 2px !important;
+        }
+    }
+    
+    // Formularios
+    .form-control,
+    .form-select {
+        background-color: var(--contrast-text) !important;
+        color: var(--contrast-bg) !important;
+        border: 2px solid var(--contrast-border) !important;
+        
+        &:focus {
+            outline: 3px solid var(--contrast-primary) !important;
+            outline-offset: 2px !important;
+            border-color: var(--contrast-primary) !important;
+        }
+    }
+    
+    // Cards
+    .card {
+        background-color: var(--contrast-bg) !important;
+        border: 2px solid var(--contrast-border) !important;
+        
+        .card-header {
+            background-color: var(--contrast-text) !important;
+            color: var(--contrast-bg) !important;
+            border-bottom: 2px solid var(--contrast-border) !important;
+        }
+    }
+    
+    // Tablas
+    .table {
+        color: var(--contrast-text) !important;
+        
+        thead th {
+            background-color: var(--contrast-text) !important;
+            color: var(--contrast-bg) !important;
+            border: 2px solid var(--contrast-border) !important;
+        }
+        
+        tbody td {
+            border: 1px solid var(--contrast-border) !important;
+        }
+        
+        tbody tr:hover {
+            background-color: var(--contrast-primary) !important;
+            color: var(--contrast-bg) !important;
+        }
+    }
+    
+    // Badges
+    .badge {
+        border: 1px solid var(--contrast-border) !important;
+        font-weight: bold !important;
+        
+        &.bg-primary {
+            background-color: var(--contrast-primary) !important;
+            color: var(--contrast-bg) !important;
+        }
+        
+        &.bg-success {
+            background-color: var(--contrast-success) !important;
+            color: var(--contrast-bg) !important;
+        }
+        
+        &.bg-warning {
+            background-color: var(--contrast-warning) !important;
+            color: var(--contrast-bg) !important;
+        }
+        
+        &.bg-danger {
+            background-color: var(--contrast-danger) !important;
+            color: var(--contrast-text) !important;
+        }
+    }
+}
+
+// ========== TEXTO GRANDE ==========
+
+.large-text {
+    font-size: 1.25rem !important;
+    line-height: 1.8 !important;
+    
+    h1 { font-size: 3.5rem !important; }
+    h2 { font-size: 2.75rem !important; }
+    h3 { font-size: 2.25rem !important; }
+    h4 { font-size: 1.875rem !important; }
+    h5 { font-size: 1.5rem !important; }
+    h6 { font-size: 1.25rem !important; }
+    
+    .btn {
+        font-size: 1.125rem !important;
+        padding: 0.75rem 1.5rem !important;
+    }
+    
+    .form-control,
+    .form-select {
+        font-size: 1.125rem !important;
+        padding: 0.75rem 1rem !important;
+    }
+    
+    .table {
+        font-size: 1.125rem !important;
+        
+        th, td {
+            padding: 1rem 1.25rem !important;
+        }
+    }
+    
+    .badge {
+        font-size: 1rem !important;
+        padding: 0.5rem 1rem !important;
+    }
+}
+
+// ========== REDUCIR ANIMACIONES ==========
+
+.reduce-motion {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .hover-lift:hover {
+        transform: none !important;
+    }
+    
+    .btn:hover {
+        transform: none !important;
+    }
+    
+    .card:hover {
+        transform: none !important;
+    }
+}
+
+// ========== MODO LECTOR DE PANTALLA ==========
+
+.screen-reader-mode {
+    // Ocultar elementos decorativos
+    .fa, .fas, .far, .fab {
+        &:not([aria-label]):not([aria-labelledby]):not([title]) {
+            display: none !important;
+        }
+    }
+    
+    // Mejorar contraste de foco
+    *:focus {
+        outline: 3px solid #005fcc !important;
+        outline-offset: 2px !important;
+        box-shadow: 0 0 0 5px rgba(0, 95, 204, 0.3) !important;
+    }
+    
+    // Simplificar layout
+    .card {
+        box-shadow: none !important;
+        border: 2px solid #ccc !important;
+    }
+    
+    // Eliminar gradientes
+    .btn,
+    .card-header,
+    .bg-primary,
+    .bg-success,
+    .bg-warning,
+    .bg-danger {
+        background-image: none !important;
+    }
+    
+    // Mejorar espaciado
+    .btn {
+        margin: 0.25rem !important;
+    }
+    
+    // Simplificar tablas
+    .table {
+        border-collapse: separate !important;
+        border-spacing: 2px !important;
+        
+        th, td {
+            border: 1px solid #000 !important;
+            padding: 0.75rem !important;
+        }
+    }
+}
+
+// ========== UTILIDADES DE ACCESIBILIDAD ==========
+
+// Texto solo para lectores de pantalla
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+// Mostrar solo en foco (para navegación por teclado)
+.sr-only-focusable:focus {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    padding: inherit !important;
+    margin: inherit !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+}
+
+// Skip links
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 9999;
+    
+    &:focus {
+        top: 6px;
+    }
+}
+
+// Indicadores de estado para lectores de pantalla
+.status-indicator {
+    &::after {
+        content: attr(data-status);
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+    }
+}
+
+// ========== FOCUS MANAGEMENT ==========
+
+// Mejorar indicadores de foco
+*:focus {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
+}
+
+// Foco visible solo con teclado
+.js-focus-visible *:focus:not(.focus-visible) {
+    outline: none;
+}
+
+// ========== RESPONSIVE PARA ACCESIBILIDAD ==========
+
+@media (max-width: 768px) {
+    .large-text {
+        .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .table-responsive {
+            font-size: 1rem !important;
+        }
+    }
+    
+    .high-contrast {
+        .btn {
+            min-height: 44px; // Tamaño mínimo táctil
+            min-width: 44px;
+        }
+    }
+}
+
+// ========== PRINT ACCESSIBILITY ==========
+
+@media print {
+    .high-contrast {
+        background: white !important;
+        color: black !important;
+        
+        * {
+            background: transparent !important;
+            color: black !important;
+        }
+    }
+    
+    .sr-only {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        clip: auto !important;
+        overflow: visible !important;
+    }
+}

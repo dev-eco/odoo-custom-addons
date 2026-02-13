@@ -1,0 +1,512 @@
+/**
+ * Portal B2B Theme - Modo Oscuro
+ * Estilos para el tema oscuro
+ */
+
+// ========== VARIABLES MODO OSCURO ==========
+
+$dark-bg-primary: #1a1a1a;
+$dark-bg-secondary: #2d2d2d;
+$dark-bg-tertiary: #3a3a3a;
+$dark-text-primary: #ffffff;
+$dark-text-secondary: #e0e0e0;
+$dark-text-muted: #a0a0a0;
+$dark-border: #404040;
+$dark-primary: #4a9eff;
+$dark-success: #4caf50;
+$dark-warning: #ff9800;
+$dark-danger: #f44336;
+$dark-info: #2196f3;
+
+// ========== MODO OSCURO BASE ==========
+
+.theme-dark {
+    background-color: $dark-bg-primary;
+    color: $dark-text-primary;
+    
+    // Textos
+    h1, h2, h3, h4, h5, h6 {
+        color: $dark-text-primary;
+    }
+    
+    p, span, div {
+        color: $dark-text-secondary;
+    }
+    
+    .text-muted {
+        color: $dark-text-muted !important;
+    }
+    
+    // Enlaces
+    a {
+        color: $dark-primary;
+        
+        &:hover {
+            color: lighten($dark-primary, 10%);
+        }
+    }
+    
+    // ========== COMPONENTES ==========
+    
+    // Cards
+    .card {
+        background-color: $dark-bg-secondary;
+        border: 1px solid $dark-border;
+        color: $dark-text-primary;
+        
+        .card-header {
+            background-color: $dark-bg-tertiary;
+            border-bottom: 1px solid $dark-border;
+            color: $dark-text-primary;
+            
+            &.bg-primary {
+                background: linear-gradient(135deg, $dark-primary 0%, darken($dark-primary, 10%) 100%) !important;
+                color: white;
+            }
+            
+            &.bg-success {
+                background: linear-gradient(135deg, $dark-success 0%, darken($dark-success, 10%) 100%) !important;
+                color: white;
+            }
+            
+            &.bg-warning {
+                background: linear-gradient(135deg, $dark-warning 0%, darken($dark-warning, 10%) 100%) !important;
+                color: white;
+            }
+            
+            &.bg-danger {
+                background: linear-gradient(135deg, $dark-danger 0%, darken($dark-danger, 10%) 100%) !important;
+                color: white;
+            }
+            
+            &.bg-info {
+                background: linear-gradient(135deg, $dark-info 0%, darken($dark-info, 10%) 100%) !important;
+                color: white;
+            }
+        }
+        
+        .card-body {
+            background-color: $dark-bg-secondary;
+            color: $dark-text-secondary;
+        }
+        
+        .card-footer {
+            background-color: $dark-bg-tertiary;
+            border-top: 1px solid $dark-border;
+        }
+    }
+    
+    // Botones
+    .btn {
+        border: 1px solid $dark-border;
+        
+        &.btn-primary {
+            background: linear-gradient(135deg, $dark-primary 0%, darken($dark-primary, 10%) 100%);
+            border-color: $dark-primary;
+            color: white;
+            
+            &:hover {
+                background: linear-gradient(135deg, lighten($dark-primary, 5%) 0%, darken($dark-primary, 5%) 100%);
+            }
+        }
+        
+        &.btn-secondary {
+            background-color: $dark-bg-tertiary;
+            border-color: $dark-border;
+            color: $dark-text-primary;
+            
+            &:hover {
+                background-color: lighten($dark-bg-tertiary, 10%);
+            }
+        }
+        
+        &.btn-success {
+            background: linear-gradient(135deg, $dark-success 0%, darken($dark-success, 10%) 100%);
+            border-color: $dark-success;
+            color: white;
+        }
+        
+        &.btn-warning {
+            background: linear-gradient(135deg, $dark-warning 0%, darken($dark-warning, 10%) 100%);
+            border-color: $dark-warning;
+            color: white;
+        }
+        
+        &.btn-danger {
+            background: linear-gradient(135deg, $dark-danger 0%, darken($dark-danger, 10%) 100%);
+            border-color: $dark-danger;
+            color: white;
+        }
+        
+        &.btn-outline-primary {
+            border-color: $dark-primary;
+            color: $dark-primary;
+            
+            &:hover {
+                background-color: $dark-primary;
+                color: white;
+            }
+        }
+    }
+    
+    // Formularios
+    .form-control {
+        background-color: $dark-bg-tertiary;
+        border: 1px solid $dark-border;
+        color: $dark-text-primary;
+        
+        &:focus {
+            background-color: $dark-bg-tertiary;
+            border-color: $dark-primary;
+            color: $dark-text-primary;
+            box-shadow: 0 0 0 0.2rem rgba($dark-primary, 0.25);
+        }
+        
+        &::placeholder {
+            color: $dark-text-muted;
+        }
+    }
+    
+    .form-select {
+        background-color: $dark-bg-tertiary;
+        border: 1px solid $dark-border;
+        color: $dark-text-primary;
+        
+        &:focus {
+            border-color: $dark-primary;
+            box-shadow: 0 0 0 0.2rem rgba($dark-primary, 0.25);
+        }
+    }
+    
+    .form-check-input {
+        background-color: $dark-bg-tertiary;
+        border: 1px solid $dark-border;
+        
+        &:checked {
+            background-color: $dark-primary;
+            border-color: $dark-primary;
+        }
+        
+        &:focus {
+            box-shadow: 0 0 0 0.2rem rgba($dark-primary, 0.25);
+        }
+    }
+    
+    .form-label {
+        color: $dark-text-primary;
+    }
+    
+    // Tablas
+    .table {
+        color: $dark-text-secondary;
+        
+        thead {
+            th {
+                background-color: $dark-bg-tertiary;
+                border-bottom: 2px solid $dark-border;
+                color: $dark-text-primary;
+            }
+        }
+        
+        tbody {
+            tr {
+                border-bottom: 1px solid $dark-border;
+                
+                &:hover {
+                    background-color: rgba($dark-primary, 0.1);
+                }
+                
+                td {
+                    border-bottom: 1px solid $dark-border;
+                }
+            }
+        }
+        
+        &.table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba($dark-bg-tertiary, 0.3);
+        }
+    }
+    
+    // Alertas
+    .alert {
+        border: 1px solid $dark-border;
+        
+        &.alert-primary {
+            background-color: rgba($dark-primary, 0.1);
+            border-left-color: $dark-primary;
+            color: lighten($dark-primary, 20%);
+        }
+        
+        &.alert-success {
+            background-color: rgba($dark-success, 0.1);
+            border-left-color: $dark-success;
+            color: lighten($dark-success, 20%);
+        }
+        
+        &.alert-warning {
+            background-color: rgba($dark-warning, 0.1);
+            border-left-color: $dark-warning;
+            color: lighten($dark-warning, 20%);
+        }
+        
+        &.alert-danger {
+            background-color: rgba($dark-danger, 0.1);
+            border-left-color: $dark-danger;
+            color: lighten($dark-danger, 20%);
+        }
+        
+        &.alert-info {
+            background-color: rgba($dark-info, 0.1);
+            border-left-color: $dark-info;
+            color: lighten($dark-info, 20%);
+        }
+    }
+    
+    // Badges
+    .badge {
+        &.bg-primary {
+            background-color: $dark-primary !important;
+        }
+        
+        &.bg-success {
+            background-color: $dark-success !important;
+        }
+        
+        &.bg-warning {
+            background-color: $dark-warning !important;
+        }
+        
+        &.bg-danger {
+            background-color: $dark-danger !important;
+        }
+        
+        &.bg-info {
+            background-color: $dark-info !important;
+        }
+        
+        &.bg-secondary {
+            background-color: $dark-bg-tertiary !important;
+            color: $dark-text-primary !important;
+        }
+        
+        &.bg-light {
+            background-color: $dark-bg-secondary !important;
+            color: $dark-text-primary !important;
+        }
+        
+        &.bg-dark {
+            background-color: $dark-bg-primary !important;
+            color: $dark-text-primary !important;
+        }
+    }
+    
+    // Breadcrumb
+    .breadcrumb {
+        background-color: transparent;
+        
+        .breadcrumb-item {
+            color: $dark-text-muted;
+            
+            &.active {
+                color: $dark-text-primary;
+            }
+            
+            a {
+                color: $dark-primary;
+            }
+            
+            + .breadcrumb-item::before {
+                color: $dark-text-muted;
+            }
+        }
+    }
+    
+    // Modales
+    .modal-content {
+        background-color: $dark-bg-secondary;
+        border: 1px solid $dark-border;
+        color: $dark-text-primary;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid $dark-border;
+        
+        .modal-title {
+            color: $dark-text-primary;
+        }
+        
+        .btn-close {
+            filter: invert(1);
+        }
+    }
+    
+    .modal-footer {
+        border-top: 1px solid $dark-border;
+    }
+    
+    // Dropdowns
+    .dropdown-menu {
+        background-color: $dark-bg-secondary;
+        border: 1px solid $dark-border;
+        
+        .dropdown-item {
+            color: $dark-text-secondary;
+            
+            &:hover,
+            &:focus {
+                background-color: $dark-bg-tertiary;
+                color: $dark-text-primary;
+            }
+            
+            &.active {
+                background-color: $dark-primary;
+                color: white;
+            }
+        }
+        
+        .dropdown-divider {
+            border-color: $dark-border;
+        }
+    }
+    
+    // Navbar
+    .navbar {
+        background-color: $dark-bg-secondary !important;
+        border-bottom: 1px solid $dark-border;
+        
+        .navbar-brand {
+            color: $dark-text-primary !important;
+        }
+        
+        .nav-link {
+            color: $dark-text-secondary !important;
+            
+            &:hover {
+                color: $dark-primary !important;
+            }
+            
+            &.active {
+                color: $dark-primary !important;
+            }
+        }
+    }
+    
+    // Footer
+    footer {
+        background-color: $dark-bg-secondary !important;
+        border-top: 1px solid $dark-border;
+        color: $dark-text-secondary;
+        
+        h5 {
+            color: $dark-text-primary;
+        }
+        
+        a {
+            color: $dark-primary;
+            
+            &:hover {
+                color: lighten($dark-primary, 10%);
+            }
+        }
+    }
+    
+    // List groups
+    .list-group {
+        .list-group-item {
+            background-color: $dark-bg-secondary;
+            border: 1px solid $dark-border;
+            color: $dark-text-secondary;
+            
+            &:hover {
+                background-color: $dark-bg-tertiary;
+            }
+            
+            &.active {
+                background-color: $dark-primary;
+                border-color: $dark-primary;
+                color: white;
+            }
+            
+            &.list-group-item-primary {
+                background-color: rgba($dark-primary, 0.1);
+                border-color: rgba($dark-primary, 0.3);
+                color: lighten($dark-primary, 20%);
+            }
+            
+            &.list-group-item-success {
+                background-color: rgba($dark-success, 0.1);
+                border-color: rgba($dark-success, 0.3);
+                color: lighten($dark-success, 20%);
+            }
+            
+            &.list-group-item-warning {
+                background-color: rgba($dark-warning, 0.1);
+                border-color: rgba($dark-warning, 0.3);
+                color: lighten($dark-warning, 20%);
+            }
+            
+            &.list-group-item-danger {
+                background-color: rgba($dark-danger, 0.1);
+                border-color: rgba($dark-danger, 0.3);
+                color: lighten($dark-danger, 20%);
+            }
+            
+            &.list-group-item-info {
+                background-color: rgba($dark-info, 0.1);
+                border-color: rgba($dark-info, 0.3);
+                color: lighten($dark-info, 20%);
+            }
+        }
+    }
+    
+    // Paginación
+    .pagination {
+        .page-link {
+            background-color: $dark-bg-secondary;
+            border: 1px solid $dark-border;
+            color: $dark-primary;
+            
+            &:hover {
+                background-color: $dark-bg-tertiary;
+                border-color: $dark-primary;
+                color: $dark-primary;
+            }
+            
+            &:focus {
+                box-shadow: 0 0 0 0.2rem rgba($dark-primary, 0.25);
+            }
+        }
+        
+        .page-item.active .page-link {
+            background-color: $dark-primary;
+            border-color: $dark-primary;
+            color: white;
+        }
+        
+        .page-item.disabled .page-link {
+            background-color: $dark-bg-tertiary;
+            border-color: $dark-border;
+            color: $dark-text-muted;
+        }
+    }
+}
+
+// ========== MODO AUTOMÁTICO ==========
+
+.theme-auto {
+    @media (prefers-color-scheme: dark) {
+        @extend .theme-dark;
+    }
+}
+
+// ========== TRANSICIONES SUAVES ==========
+
+.theme-dark,
+.theme-light,
+.theme-auto {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    
+    * {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+}

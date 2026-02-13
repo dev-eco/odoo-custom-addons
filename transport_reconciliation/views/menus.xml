@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Menú principal -->
+        <menuitem id="menu_transport_reconciliation" name="Conciliación de Transportes" 
+                  parent="stock.menu_stock_root" sequence="50"/>
+
+        <!-- Submenús -->
+        <menuitem id="menu_transport_reconciliation_wizard" name="Conciliar Transportes"
+                  parent="menu_transport_reconciliation" sequence="10"
+                  action="transport_reconciliation.action_transport_reconciliation_wizard"/>
+
+        <menuitem id="menu_transport_carriers" name="Transportistas"
+                  parent="menu_transport_reconciliation" sequence="20"
+                  action="base.action_partner_form"/>
+    </data>
+</odoo>

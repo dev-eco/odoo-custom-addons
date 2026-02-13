@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vista árbol (lista) de direcciones de entrega -->
+    <record id="view_delivery_address_tree" model="ir.ui.view">
+        <field name="name">delivery.address.tree</field>
+        <field name="model">delivery.address</field>
+        <field name="arch" type="xml">
+            <tree string="Direcciones de Entrega" edit="false">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="city"/>
+                <field name="zip"/>
+                <field name="is_default" widget="boolean"/>
+                <field name="require_appointment" widget="boolean" optional="hide"/>
+                <field name="tail_lift_required" widget="boolean" optional="hide"/>
+                <field name="active" widget="boolean" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista formulario de dirección de entrega -->
+    <record id="view_delivery_address_form" model="ir.ui.view">
+        <field name="name">delivery.address.form</field>
+        <field name="model">delivery.address</field>
+        <field name="arch" type="xml">
+            <form string="Dirección de Entrega">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_set_default" 
+                                type="object" 
+                                class="oe_stat_button" 
+                                icon="fa-star"
+                                invisible="is_default">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Marcar como</span>
+                                <span class="o_stat_text">Predeterminada</span>
+                            </div>
+                        </button>
+                        <button name="action_archive" 
+                                type="object" 
+                                class="oe_stat_button" 
+                                icon="fa-archive"
+                                invisible="not active">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Desactivar</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="o_notification_info" invisible="not is_default" role="status" aria-live="polite">
+                        <i class="fa fa-star me-2" aria-label="Dirección predeterminada"/>
+                        <strong>Esta es la dirección predeterminada.</strong>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Alias de la dirección"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Información Básica">
+                            <field name="partner_id" options="{'no_create': True}"/>
+                            <field name="display_name" readonly="True"/>
+                        </group>
+                        <group string="Control">
+                            <field name="is_default" widget="boolean"/>
+                            <field name="active" widget="boolean"/>
+                        </group>
+                    </group>
+
+                    <group string="Dirección">
+                        <group>
+                            <field name="street" placeholder="Calle y número"/>
+                            <field name="street2" placeholder="Piso, puerta, etc."/>
+                            <field name="city"/>
+                        </group>
+                        <group>
+                            <field name="zip"/>
+                            <field name="state_id"/>
+                            <field name="country_id"/>
+                        </group>
+                    </group>
+
+                    <group string="Contacto en Destino">
+                        <group>
+                            <field name="contact_name" placeholder="Nombre de la persona"/>
+                            <field name="contact_phone" placeholder="Teléfono de contacto"/>
+                        </group>
+                    </group>
+
+                    <group string="Requisitos de Entrega">
+                        <group>
+                            <field name="require_appointment" widget="boolean"/>
+                            <field name="tail_lift_required" widget="boolean"/>
+                        </group>
+                    </group>
+
+                    <group string="Instrucciones Especiales">
+                        <field name="delivery_notes" nolabel="1" placeholder="Notas para el transportista..."/>
+                    </group>
+
+                    <group string="Dirección Completa">
+                        <field name="full_address" readonly="True" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción para gestionar direcciones de entrega -->
+    <record id="action_delivery_address" model="ir.actions.act_window">
+        <field name="name">Direcciones de Entrega</field>
+        <field name="res_model">delivery.address</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('view_delivery_address_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_delivery_address_form')})]"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay direcciones de entrega
+            </p>
+            <p>
+                Las direcciones de entrega permiten a los distribuidores gestionar múltiples
+                ubicaciones de entrega. Cada dirección puede tener requisitos especiales
+                como cita previa o camión con pluma.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú para direcciones de entrega -->
+    <menuitem id="menu_delivery_address"
+              name="Direcciones de Entrega"
+              parent="sale.sale_menu_root"
+              action="action_delivery_address"
+              sequence="10"/>
+
+</odoo>

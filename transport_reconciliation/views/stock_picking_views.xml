@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Extensión de formulario de Albarán -->
+        <record id="stock_picking_form_transport" model="ir.ui.view">
+            <field name="name">stock.picking.form.transport</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <!-- Añadir pestaña de transporte en el notebook -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="🚚 Transporte" name="transport_info">
+                        <group>
+                            <group string="Información de Transporte">
+                                <field name="transport_carrier_id"/>
+                                <field name="transport_cost"/>
+                                <field name="transport_packages"/>
+                                <field name="transport_weight"/>
+                            </group>
+                            <group string="Conciliación">
+                                <field name="reconciliation_status"/>
+                                <field name="reconciliation_notes"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Vista de árbol extendida -->
+        <record id="stock_picking_tree_transport" model="ir.ui.view">
+            <field name="name">stock.picking.tree.transport</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.vpicktree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='location_dest_id']" position="after">
+                    <field name="transport_carrier_id" optional="hide"/>
+                    <field name="reconciliation_status" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Filtros de búsqueda -->
+        <record id="stock_picking_search_transport" model="ir.ui.view">
+            <field name="name">stock.picking.search.transport</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <separator/>
+                    <filter string="Pendiente Conciliar" 
+                            name="filter_pending_reconciliation"
+                            domain="[('reconciliation_status', '=', 'pending')]"/>
+                    <filter string="Con Discrepancia" 
+                            name="filter_discrepancy"
+                            domain="[('reconciliation_status', '=', 'discrepancy')]"/>
+                    <filter string="Conciliados" 
+                            name="filter_reconciled"
+                            domain="[('reconciliation_status', '=', 'reconciled')]"/>
+                    <separator/>
+                    <field name="transport_carrier_id"/>
+                    <separator/>
+                    <group expand="0" string="Agrupar Por">
+                        <filter string="Transportista" 
+                                name="group_carrier"
+                                context="{'group_by': 'transport_carrier_id'}"/>
+                        <filter string="Estado Conciliación" 
+                                name="group_reconciliation_state"
+                                context="{'group_by': 'reconciliation_status'}"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

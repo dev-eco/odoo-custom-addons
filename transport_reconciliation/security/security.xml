@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Grupos de seguridad -->
+        <record id="group_transport_reconciliation_user" model="res.groups">
+            <field name="name">Usuario de Conciliación de Transportes</field>
+            <field name="category_id" ref="base.module_category_inventory"/>
+        </record>
+
+        <record id="group_transport_reconciliation_manager" model="res.groups">
+            <field name="name">Gestor de Concili ación de Transportes</field>
+            <field name="category_id" ref="base.module_category_inventory"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_reconciliation_user'))]"/>
+        </record>
+    </data>
+</odoo>

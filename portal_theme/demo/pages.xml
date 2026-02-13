@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Páginas de demostración para Portal B2B Theme -->
+        <!-- Las páginas de demostración están en views/demo/pages.xml -->
+        <!-- Este archivo se mantiene para compatibilidad futura -->
+    </data>
+</odoo>

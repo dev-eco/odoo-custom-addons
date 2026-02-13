@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Template: Stock Disponible -->
+        <record id="email_template_stock_available" model="mail.template">
+            <field name="name">Portal B2B: Stock Disponible</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Stock disponible para su pedido ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email) | safe}</field>
+            <field name="email_to">${object.partner_id.email | safe}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #0066CC;">Stock Disponible</h2>
+                    
+                    <p>Estimado/a ${object.partner_id.name},</p>
+                    
+                    <p>Le informamos que <strong>todos los productos de su pedido ${object.name} están ahora disponibles en stock</strong>.</p>
+                    
+                    <p>Puede proceder con la confirmación del pedido accediendo a su portal:</p>
+                    
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="${object.get_portal_url()}" 
+                           style="background-color: #0066CC; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                            Ver Pedido
+                        </a>
+                    </p>
+                    
+                    <p>Saludos cordiales,<br/>
+                    ${object.company_id.name}</p>
+                </div>
+            </field>
+        </record>
+        
+    </data>
+</odoo>

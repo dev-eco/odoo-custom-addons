@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Formulario de contacto extendido -->
+    <record id="view_partner_form_transport" model="ir.ui.view">
+        <field name="name">res.partner.form.transport</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="is_transport_carrier"/>
+                <field name="transport_carrier_code" invisible="not is_transport_carrier"/>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Filtro en búsqueda de contactos -->
+    <record id="view_partner_filter_transport" model="ir.ui.view">
+        <field name="name">res.partner.search.transport</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='supplier']" position="after">
+                <filter string="Transportistas" 
+                        name="filter_transport_carrier"
+                        domain="[('is_transport_carrier', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

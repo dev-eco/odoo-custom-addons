@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vista árbol de etiquetas -->
+    <record id="view_distributor_label_tree" model="ir.ui.view">
+        <field name="name">distributor.label.tree</field>
+        <field name="model">distributor.label</field>
+        <field name="arch" type="xml">
+            <tree string="Etiquetas Cliente Final">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="customer_name"/>
+                <field name="customer_reference"/>
+                <field name="print_on_delivery_note" widget="boolean"/>
+                <field name="active" widget="boolean"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista formulario de etiqueta -->
+    <record id="view_distributor_label_form" model="ir.ui.view">
+        <field name="name">distributor.label.form</field>
+        <field name="model">distributor.label</field>
+        <field name="arch" type="xml">
+            <form string="Etiqueta Cliente Final">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"  placeholder="Nombre de la etiqueta"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Información Básica">
+                            <field name="partner_id" options="{'no_create': True}"/>
+                            <field name="customer_name"/>
+                            <field name="customer_reference"/>
+                        </group>
+                        <group string="Configuración Impresión">
+                            <field name="print_on_delivery_note" widget="boolean"/>
+                            <field name="hide_company_info" widget="boolean"/>
+                            <field name="active" widget="boolean"/>
+                        </group>
+                    </group>
+
+                    <group string="Datos Cliente Final">
+                        <group>
+                            <field name="customer_phone"/>
+                            <field name="customer_email"/>
+                        </group>
+                        <group>
+                            <field name="customer_address" placeholder="Dirección completa del cliente final"/>
+                        </group>
+                    </group>
+
+                    <group string="Notas">
+                        <field name="notes" nolabel="1" placeholder="Información adicional..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_distributor_label" model="ir.actions.act_window">
+        <field name="name">Etiquetas Cliente Final</field>
+        <field name="res_model">distributor.label</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay etiquetas de cliente final
+            </p>
+            <p>
+                Las etiquetas permiten a los distribuidores gestionar información
+                de sus clientes finales para incluir en albaranes y documentos.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem id="menu_distributor_label"
+              name="Etiquetas Cliente Final"
+              parent="sale.sale_menu_root"
+              action="action_distributor_label"
+              sequence="11"/>
+
+</odoo>

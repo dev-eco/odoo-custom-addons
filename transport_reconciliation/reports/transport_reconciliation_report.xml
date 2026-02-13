@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Reporte de Conciliación de Transportes -->
+        <record id="transport_reconciliation_report" model="ir.actions.report">
+            <field name="name">Reporte de Conciliación de Transportes</field>
+            <field name="model">transport.reconciliation.wizard</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">transport_reconciliation.transport_reconciliation_template</field>
+            <field name="print_report_name">'Conciliación Transportes - %s' % (object.transport_carrier_id.name)</field>
+        </record>
+    </data>
+</odoo>

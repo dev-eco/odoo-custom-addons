@@ -1,0 +1,169 @@
+/**
+ * Portal B2B Theme - Variables Principales
+ * Define los colores, tipografía y espaciados base del tema
+ */
+
+// ========== COLORES CORPORATIVOS ==========
+
+// Colores principales
+$primary: #0066CC !default;
+$secondary: #6c757d !default;
+$success: #28a745 !default;
+$info: #17a2b8 !default;
+$warning: #ffc107 !default;
+$danger: #dc3545 !default;
+$light: #f8f9fa !default;
+$dark: #343a40 !default;
+
+// Colores de texto
+$body-color: #212529 !default;
+$text-muted: #6c757d !default;
+$headings-color: #212529 !default;
+
+// Colores de fondo
+$body-bg: #ffffff !default;
+$card-bg: #ffffff !default;
+$modal-bg: #ffffff !default;
+
+// Colores de borde
+$border-color: #dee2e6 !default;
+$border-color-light: #e9ecef !default;
+
+// ========== TIPOGRAFÍA ==========
+
+// Fuentes
+$font-family-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !default;
+$font-family-monospace: 'Roboto Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !default;
+
+// Tamaños de fuente
+$font-size-base: 1rem !default;
+$font-size-sm: 0.875rem !default;
+$font-size-lg: 1.125rem !default;
+
+$h1-font-size: 2.5rem !default;
+$h2-font-size: 2rem !default;
+$h3-font-size: 1.75rem !default;
+$h4-font-size: 1.5rem !default;
+$h5-font-size: 1.25rem !default;
+$h6-font-size: 1rem !default;
+
+// Pesos de fuente
+$font-weight-light: 300 !default;
+$font-weight-normal: 400 !default;
+$font-weight-medium: 500 !default;
+$font-weight-semibold: 600 !default;
+$font-weight-bold: 700 !default;
+
+// Altura de línea
+$line-height-base: 1.6 !default;
+$line-height-sm: 1.4 !default;
+$line-height-lg: 1.8 !default;
+
+// ========== ESPACIADO ==========
+
+$spacer: 1rem !default;
+$spacers: (
+    0: 0,
+    1: $spacer * 0.25,
+    2: $spacer * 0.5,
+    3: $spacer,
+    4: $spacer * 1.5,
+    5: $spacer * 3,
+    6: $spacer * 4,
+    7: $spacer * 5,
+) !default;
+
+// ========== BORDES ==========
+
+$border-width: 1px !default;
+$border-radius: 0.375rem !default;
+$border-radius-sm: 0.25rem !default;
+$border-radius-lg: 0.5rem !default;
+$border-radius-xl: 1rem !default;
+$border-radius-pill: 50rem !default;
+
+// ========== SOMBRAS ==========
+
+$box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !default;
+$box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1) !default;
+$box-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !default;
+$box-shadow-xl: 0 1rem 2rem rgba(0, 0, 0, 0.2) !default;
+
+// ========== TRANSICIONES ==========
+
+$transition-base: all 0.2s ease-in-out !default;
+$transition-fade: opacity 0.15s linear !default;
+$transition-collapse: height 0.35s ease !default;
+
+// ========== COMPONENTES ==========
+
+// Cards
+$card-spacer-y: 1.25rem !default;
+$card-spacer-x: 1.5rem !default;
+$card-border-width: 0 !default;
+$card-border-radius: $border-radius !default;
+$card-box-shadow: $box-shadow !default;
+
+// Botones
+$btn-padding-y: 0.625rem !default;
+$btn-padding-x: 1.25rem !default;
+$btn-font-weight: $font-weight-medium !default;
+$btn-border-radius: $border-radius !default;
+$btn-box-shadow: $box-shadow-sm !default;
+
+// Inputs
+$input-padding-y: 0.625rem !default;
+$input-padding-x: 0.875rem !default;
+$input-border-radius: $border-radius !default;
+$input-border-color: $border-color !default;
+$input-focus-border-color: $primary !default;
+$input-focus-box-shadow: 0 0 0 0.2rem rgba($primary, 0.25) !default;
+
+// Tablas
+$table-cell-padding-y: 1rem !default;
+$table-cell-padding-x: 1rem !default;
+$table-striped-bg: rgba(0, 0, 0, 0.02) !default;
+$table-hover-bg: rgba(0, 0, 0, 0.04) !default;
+
+// Badges
+$badge-padding-y: 0.35em !default;
+$badge-padding-x: 0.65em !default;
+$badge-border-radius: $border-radius-sm !default;
+
+// Alertas
+$alert-padding-y: 1rem !default;
+$alert-padding-x: 1.25rem !default;
+$alert-border-radius: $border-radius !default;
+$alert-border-width: 0 !default;
+$alert-border-left-width: 4px !default;
+
+// ========== BREAKPOINTS ==========
+
+$grid-breakpoints: (
+    xs: 0,
+    sm: 576px,
+    md: 768px,
+    lg: 992px,
+    xl: 1200px,
+    xxl: 1400px
+) !default;
+
+// ========== CONTENEDORES ==========
+
+$container-max-widths: (
+    sm: 540px,
+    md: 720px,
+    lg: 960px,
+    xl: 1140px,
+    xxl: 1320px
+) !default;
+
+// ========== Z-INDEX ==========
+
+$zindex-dropdown: 1000 !default;
+$zindex-sticky: 1020 !default;
+$zindex-fixed: 1030 !default;
+$zindex-modal-backdrop: 1040 !default;
+$zindex-modal: 1050 !default;
+$zindex-popover: 1060 !default;
+$zindex-tooltip: 1070 !default;

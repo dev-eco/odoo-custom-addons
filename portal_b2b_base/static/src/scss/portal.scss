@@ -1,0 +1,982 @@
+/**
+ * Portal B2B - Estilos personalizados
+ * Compatible con Bootstrap 5 y Odoo 17
+ */
+
+// Variables
+$primary-color: #0066CC;
+$success-color: #28a745;
+$danger-color: #dc3545;
+$warning-color: #ffc107;
+$info-color: #17a2b8;
+$secondary-color: #6c757d;
+
+$border-radius: 0.375rem;
+$box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+$box-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+
+// Mixins
+@mixin transition($property: all, $duration: 0.2s, $timing: ease) {
+    transition: $property $duration $timing;
+}
+
+@mixin card-shadow {
+    box-shadow: $box-shadow;
+
+    &:hover {
+        box-shadow: $box-shadow-lg;
+    }
+}
+
+// Estilos generales portal
+.portal-b2b {
+
+    // Cards
+    .card {
+        border: none;
+        border-radius: $border-radius;
+        @include card-shadow;
+        margin-bottom: 1.5rem;
+
+        .card-header {
+            border-radius: $border-radius $border-radius 0 0;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.125);
+
+            h4, h5 {
+                margin-bottom: 0;
+            }
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+    }
+
+    // Badges
+    .badge {
+        padding: 0.5em 0.75em;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: 0.25rem;
+    }
+
+    // Tablas
+    .table {
+        margin-bottom: 0;
+
+        thead {
+            background-color: #f8f9fa;
+
+            th {
+                font-weight: 600;
+                text-transform: uppercase;
+                font-size: 0.875rem;
+                color: $secondary-color;
+                padding: 1rem;
+                border-bottom: 2px solid #dee2e6;
+            }
+        }
+
+        tbody {
+            tr {
+                @include transition(background-color);
+
+                &:hover {
+                    background-color: #f8f9fa;
+                }
+
+                td {
+                    padding: 1rem;
+                    vertical-align: middle;
+                }
+            }
+        }
+
+        tfoot {
+            tr {
+                &.table-active {
+                    background-color: #e9ecef;
+                    font-weight: 600;
+                }
+
+                td {
+                    padding: 1rem;
+                }
+            }
+        }
+    }
+
+    // Botones
+    .btn {
+        border-radius: $border-radius;
+        font-weight: 500;
+        @include transition(all, 0.2s);
+
+        &:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: $box-shadow-lg;
+        }
+
+        &:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        &.btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+    }
+
+    // Alertas
+    .alert {
+        border: none;
+        border-radius: $border-radius;
+        padding: 1rem 1.25rem;
+
+        &.alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid $info-color;
+        }
+
+        &.alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid $success-color;
+        }
+
+        &.alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 4px solid $warning-color;
+        }
+
+        &.alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid $danger-color;
+        }
+
+        i {
+            margin-right: 0.5rem;
+        }
+    }
+
+    // Formularios
+    .form-control {
+        border: 1px solid #ced4da;
+        border-radius: $border-radius;
+        padding: 0.625rem 0.875rem;
+        @include transition(border-color, 0.15s);
+        @include transition(box-shadow, 0.15s);
+
+        &:focus {
+            border-color: $primary-color;
+            box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+        }
+
+        &[readonly] {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    // Breadcrumb
+    .breadcrumb {
+        background-color: transparent;
+        padding: 0;
+        margin-bottom: 1.5rem;
+
+        .breadcrumb-item {
+            &.active {
+                color: $secondary-color;
+                font-weight: 500;
+            }
+
+            a {
+                color: $primary-color;
+                text-decoration: none;
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+
+            + .breadcrumb-item::before {
+                color: $secondary-color;
+            }
+        }
+    }
+}
+
+// Resultados búsqueda productos
+#product-results {
+    position: relative;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: $border-radius;
+    margin-top: 0.5rem;
+    box-shadow: $box-shadow;
+
+    .list-group-item {
+        border: none;
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem;
+        cursor: pointer;
+        @include transition(background-color);
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background-color: #f8f9fa;
+        }
+
+        strong {
+            color: #212529;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        small {
+            color: $secondary-color;
+        }
+    }
+}
+
+// Tabla líneas de pedido
+#order-lines-table {
+    .qty-input {
+        text-align: center;
+        width: 80px;
+        margin: 0 auto;
+    }
+
+    .remove-line {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+    }
+}
+
+// Spinner
+.spinner-border {
+    color: $primary-color;
+}
+
+// Información de crédito
+.credit-info-card {
+    .credit-item {
+        text-align: center;
+        padding: 1rem;
+
+        small {
+            display: block;
+            color: $secondary-color;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        h4 {
+            margin: 0;
+            font-weight: 600;
+
+            &.text-success {
+                color: $success-color !important;
+            }
+
+            &.text-danger {
+                color: $danger-color !important;
+            }
+        }
+    }
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .portal-b2b {
+        .table {
+            font-size: 0.875rem;
+
+            thead th {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            tbody td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        #product-results {
+            max-height: 300px;
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    .portal-b2b {
+        .card-header {
+            padding: 0.75rem 1rem;
+
+            h4 {
+                font-size: 1.25rem;
+            }
+        }
+
+        .table {
+            font-size: 0.8125rem;
+
+            thead th {
+                padding: 0.5rem 0.25rem;
+            }
+
+            tbody td {
+                padding: 0.5rem 0.25rem;
+            }
+        }
+
+        .breadcrumb {
+            font-size: 0.875rem;
+        }
+    }
+}
+
+// Animaciones
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+// Utilidades adicionales
+.text-muted {
+    color: $secondary-color !important;
+}
+
+.text-success {
+    color: $success-color !important;
+}
+
+.text-danger {
+    color: $danger-color !important;
+}
+
+.text-warning {
+    color: $warning-color !important;
+}
+
+.bg-success {
+    background-color: $success-color !important;
+}
+
+.bg-danger {
+    background-color: $danger-color !important;
+}
+
+.bg-warning {
+    background-color: $warning-color !important;
+}
+
+.border-left-primary {
+    border-left: 4px solid $primary-color;
+}
+
+.border-left-success {
+    border-left: 4px solid $success-color;
+}
+
+.border-left-danger {
+    border-left: 4px solid $danger-color;
+}
+
+.border-left-warning {
+    border-left: 4px solid $warning-color;
+}
+
+.border-left-info {
+    border-left: 4px solid $info-color;
+}
+
+// ========== PLANTILLAS DE PEDIDOS ==========
+
+.template-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+    
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border-color: $primary-color;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 1rem;
+        
+        i {
+            color: $primary-color;
+        }
+    }
+    
+    .template-stats {
+        padding: 0.75rem 0;
+        border-top: 1px solid #e9ecef;
+        border-bottom: 1px solid #e9ecef;
+        
+        .h5 {
+            color: $primary-color;
+            font-weight: 700;
+        }
+    }
+}
+
+// Responsive para cards de plantillas
+@media (max-width: 768px) {
+    .template-card {
+        margin-bottom: 1rem;
+    }
+}
+
+// ========== TIMELINE DE ESTADO ==========
+
+.order-timeline {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    padding: 2rem 0;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        top: 2.5rem;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #e9ecef;
+        z-index: 0;
+    }
+    
+    .timeline-item {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        
+        &.completed {
+            .timeline-marker {
+                background: $success-color;
+                border-color: $success-color;
+                color: white;
+            }
+            
+            .timeline-content h6 {
+                color: $success-color;
+            }
+        }
+        
+        .timeline-marker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            transition: all 0.3s ease;
+            
+            i {
+                font-size: 16px;
+            }
+        }
+        
+        .timeline-content {
+            h6 {
+                font-weight: 600;
+                margin-bottom: 0.25rem;
+                color: #6c757d;
+                transition: color 0.3s ease;
+            }
+            
+            small {
+                font-size: 0.85rem;
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .order-timeline {
+        flex-direction: column;
+        
+        &::before {
+            top: 0;
+            bottom: 0;
+            left: 20px;
+            width: 2px;
+            height: auto;
+        }
+        
+        .timeline-item {
+            text-align: left;
+            padding-left: 60px;
+            margin-bottom: 2rem;
+            
+            .timeline-marker {
+                position: absolute;
+                left: 0;
+                margin: 0;
+            }
+        }
+    }
+}
+
+// ========== OCULTAR BREADCRUMB DE PEDIDOS DE COMPRA ==========
+
+// Ocultar breadcrumb completo que contiene "Pedidos de compra"
+.o_portal .breadcrumb:has(a[href*="/my/purchase"]) {
+    display: none !important;
+}
+
+// Fallback para navegadores que no soportan :has()
+.o_portal .breadcrumb-item a[href*="/my/purchase"] {
+    display: none !important;
+}
+
+// Ocultar el breadcrumb-item padre también
+.o_portal .breadcrumb-item:has(a[href*="/my/purchase"]) {
+    display: none !important;
+}
+
+// Ocultar breadcrumb-item siguiente (el activo con S00127)
+.o_portal .breadcrumb-item:has(a[href*="/my/purchase"]) + .breadcrumb-item {
+    display: none !important;
+}
+
+// Si el breadcrumb queda vacío, ocultarlo completamente
+.o_portal .breadcrumb:empty,
+.o_portal .breadcrumb:not(:has(.breadcrumb-item:not([style*="display: none"]))) {
+    display: none !important;
+}
+
+// Ocultar cualquier lista que contenga enlaces a /my/purchase
+.o_portal ul:has(a[href*="/my/purchase"]),
+.o_portal ol:has(a[href*="/my/purchase"]) {
+    display: none !important;
+}
+
+// Ocultar contenedor completo si contiene enlace a /my/purchase
+.d-flex.justify-content-between.align-items-center:has(a[href="/my/purchase"]),
+.d-flex.justify-content-between.align-items-center:has(a[href^="/my/purchase/"]) {
+    display: none !important;
+}
+
+// Fallback: Ocultar breadcrumb específico
+ol.o_portal_submenu.breadcrumb:has(a[href="/my/purchase"]),
+ol.o_portal_submenu.breadcrumb:has(a[href^="/my/purchase/"]) {
+    display: none !important;
+}
+
+// Fallback adicional: Ocultar el enlace directamente
+a[href="/my/purchase"],
+a[href^="/my/purchase/"] {
+    display: none !important;
+}
+
+// Ocultar breadcrumb-item que contiene el enlace
+.breadcrumb-item:has(a[href="/my/purchase"]),
+.breadcrumb-item:has(a[href^="/my/purchase/"]) {
+    display: none !important;
+}
+
+// Ocultar separador después de breadcrumb-item oculto
+.breadcrumb-item:has(a[href="/my/purchase"]) + .breadcrumb-item::before,
+.breadcrumb-item:has(a[href^="/my/purchase/"]) + .breadcrumb-item::before {
+    display: none !important;
+}
+
+// Ocultar breadcrumb-item vacío
+.breadcrumb-item:empty {
+    display: none !important;
+}
+
+// ========== WIDGET DE CRÉDITO FLOTANTE ==========
+
+.credit-widget-floating {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 340px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    z-index: 1050;
+    @include transition(all, 0.3s, cubic-bezier(0.4, 0, 0.2, 1));
+    overflow: hidden;
+    
+    // Estados de color
+    &.status-danger {
+        border-left: 4px solid $danger-color;
+    }
+    
+    &.status-warning {
+        border-left: 4px solid $warning-color;
+    }
+    
+    &.status-success {
+        border-left: 4px solid $success-color;
+    }
+    
+    // Estado colapsado
+    &.collapsed {
+        width: 200px;
+    }
+    
+    // Header
+    .credit-widget-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        cursor: pointer;
+        user-select: none;
+        @include transition(background);
+        
+        &:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+        
+        .credit-widget-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            
+            i {
+                font-size: 18px;
+                color: #495057;
+            }
+            
+            .credit-widget-title {
+                font-weight: 600;
+                font-size: 15px;
+                color: #212529;
+            }
+        }
+        
+        .credit-widget-actions {
+            display: flex;
+            gap: 8px;
+            
+            button {
+                background: transparent;
+                border: none;
+                padding: 4px 8px;
+                cursor: pointer;
+                border-radius: 4px;
+                @include transition(background);
+                
+                &:hover:not(:disabled) {
+                    background: rgba(0, 0, 0, 0.05);
+                }
+                
+                i {
+                    font-size: 14px;
+                    color: #6c757d;
+                }
+                
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+            }
+        }
+    }
+    
+    // Content
+    .credit-widget-content {
+        padding: 16px;
+        @include transition(all);
+    }
+    
+    // Loading State
+    .credit-widget-loading,
+    .credit-widget-error {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 24px;
+        color: $secondary-color;
+        font-size: 14px;
+        
+        i {
+            font-size: 18px;
+        }
+    }
+    
+    .credit-widget-error {
+        color: $danger-color;
+        background: #f8d7da;
+        border-radius: 8px;
+    }
+    
+    // Data Content
+    .credit-widget-data {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    // Progress Bar
+    .credit-progress-container {
+        margin-bottom: 16px;
+        
+        .credit-progress-bar {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 6px;
+            
+            .credit-progress-fill {
+                height: 100%;
+                @include transition(width, 0.5s, cubic-bezier(0.4, 0, 0.2, 1));
+                border-radius: 5px;
+            }
+        }
+        
+        .credit-progress-label {
+            text-align: right;
+            font-size: 12px;
+            color: $secondary-color;
+            font-weight: 500;
+        }
+    }
+    
+    // Info Grid
+    .credit-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+        
+        .credit-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            @include transition(all);
+            
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            .credit-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 11px;
+                color: $secondary-color;
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+                
+                i {
+                    font-size: 12px;
+                }
+            }
+            
+            .credit-value {
+                font-size: 16px;
+                font-weight: 700;
+                color: #212529;
+                
+                &.credit-value-large {
+                    font-size: 20px;
+                }
+            }
+            
+            // Disponible destacado
+            &.credit-available {
+                grid-column: 1 / -1;
+                background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+                border: 2px solid $success-color;
+                
+                .credit-label {
+                    color: #2e7d32;
+                }
+            }
+        }
+    }
+    
+    // Tooltip
+    .credit-tooltip-trigger {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        background: #e7f3ff;
+        border-radius: 6px;
+        cursor: help;
+        font-size: 12px;
+        color: $primary-color;
+        
+        i {
+            font-size: 14px;
+        }
+        
+        &:hover .credit-tooltip-content {
+            display: block;
+        }
+        
+        .credit-tooltip-content {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            right: 0;
+            background: #2c3e50;
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            
+            &::after {
+                content: '';
+                position: absolute;
+                top: 100%;
+                left: 20px;
+                border: 8px solid transparent;
+                border-top-color: #2c3e50;
+            }
+            
+            .tooltip-item {
+                margin-bottom: 12px;
+                
+                &:last-child {
+                    margin-bottom: 0;
+                }
+                
+                strong {
+                    display: block;
+                    margin-bottom: 4px;
+                    color: #3498db;
+                }
+                
+                p {
+                    margin: 0;
+                    line-height: 1.4;
+                    opacity: 0.9;
+                }
+            }
+        }
+    }
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .credit-widget-floating {
+        position: static;
+        width: 100%;
+        margin: 16px 0;
+        border-radius: 8px;
+        
+        &.collapsed {
+            width: 100%;
+        }
+    }
+}
+
+// Print
+@media print {
+    .credit-widget-floating {
+        display: none !important;
+    }
+}
+
+// ========== INDICADORES DE STOCK ==========
+
+.stock-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    
+    &.stock-in {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    &.stock-low {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    
+    &.stock-out {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    &.stock-order {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+    
+    i {
+        font-size: 1rem;
+    }
+}
+
+// Productos sin stock en resultados
+.list-group-item.disabled {
+    cursor: not-allowed;
+    
+    &:hover {
+        background-color: #f8f9fa !important;
+    }
+}

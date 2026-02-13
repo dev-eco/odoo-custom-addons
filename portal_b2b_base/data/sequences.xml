@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Secuencia para RMA -->
+        <record id="sequence_sale_return" model="ir.sequence">
+            <field name="name">Devolución de Venta</field>
+            <field name="code">sale.return</field>
+            <field name="prefix">RMA/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Configuración del Portal B2B - Direcciones de Entrega en el Sitio Web -->
+        
+        <!-- Nota: Los menús principales se heredan de portal_b2b_base -->
+        <!-- Este archivo solo contiene configuración adicional específica del módulo -->
+        
+    </data>
+</odoo>

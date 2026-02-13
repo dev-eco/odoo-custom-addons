@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extensión del reporte de facturas con información de pago -->
+    <template id="report_invoice_payment_document" inherit_id="account.report_invoice_document">
+        
+        <!-- Información de pago después de los totales -->
+        <xpath expr="//div[@id='total']" position="after">
+            <div t-if="o.show_bank_info or o.show_early_discount or o.show_payment_qr" 
+                 style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 20px;">
+                
+                <h5 style="color: #2E7D32; margin-bottom: 15px;">💳 Información de Pago</h5>
+                
+                <div class="row">
+                    <!-- Información Bancaria -->
+                    <div t-if="o.show_bank_info and (o.bank_account_to_show or o.company_id.primary_bank_account)" 
+                         class="col-6">
+                        <strong>🏦 Transferencia Bancaria:</strong><br/>
+                        
+                        <t t-set="bank_account" t-value="o.bank_account_to_show or o.company_id.primary_bank_account"/>
+                        
+                        <strong>IBAN:</strong> 
+                        <span t-field="bank_account.acc_number" style="font-family: monospace; font-weight: bold;"/><br/>
+                        
+                        <strong>Banco:</strong> <span t-field="bank_account.bank_id.name"/><br/>
+                        
+                        <t t-if="bank_account.bank_id.bic">
+                            <strong>BIC:</strong> <span t-field="bank_account.bank_id.bic"/><br/>
+                        </t>
+                        
+                        <strong style="color: #D32F2F;">Referencia:</strong> 
+                        <span t-field="o.payment_reference" style="font-weight: bold;color: #D32F2F;"/>
+                    </div>
+                    
+                    <!-- Descuento y QR -->
+                    <div class="col-6">
+                        <!-- Descuento por pronto pago -->
+                        <div t-if="o.show_early_discount and o.early_payment_discount_amount > 0">
+                            <strong style="color: #4CAF50;">🎯 Descuento Pronto Pago:</strong><br/>
+                            <strong>Hasta:</strong> 
+                            <span t-field="o.early_payment_due_date" t-options="{'widget': 'date'}"/><br/>
+                            <strong>Descuento:</strong> 
+                            <span t-field="o.early_payment_discount_amount" 
+                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"
+                                  style="color: #4CAF50; font-weight: bold;"/><br/>
+                            <strong>Total:</strong> 
+                            <span t-field="o.early_payment_final_amount" 
+                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"
+                                  style="color: #4CAF50; font-weight: bold;"/>
+                        </div>
+                        
+                        <!-- QR Code compacto -->
+                        <div t-if="o.show_payment_qr and o.payment_qr_code" style="text-align: center; margin-top: 10px;">
+                            <strong>📱 QR Pago:</strong><br/>
+                            <img t-att-src="image_data_uri(o.payment_qr_code)" 
+                                 style="max-width: 80px; margin: 5px 0;"/>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Métodos de pago en una línea -->
+                <div t-if="o.available_payment_methods" style="margin-top: 10px;">
+                    <strong>💳 Métodos aceptados:</strong>
+                    <span t-foreach="o.available_payment_methods" t-as="method">
+                        <span t-field="method.name"/>
+                        <t t-if="not method_last">, </t>
+                    </span>
+                </div>
+                
+                <!-- Urgencia compacta -->
+                <div t-if="o.payment_urgency != 'normal'" style="margin-top: 10px;">
+                    <strong style="color: #f44336;">⚡ PAGO <span t-field="o.payment_urgency" style="text-transform: uppercase;"/>:</strong>
+                    <span t-if="o.payment_urgency == 'urgent'">Requerido en 48h</span>
+                    <span t-if="o.payment_urgency == 'immediate'">Requerido inmediatamente</span>
+                </div>
+                
+                <!-- Instrucciones compactas -->
+                <div t-if="o.custom_payment_instructions or o.company_id.bank_payment_instructions" 
+                     style="margin-top: 10px; font-size: 11px; color: #666;">
+                    <div t-if="o.custom_payment_instructions" t-raw="o.custom_payment_instructions"/>
+                    <div t-elif="o.company_id.bank_payment_instructions" t-raw="o.company_id.bank_payment_instructions"/>
+                </div>
+                
+                <!-- Términos legales compactos -->
+                <div t-if="o.company_id.payment_terms_note" style="margin-top: 15px; font-size: 10px; color: #666;">
+                    <strong>📜 Términos de Pago:</strong>
+                    <div t-raw="o.company_id.payment_terms_note"/>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

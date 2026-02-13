@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="transport_reconciliation_template">
+            <t t-call="web.html_container">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Reporte de Conciliación de Transportes</h2>
+                        <p>
+                            <strong>Transportista:</strong> <t t-esc="object.transport_carrier_id.name"/><br/>
+                            <strong>Período:</strong> <t t-esc="object.month"/>/<t t-esc="object.year"/><br/>
+                            <strong>Discrepancias:</strong> <t t-esc="object.discrepancy_count"/>
+                        </p>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Albarán</th>
+                                    <th>Coste Previsto</th>
+                                    <th>Coste Facturado</th>
+                                    <th>Discrepancia</th>
+                                    <th>Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="object.wizard_line_ids" t-as="line">
+                                    <tr t-att-class="'table-danger' if line.has_discrepancy else ''">
+                                        <td><t t-esc="line.picking_number"/></td>
+                                        <td><t t-esc="line.expected_cost"/></td>
+                                        <td><t t-esc="line.invoiced_cost"/></td>
+                                        <td><t t-esc="line.discrepancy_amount"/></td>
+                                        <td><t t-esc="line.notes"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>
