@@ -10,6 +10,8 @@ access_res_partner_portal_b2b,res.partner portal b2b,base.model_res_partner,port
 access_ir_attachment_portal_b2b,ir.attachment portal b2b,base.model_ir_attachment,portal_b2b_base.group_portal_b2b,1,1,1,1
 access_sale_order_template_portal_b2b,sale.order.template portal b2b,portal_b2b_base.model_sale_order_template,portal_b2b_base.group_portal_b2b,1,1,1,1
 access_sale_order_template_line_portal_b2b,sale.order.template.line portal b2b,portal_b2b_base.model_sale_order_template_line,portal_b2b_base.group_portal_b2b,1,1,1,1
+access_sale_order_template_option_portal_b2b,sale.order.template.option portal b2b,portal_b2b_base.model_sale_order_template_option,portal_b2b_base.group_portal_b2b,1,1,1,1
+access_sale_order_template_option_internal,sale.order.template.option internal,portal_b2b_base.model_sale_order_template_option,base.group_user,1,1,1,1
 access_sale_order_template_wizard_portal_b2b,sale.order.template.wizard portal b2b,portal_b2b_base.model_sale_order_template_wizard,portal_b2b_base.group_portal_b2b,1,1,1,0
 access_sale_order_template_wizard_internal,sale.order.template.wizard internal,portal_b2b_base.model_sale_order_template_wizard,base.group_user,1,1,1,1
 access_distributor_statistics_portal_b2b,distributor.statistics portal b2b,model_distributor_statistics,portal_b2b_base.group_portal_b2b,1,0,0,0
