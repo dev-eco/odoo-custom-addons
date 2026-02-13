@@ -684,16 +684,57 @@ class PortalB2B(CustomerPortal):
                 'client_order_ref': client_order_ref,
             }
             
-            # Dirección de entrega (opcional)
-            if delivery_address_id:
+            # Gestión de dirección de entrega
+            delivery_option = kw.get('delivery_option', 'default')
+            delivery_address_id = None
+
+            if delivery_option == 'saved':
+                # Usar dirección guardada
+                delivery_address_id = kw.get('delivery_address_id')
+                if delivery_address_id:
+                    try:
+                        delivery_address = request.env['delivery.address'].browse(int(delivery_address_id))
+                        if delivery_address.exists() and delivery_address.partner_id == partner:
+                            order_vals['delivery_address_id'] = delivery_address.id
+                    except Exception as e:
+                        _logger.warning(f"Error al asignar dirección guardada: {str(e)}")
+
+            elif delivery_option == 'new':
+                # Crear nueva dirección
                 try:
-                    delivery_address = request.env['delivery.address'].browse(
-                        int(delivery_address_id)
-                    )
-                    if delivery_address.exists() and delivery_address.partner_id == partner:
-                        order_vals['delivery_address_id'] = delivery_address.id
+                    new_address_vals = {
+                        'partner_id': partner.id,
+                        'name': kw.get('new_address_name', ''),
+                        'street': kw.get('new_address_street', ''),
+                        'street2': kw.get('new_address_street2', ''),
+                        'zip': kw.get('new_address_zip', ''),
+                        'city': kw.get('new_address_city', ''),
+                        'contact_name': kw.get('new_address_contact_name', ''),
+                        'contact_phone': kw.get('new_address_contact_phone', ''),
+                        'delivery_notes': kw.get('new_address_notes', ''),
+                        'require_appointment': kw.get('new_address_appointment') == 'on',
+                        'tail_lift_required': kw.get('new_address_tail_lift') == 'on',
+                        'active': True,
+                    }
+                    
+                    # Validar campos obligatorios
+                    if not all([new_address_vals['name'], new_address_vals['street'], 
+                               new_address_vals['zip'], new_address_vals['city']]):
+                        return {'error': _('Complete todos los campos obligatorios de la dirección')}
+                    
+                    # Crear dirección
+                    new_address = request.env['delivery.address'].sudo().create(new_address_vals)
+                    order_vals['delivery_address_id'] = new_address.id
+                    
+                    # Si el usuario NO marcó "guardar para futuros pedidos", marcarla como no predeterminada
+                    if not kw.get('save_address_for_future'):
+                        new_address.write({'is_default': False})
+                    
+                    _logger.info(f"Nueva dirección '{new_address.name}' creada para {partner.name}")
+                    
                 except Exception as e:
-                    _logger.warning(f"Error al asignar dirección de entrega: {str(e)}")
+                    _logger.error(f"Error creando nueva dirección: {str(e)}")
+                    return {'error': _('Error al crear la dirección de entrega')}
 
             # Etiqueta distribuidor (opcional)
             if distributor_label_id:
@@ -1476,6 +1517,7 @@ class PortalB2B(CustomerPortal):
         from datetime import datetime, timedelta
         today = datetime.today().date()
         
+        # Calcular fechas según período
         if period == 'week':
             start_date = today - timedelta(days=7)
         elif period == 'month':
@@ -1488,23 +1530,90 @@ class PortalB2B(CustomerPortal):
             start_date = today - timedelta(days=30)
         
         try:
-            stats_model = request.env['distributor.statistics']
-            stats = stats_model.search([
-                ('partner_id', '=', partner.id),
-                ('period_start', '=', start_date),
-                ('period_end', '=', today)
-            ], limit=1)
+            # Dominio base para pedidos del distribuidor
+            order_domain = [
+                ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+                ('date_order', '>=', start_date),
+                ('date_order', '<=', today),
+            ]
             
-            if not stats:
-                stats = stats_model.create({
-                    'partner_id': partner.id,
-                    'period_start': start_date,
-                    'period_end': today
+            # Obtener pedidos
+            orders = request.env['sale.order'].search(order_domain)
+            
+            # Calcular estadísticas de pedidos
+            total_orders = len(orders)
+            confirmed_orders = orders.filtered(lambda o: o.state in ['sale', 'done'])
+            total_amount = sum(float(o.amount_total) for o in orders)
+            average_value = total_amount / total_orders if total_orders > 0 else 0
+            
+            # Obtener productos más pedidos
+            order_lines = orders.mapped('order_line')
+            product_stats = {}
+            
+            for line in order_lines:
+                product_id = line.product_id.id
+                if product_id not in product_stats:
+                    product_stats[product_id] = {
+                        'product': line.product_id,
+                        'quantity': 0,
+                        'amount': 0,
+                    }
+                product_stats[product_id]['quantity'] += line.product_uom_qty
+                product_stats[product_id]['amount'] += line.price_subtotal
+            
+            # Ordenar por cantidad y tomar top 10
+            top_products = sorted(
+                product_stats.values(),
+                key=lambda x: x['quantity'],
+                reverse=True
+            )[:10]
+            
+            top_products_data = []
+            for item in top_products:
+                top_products_data.append({
+                    'name': item['product'].name,
+                    'default_code': item['product'].default_code or '',
+                    'quantity': item['quantity'],
+                    'amount': item['amount'],
                 })
             
-            dashboard_data = stats.get_statistics_for_portal()
+            # Estadísticas de facturación
+            invoice_domain = [
+                ('move_type', '=', 'out_invoice'),
+                ('partner_id', 'child_of', partner.commercial_partner_id.id),
+                ('invoice_date', '>=', start_date),
+                ('invoice_date', '<=', today),
+                ('state', '=', 'posted'),
+            ]
+            
+            invoices = request.env['account.move'].search(invoice_domain)
+            
+            total_invoiced = sum(float(inv.amount_total) for inv in invoices)
+            paid_invoices = invoices.filtered(lambda i: i.payment_state == 'paid')
+            total_paid = sum(float(inv.amount_total) for inv in paid_invoices)
+            pending_payment = total_invoiced - total_paid
+            
+            # Construir datos del dashboard
+            dashboard_data = {
+                'orders': {
+                    'total': total_orders,
+                    'confirmed': len(confirmed_orders),
+                    'total_amount': total_amount,
+                    'average_value': average_value,
+                },
+                'products': {
+                    'total_ordered': len(product_stats),
+                    'top_products': top_products_data,
+                },
+                'invoicing': {
+                    'total_invoiced': total_invoiced,
+                    'total_paid': total_paid,
+                    'pending_payment': pending_payment,
+                },
+            }
+            
         except Exception as e:
-            _logger.warning(f"Error obteniendo estadísticas: {str(e)}")
+            _logger.error(f"Error calculando estadísticas: {str(e)}", exc_info=True)
             dashboard_data = {
                 'orders': {'total': 0, 'confirmed': 0, 'total_amount': 0, 'average_value': 0},
                 'products': {'total_ordered': 0, 'top_products': []},
@@ -1959,6 +2068,149 @@ class PortalB2B(CustomerPortal):
         except Exception as e:
             _logger.error(f"Error al obtener historial de precios: {str(e)}")
             return {'error': _('Error al obtener historial')}
+
+    @http.route(['/api/productos/catalogo'], type='json', auth='user', methods=['POST'])
+    def api_productos_catalogo(self, page=1, limit=20, search='', category_id=None, sort='name', **kw):
+        """API para obtener catálogo de productos con imágenes."""
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return {'error': _('Usuario no autorizado')}
+
+        try:
+            page = int(page)
+            limit = int(limit)
+            offset = (page - 1) * limit
+
+            # Construir dominio
+            domain = [
+                ('sale_ok', '=', True),
+                ('active', '=', True),
+            ]
+
+            if search:
+                domain += [
+                    '|', '|',
+                    ('name', 'ilike', search),
+                    ('default_code', 'ilike', search),
+                    ('description_sale', 'ilike', search),
+                ]
+
+            if category_id:
+                domain.append(('categ_id', '=', int(category_id)))
+
+            # Ordenamiento
+            order_map = {
+                'name': 'name asc',
+                'price': 'list_price asc',
+                'code': 'default_code asc',
+            }
+            order = order_map.get(sort, 'name asc')
+
+            # Contar total
+            total_count = request.env['product.product'].sudo().search_count(domain)
+
+            # Obtener productos
+            products = request.env['product.product'].sudo().search(
+                domain,
+                limit=limit,
+                offset=offset,
+                order=order
+            )
+
+            # Obtener tarifa del distribuidor
+            pricelist = None
+            if hasattr(partner, 'obtener_tarifa_aplicable'):
+                try:
+                    pricelist = partner.obtener_tarifa_aplicable()
+                except Exception as e:
+                    _logger.debug(f"Error obteniendo tarifa: {str(e)}")
+
+            # Preparar datos
+            result = []
+            for product in products:
+                # Calcular precio
+                price = float(product.list_price or 0.0)
+                if pricelist:
+                    try:
+                        price_compute = pricelist._get_product_price(
+                            product,
+                            1.0,
+                            partner=partner,
+                            date=fields.Date.today(),
+                        )
+                        if price_compute:
+                            price = float(price_compute)
+                    except Exception:
+                        pass
+
+                # Obtener imagen (base64)
+                image_url = f'/web/image/product.product/{product.id}/image_128'
+
+                result.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'default_code': product.default_code or '',
+                    'description_sale': product.description_sale or '',
+                    'list_price': price,
+                    'qty_available': float(product.qty_available) if product.type == 'product' else 999,
+                    'uom_name': product.uom_id.name,
+                    'image_url': image_url,
+                    'categ_id': product.categ_id.id if product.categ_id else None,
+                    'categ_name': product.categ_id.name if product.categ_id else '',
+                })
+
+            # Calcular páginas
+            total_pages = (total_count + limit - 1) // limit
+
+            return {
+                'products': result,
+                'total_count': total_count,
+                'page': page,
+                'total_pages': total_pages,
+                'has_next': page < total_pages,
+                'has_prev': page > 1,
+            }
+
+        except Exception as e:
+            _logger.error(f"Error en catálogo de productos: {str(e)}", exc_info=True)
+            return {'error': _('Error al cargar el catálogo')}
+
+    @http.route(['/api/productos/categorias'], type='json', auth='user', methods=['POST'])
+    def api_productos_categorias(self, **kw):
+        """API para obtener categorías de productos."""
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return {'error': _('Usuario no autorizado')}
+
+        try:
+            # Obtener categorías que tienen productos en venta
+            categories = request.env['product.category'].sudo().search([
+                ('product_count', '>', 0)
+            ], order='name asc')
+
+            result = []
+            for category in categories:
+                # Contar productos vendibles en esta categoría
+                product_count = request.env['product.product'].sudo().search_count([
+                    ('categ_id', '=', category.id),
+                    ('sale_ok', '=', True),
+                    ('active', '=', True),
+                ])
+
+                if product_count > 0:
+                    result.append({
+                        'id': category.id,
+                        'name': category.name,
+                        'product_count': product_count,
+                    })
+
+            return {'categories': result}
+
+        except Exception as e:
+            _logger.error(f"Error obteniendo categorías: {str(e)}")
+            return {'error': _('Error al cargar categorías')}
 
     @http.route(['/api/notificaciones/recientes'], type='json', auth='user', methods=['POST'])
     def get_recent_notifications(self, limit=10, **kw):

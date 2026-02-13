@@ -99,11 +99,18 @@ Licencia: LGPL-3
     ],
     'assets': {
         'web.assets_frontend': [
+            # Correcciones de compatibilidad (DEBE ser primero)
+            'portal_b2b_base/static/src/js/portal_fix.js',
+            
+            # Manejador de errores OWL
+            'portal_b2b_base/static/src/js/owl_error_handler.js',
+            
             # Estilos
             'portal_b2b_base/static/src/scss/portal.scss',
 
             # Scripts del portal
             'portal_b2b_base/static/src/js/portal.js',
+            'portal_b2b_base/static/src/js/product_grid.js',
         ],
     },
     'external_dependencies': {

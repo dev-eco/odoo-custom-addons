@@ -8,6 +8,8 @@
 (function() {
     'use strict';
 
+    console.log('Portal B2B: Inicializando script principal');
+
     // Esperar a que el DOM esté listo
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
@@ -29,25 +31,30 @@
             const currentPath = window.location.pathname;
             
             if (currentPath.includes('/crear-pedido')) {
+                console.log('Portal B2B: Inicializando página crear pedido');
                 inicializarCrearPedido();
             }
             
             if (currentPath.includes('/mi-cuenta')) {
+                console.log('Portal B2B: Inicializando página mi cuenta');
                 inicializarMiCuenta();
             }
         
             if (currentPath.includes('/crear-plantilla')) {
+                console.log('Portal B2B: Inicializando página crear plantilla');
                 inicializarCrearPlantillaDesdePedido();
             }
         
-            // Estos pueden estar en crear-pedido
-            if (document.getElementById('delivery-address-select')) {
-                inicializarSelectorDirecciones();
-            }
+            // ❌ COMENTADO: Gestión de direcciones movida a product_grid.js
+            // if (document.getElementById('delivery-address-select')) {
+            //     console.log('Portal B2B: Inicializando selector de direcciones');
+            //     inicializarSelectorDirecciones();
+            // }
             
-            if (document.getElementById('distributor-label-select')) {
-                inicializarSelectorEtiquetas();
-            }
+            // if (document.getElementById('distributor-label-select')) {
+            //     console.log('Portal B2B: Inicializando selector de etiquetas');
+            //     inicializarSelectorEtiquetas();
+            // }
 
         } catch (error) {
             console.error('Portal B2B: Error durante inicialización:', error);
@@ -755,162 +762,9 @@
         });
     }
 
-    /**
-     * Inicializa selector de direcciones de entrega
-     */
-    function inicializarSelectorDirecciones() {
-        const deliveryAddressSelect = document.getElementById('delivery-address-select');
-        if (!deliveryAddressSelect) {
-            console.log('Portal B2B: Selector de direcciones no encontrado');
-            return;
-        }
-
-        console.log('Portal B2B: Inicializando selector de direcciones');
-
-        const addressInfo = document.getElementById('address-info');
-        const addressFull = document.getElementById('address-full');
-
-        if (!addressInfo || !addressFull) {
-            console.warn('Portal B2B: Elementos de dirección no encontrados');
-            return;
-        }
-
-        deliveryAddressSelect.addEventListener('change', function() {
-            try {
-                const selectedOption = this.options[this.selectedIndex];
-                if (!selectedOption) {
-                    console.warn('Portal B2B: Opción seleccionada no encontrada');
-                    return;
-                }
-
-                const fullAddress = selectedOption.getAttribute('data-full-address') || '';
-                const requireAppointment = selectedOption.getAttribute('data-require-appointment') === 'True';
-                const tailLift = selectedOption.getAttribute('data-tail-lift') === 'True';
-
-                if (this.value) {
-                    addressFull.textContent = fullAddress;
-                    
-                    const addressRequirements = document.getElementById('address-requirements');
-                    const appointmentWarning = document.getElementById('appointment-warning');
-                    const tailLiftWarning = document.getElementById('tail-lift-warning');
-                    
-                    if (addressRequirements) {
-                        if (requireAppointment || tailLift) {
-                            addressRequirements.style.display = 'block';
-                            if (appointmentWarning) {
-                                appointmentWarning.style.display = requireAppointment ? 'block' : 'none';
-                            }
-                            if (tailLiftWarning) {
-                                tailLiftWarning.style.display = tailLift ? 'block' : 'none';
-                            }
-                        } else {
-                            addressRequirements.style.display = 'none';
-                        }
-                    }
-
-                    addressInfo.style.display = 'block';
-                } else {
-                    addressInfo.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Portal B2B: Error en selector de direcciones:', error);
-            }
-        });
-
-        // Trigger inicial
-        if (deliveryAddressSelect.value) {
-            deliveryAddressSelect.dispatchEvent(new Event('change'));
-        }
-    }
-
-    /**
-     * Inicializa selector de etiquetas cliente final
-     */
-    function inicializarSelectorEtiquetas() {
-        const distributorLabelSelect = document.getElementById('distributor-label-select');
-        if (!distributorLabelSelect) {
-            console.log('Portal B2B: Selector de etiquetas no encontrado');
-            return;
-        }
-
-        console.log('Portal B2B: Inicializando selector de etiquetas');
-
-        const labelInfo = document.getElementById('label-info');
-        const labelCustomerName = document.getElementById('label-customer-name');
-        const customerDeliveryRefGroup = document.getElementById('customer-delivery-ref-group');
-
-        if (!labelInfo || !labelCustomerName) {
-            console.warn('Portal B2B: Elementos de etiqueta no encontrados');
-            return;
-        }
-
-        distributorLabelSelect.addEventListener('change', function() {
-            try {
-                const selectedOption = this.options[this.selectedIndex];
-                if (!selectedOption) {
-                    console.warn('Portal B2B: Opción de etiqueta seleccionada no encontrada');
-                    return;
-                }
-
-                const customerName = selectedOption.getAttribute('data-customer-name') || '';
-                const customerRef = selectedOption.getAttribute('data-customer-ref') || '';
-                const hideCompany = selectedOption.getAttribute('data-hide-company') === '1';
-                const printDelivery = selectedOption.getAttribute('data-print-delivery') === '1';
-
-                if (this.value) {
-                    labelCustomerName.textContent = customerName;
-                    
-                    const labelCustomerRef = document.getElementById('label-customer-ref');
-                    const labelCustomerRefContainer = document.getElementById('label-customer-ref-container');
-                    
-                    if (customerRef && labelCustomerRef && labelCustomerRefContainer) {
-                        labelCustomerRef.textContent = customerRef;
-                        labelCustomerRefContainer.style.display = 'block';
-                    } else if (labelCustomerRefContainer) {
-                        labelCustomerRefContainer.style.display = 'none';
-                    }
-
-                    const labelSettings = document.getElementById('label-settings');
-                    const labelPrintDelivery = document.getElementById('label-print-delivery');
-                    const labelHideCompany = document.getElementById('label-hide-company');
-                    
-                    if (labelSettings) {
-                        if (hideCompany || printDelivery) {
-                            labelSettings.style.display = 'block';
-                            if (labelPrintDelivery) {
-                                labelPrintDelivery.style.display = printDelivery ? 'block' : 'none';
-                            }
-                            if (labelHideCompany) {
-                                labelHideCompany.style.display = hideCompany ? 'block' : 'none';
-                            }
-                        } else {
-                            labelSettings.style.display = 'none';
-                        }
-                    }
-
-                    // MOSTRAR campo de referencia cuando se selecciona etiqueta
-                    if (customerDeliveryRefGroup) {
-                        customerDeliveryRefGroup.style.display = 'block';
-                    }
-                    
-                    labelInfo.style.display = 'block';
-                } else {
-                    labelInfo.style.display = 'none';
-                    // OCULTAR cuando no hay etiqueta seleccionada
-                    if (customerDeliveryRefGroup) {
-                        customerDeliveryRefGroup.style.display = 'none';
-                    }
-                }
-            } catch (error) {
-                console.error('Portal B2B: Error en selector de etiquetas:', error);
-            }
-        });
-
-        // Trigger inicial si ya hay una etiqueta seleccionada
-        if (distributorLabelSelect.value) {
-            distributorLabelSelect.dispatchEvent(new Event('change'));
-        }
-    }
+    // ❌ FUNCIONES ELIMINADAS: Movidas a product_grid.js
+    // - inicializarSelectorDirecciones()
+    // - inicializarSelectorEtiquetas()
 
     /**
      * Escapa HTML para prevenir XSS
@@ -928,6 +782,24 @@
     }
 
     /**
+     * Verifica si un elemento existe en el DOM
+     */
+    function elementExists(id) {
+        return document.getElementById(id) !== null;
+    }
+
+    /**
+     * Obtiene un elemento de forma segura
+     */
+    function getElement(id) {
+        const element = document.getElementById(id);
+        if (!element) {
+            console.warn(`Portal B2B: Elemento ${id} no encontrado`);
+        }
+        return element;
+    }
+
+    /**
      * Oculta el breadcrumb de "Pedidos de compra" (/my/purchase)
      * Solución robusta con múltiples estrategias
      */
@@ -935,6 +807,10 @@
         try {
             // Estrategia 1: Buscar y ocultar enlaces directos a /my/purchase
             const enlacesCompra = document.querySelectorAll('a[href*="/my/purchase"]');
+            
+            if (enlacesCompra.length > 0) {
+                console.log(`Portal B2B: Encontrados ${enlacesCompra.length} enlaces a /my/purchase`);
+            }
             
             enlacesCompra.forEach(enlace => {
                 // Ocultar el enlace
@@ -976,10 +852,10 @@
                 }
             });
 
-            console.log('Breadcrumbs de compra ocultados correctamente');
+            console.log('Portal B2B: Breadcrumbs de compra ocultados correctamente');
 
         } catch (error) {
-            console.warn('Error al ocultar breadcrumbs de compra:', error);
+            console.warn('Portal B2B: Error al ocultar breadcrumbs de compra:', error);
         }
     }
 

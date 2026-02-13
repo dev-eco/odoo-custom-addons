@@ -343,26 +343,42 @@
                                 
                                 <form id="form-crear-pedido">
                                     
-                                    <!--========== BÚSQUEDA DE PRODUCTOS ==========-->
+                                    <!--========== CATÁLOGO DE PRODUCTOS EN GRID ==========-->
                                     <div class="mb-4">
-                                        <h5>Buscar Productos</h5>
-                                        <div class="row">
-                                            <div class="col-md-8">
+                                        <h5>Catálogo de Productos</h5>
+                                    
+                                        <!-- Barra de búsqueda y filtros -->
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
                                                 <input type="text" 
-                                                       id="product-search" 
+                                                       id="product-filter" 
                                                        class="form-control" 
-                                                       placeholder="Buscar por nombre o referencia..."/>
+                                                       placeholder="Filtrar por nombre o referencia..."/>
                                             </div>
-                                            <div class="col-md-4">
-                                                <button type="button" 
-                                                        id="btn-search-product" 
-                                                        class="btn btn-primary w-100">
-                                                    <i class="fa fa-search me-2" aria-hidden="true"/>
-                                                    Buscar
-                                                </button>
+                                            <div class="col-md-3">
+                                                <select id="category-filter" class="form-control">
+                                                    <option value="">Todas las categorías</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <select id="sort-products" class="form-control">
+                                                    <option value="name">Ordenar por Nombre</option>
+                                                    <option value="price">Ordenar por Precio</option>
+                                                    <option value="code">Ordenar por Referencia</option>
+                                                </select>
                                             </div>
                                         </div>
-                                        <div id="product-results" class="list-group mt-2" style="display: none;"></div>
+                                    
+                                        <!-- Grid de productos -->
+                                        <div id="products-grid" class="row">
+                                            <div class="col-12 text-center py-5">
+                                                <i class="fa fa-spinner fa-spin fa-3x text-muted"></i>
+                                                <p class="mt-3 text-muted">Cargando productos...</p>
+                                            </div>
+                                        </div>
+                                    
+                                        <!-- Paginación -->
+                                        <div id="products-pagination" class="mt-3 text-center"></div>
                                     </div>
                                     
                                     <!--========== LÍNEAS DEL PEDIDO ==========-->
@@ -398,47 +414,183 @@
                                     </div>
                                     
                                     <!--========== DIRECCIÓN DE ENTREGA ==========-->
-                                    <t t-if="has_delivery_module and delivery_addresses">
-                                        <div class="mb-4">
-                                            <h5>Dirección de Entrega</h5>
+                                    <div class="mb-4">
+                                        <h5>Dirección de Entrega</h5>
+                                    
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" 
+                                                   type="radio" 
+                                                   name="delivery_option" 
+                                                   id="use-default-address" 
+                                                   value="default"
+                                                   checked="checked"/>
+                                            <label class="form-check-label" for="use-default-address">
+                                                Usar mi dirección predeterminada
+                                            </label>
+                                        </div>
+                                    
+                                        <t t-if="delivery_addresses">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" 
+                                                       type="radio" 
+                                                       name="delivery_option" 
+                                                       id="use-saved-address" 
+                                                       value="saved"/>
+                                                <label class="form-check-label" for="use-saved-address">
+                                                    Seleccionar dirección guardada
+                                                </label>
+                                            </div>
+                                        
+                                            <div id="saved-address-section" style="display: none;" class="mb-3 ms-4">
+                                                <select id="saved-address-select" name="delivery_address_id" class="form-control">
+                                                    <option value="">Seleccionar dirección...</option>
+                                                    <t t-foreach="delivery_addresses" t-as="address">
+                                                        <option t-att-value="address.id"
+                                                                t-att-data-full-address="address.full_address"
+                                                                t-att-data-require-appointment="address.require_appointment"
+                                                                t-att-data-tail-lift="address.tail_lift_required">
+                                                            <t t-esc="address.name"/>
+                                                        </option>
+                                                    </t>
+                                                </select>
+                                            </div>
+                                        </t>
+                                    
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" 
+                                                   type="radio" 
+                                                   name="delivery_option" 
+                                                   id="use-new-address" 
+                                                   value="new"/>
+                                            <label class="form-check-label" for="use-new-address">
+                                                Introducir nueva dirección
+                                            </label>
+                                        </div>
+                                    
+                                        <!-- Formulario de nueva dirección -->
+                                        <div id="new-address-form" style="display: none;" class="ms-4 p-3 border rounded bg-light">
                                             <div class="row">
-                                                <div class="col-md-6">
-                                                    <select id="delivery-address-select" 
-                                                            name="delivery_address_id" 
-                                                            class="form-control">
-                                                        <option value="">Usar dirección del distribuidor</option>
-                                                        <t t-foreach="delivery_addresses" t-as="address">
-                                                            <option t-att-value="address.id"
-                                                                    t-att-selected="address == default_address"
-                                                                    t-att-data-full-address="address.full_address"
-                                                                    t-att-data-require-appointment="address.require_appointment"
-                                                                    t-att-data-tail-lift="address.tail_lift_required">
-                                                                <t t-esc="address.name"/>
-                                                            </option>
-                                                        </t>
-                                                    </select>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Alias/Nombre <span class="text-danger">*</span></label>
+                                                    <input type="text" 
+                                                           id="new-address-name" 
+                                                           name="new_address_name"
+                                                           class="form-control" 
+                                                           placeholder="Ej: Obra Madrid Centro"/>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Calle <span class="text-danger">*</span></label>
+                                                    <input type="text" 
+                                                           id="new-address-street" 
+                                                           name="new_address_street"
+                                                           class="form-control" 
+                                                           placeholder="Calle y número"/>
                                                 </div>
                                             </div>
-                                            
-                                            <div id="address-info" style="display: none;" class="mt-3">
-                                                <div class="alert alert-info">
-                                                    <strong>Dirección:</strong>
-                                                    <div id="address-full"></div>
-                                                    
-                                                    <div id="address-requirements" style="display: none;" class="mt-2">
-                                                        <div id="appointment-warning" style="display: none;">
-                                                            <i class="fa fa-calendar me-2" aria-hidden="true"/>
+                                        
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Calle 2</label>
+                                                    <input type="text" 
+                                                           id="new-address-street2" 
+                                                           name="new_address_street2"
+                                                           class="form-control" 
+                                                           placeholder="Piso, puerta, etc."/>
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">Código Postal <span class="text-danger">*</span></label>
+                                                    <input type="text" 
+                                                           id="new-address-zip" 
+                                                           name="new_address_zip"
+                                                           class="form-control" 
+                                                           placeholder="28001"/>
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">Ciudad <span class="text-danger">*</span></label>
+                                                    <input type="text" 
+                                                           id="new-address-city" 
+                                                           name="new_address_city"
+                                                           class="form-control" 
+                                                           placeholder="Madrid"/>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Nombre Contacto</label>
+                                                    <input type="text" 
+                                                           id="new-address-contact-name" 
+                                                           name="new_address_contact_name"
+                                                           class="form-control" 
+                                                           placeholder="Persona que recibe"/>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Teléfono Contacto</label>
+                                                    <input type="tel" 
+                                                           id="new-address-contact-phone" 
+                                                           name="new_address_contact_phone"
+                                                           class="form-control" 
+                                                           placeholder="600 123 456"/>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="row">
+                                                <div class="col-md-12 mb-3">
+                                                    <label class="form-label">Instrucciones de Entrega</label>
+                                                    <textarea id="new-address-notes" 
+                                                              name="new_address_notes"
+                                                              class="form-control" 
+                                                              rows="2" 
+                                                              placeholder="Horarios, accesos, restricciones..."></textarea>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" 
+                                                               type="checkbox" 
+                                                               id="new-address-appointment"
+                                                               name="new_address_appointment"/>
+                                                        <label class="form-check-label" for="new-address-appointment">
                                                             Requiere cita previa
-                                                        </div>
-                                                        <div id="tail-lift-warning" style="display: none;">
-                                                            <i class="fa fa-truck me-2" aria-hidden="true"/>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" 
+                                                               type="checkbox" 
+                                                               id="new-address-tail-lift"
+                                                               name="new_address_tail_lift"/>
+                                                        <label class="form-check-label" for="new-address-tail-lift">
                                                             Requiere camión con pluma
-                                                        </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="row mt-3">
+                                                <div class="col-md-12">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" 
+                                                               type="checkbox" 
+                                                               id="save-address-for-future"
+                                                               name="save_address_for_future"/>
+                                                        <label class="form-check-label" for="save-address-for-future">
+                                                            <strong>Guardar esta dirección para futuros pedidos</strong>
+                                                        </label>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </t>
+                                    
+                                        <!-- Vista previa -->
+                                        <div id="address-preview" style="display: none;" class="mt-3 alert alert-info">
+                                            <strong>Dirección de entrega:</strong>
+                                            <div id="address-preview-content"></div>
+                                        </div>
+                                    </div>
                                     
                                     <!--========== ETIQUETA CLIENTE FINAL ==========-->
                                     <t t-if="distributor_labels">
