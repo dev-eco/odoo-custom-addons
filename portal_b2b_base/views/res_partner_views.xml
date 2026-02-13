@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vista formulario res.partner - Extensión B2B -->
+    <record id="view_partner_form_b2b" model="ir.ui.view">
+        <field name="name">res.partner.form.b2b</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Añadir página Portal B2B en notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Portal B2B" name="portal_b2b">
+                    <group>
+                        <group string="Estado Distribuidor">
+                            <field name="is_distributor" 
+                                   readonly="True"
+                                   widget="boolean"/>
+                            <field name="user_ids" 
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="Control de Crédito" invisible="not is_distributor">
+                            <field name="credit_limit" 
+                                   widget="monetary"/>
+                            <field name="available_credit" 
+                                   widget="monetary"
+                                   readonly="True"/>
+                            <field name="total_invoiced_year" 
+                                   widget="monetary"
+                                   readonly="True"/>
+                        </group>
+                        <group string="Configuración de Precios" invisible="not is_distributor">
+                            <field name="distributor_pricelist_id" 
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <!-- Vista árbol (lista) de distribuidores -->
+    <record id="view_partner_distributor_tree" model="ir.ui.view">
+        <field name="name">res.partner.distributor.tree</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <tree string="Distribuidores B2B" edit="false">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="is_distributor" widget="boolean"/>
+                <field name="credit_limit" widget="monetary" optional="show"/>
+                <field name="available_credit" widget="monetary" optional="show"/>
+                <field name="total_invoiced_year" widget="monetary" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista formulario simplificada para distribuidores -->
+    <record id="view_partner_distributor_form" model="ir.ui.view">
+        <field name="name">res.partner.distributor.form</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <form string="Distribuidor B2B">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_grant_portal_access" 
+                                type="object" 
+                                class="oe_stat_button" 
+                                icon="fa-user-plus"
+                                invisible="is_distributor"
+                                help="Crea un usuario PORTAL (no interno) con acceso al Portal B2B">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Crear Usuario</span>
+                                <span class="o_stat_text">Portal B2B</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Información si ya es distribuidor -->
+                    <div class="alert alert-success" role="alert" invisible="not is_distributor">
+                        <i class="fa fa-check-circle me-2" aria-label="Distribuidor activo"/>
+                        <strong>Este contacto es un distribuidor B2B activo.</strong>
+                        <p class="mb-0">Tiene acceso al portal B2B.</p>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del Distribuidor"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Información de Contacto">
+                            <field name="email"/>
+                            <field name="phone"/>
+                            <field name="mobile"/>
+                        </group>
+                        <group string="Acceso Portal">
+                            <field name="is_distributor" readonly="True" widget="boolean"/>
+                            <field name="user_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <group string="Control de Crédito">
+                        <group>
+                            <field name="credit_limit" widget="monetary"/>
+                            <field name="available_credit" widget="monetary" readonly="True"/>
+                        </group>
+                        <group>
+                            <field name="total_invoiced_year" widget="monetary" readonly="True"/>
+                            <field name="credit" widget="monetary" readonly="True"/>
+                        </group>
+                    </group>
+
+                    <group string="Configuración de Precios">
+                        <field name="distributor_pricelist_id" options="{'no_create': True}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción para gestionar distribuidores -->
+    <record id="action_partner_distributor" model="ir.actions.act_window">
+        <field name="name">Distribuidores B2B</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('view_partner_distributor_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_partner_distributor_form')})]"/>
+        <field name="domain">[('is_distributor', '=', True)]</field>
+        <field name="context">{'default_is_distributor': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay distribuidores configurados
+            </p>
+            <p>
+                Los distribuidores son contactos con acceso al portal B2B para gestionar sus pedidos,
+                facturas y cuenta. Haga clic en "Crear Usuario Portal B2B" para crear un usuario
+                PORTAL (no interno) con acceso exclusivo al portal B2B.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú para distribuidores -->
+    <menuitem id="menu_partner_distributor"
+              name="Distribuidores B2B"
+              parent="sale.sale_menu_root"
+              action="action_partner_distributor"
+              sequence="5"/>
+
+</odoo>

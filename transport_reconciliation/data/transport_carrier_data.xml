@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Datos iniciales de transportistas (opcional) -->
+        <!-- Puedes agregar transportistas predefinidos aquí si es necesario -->
+    </data>
+</odoo>

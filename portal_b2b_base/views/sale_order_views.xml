@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vista formulario sale.order - Extensión B2B -->
+    <record id="view_order_form_b2b" model="ir.ui.view">
+        <field name="name">sale.order.form.b2b</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Campos ocultos necesarios para los computed -->
+            <xpath expr="//notebook" position="before">
+                <field name="distributor_document_count" invisible="1"/>
+            </xpath>
+            
+            <!-- SOLO añadir página Portal B2B - NO duplicar Documentos Distribuidor -->
+            <!-- La pestaña "Documentos Distribuidor" está definida en portal_b2b_delivery_addresses/views/sale_order_views.xml -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Portal B2B" name="portal_b2b">
+                    <group>
+                        <group string="Configuración Portal">
+                            <field name="is_recurring"/>
+                            <field name="notify_on_stock"/>
+                            <field name="portal_visible"/>
+                            <field name="can_be_cancelled"/>
+                        </group>
+                        <group string="Información Adicional">
+                            <field name="delivery_schedule"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+            
+        </field>
+    </record>
+
+</odoo>

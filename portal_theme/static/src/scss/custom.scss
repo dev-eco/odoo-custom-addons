@@ -1,0 +1,1083 @@
+/**
+ * Portal B2B Theme - Archivo Principal
+ * Importa todos los estilos del tema
+ */
+
+@import 'primary_variables';
+@import 'bootstrap_overrides';
+@import 'portal_layout';
+@import 'portal_components';
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.o_portal_sidebar .breadcrumb,
+nav[aria-label="breadcrumb"] a[href^="/my/"] {
+    display: none !important;
+}
+
+.breadcrumb a[href^="/my/"] {
+    display: none !important;
+}
+
+.text-primary {
+    color: $primary !important;
+}
+
+.text-success {
+    color: $success !important;
+}
+
+.text-danger {
+    color: $danger !important;
+}
+
+.text-warning {
+    color: $warning !important;
+}
+
+.text-info {
+    color: $info !important;
+}
+
+.text-muted {
+    color: $text-muted !important;
+}
+
+.bg-primary {
+    background-color: $primary !important;
+}
+
+.bg-light {
+    background-color: $light !important;
+}
+
+.bg-dark {
+    background-color: $dark !important;
+}
+
+.border-primary {
+    border-color: $primary !important;
+}
+
+.border-left-primary {
+    border-left: 4px solid $primary !important;
+}
+
+.border-left-success {
+    border-left: 4px solid $success !important;
+}
+
+.border-left-danger {
+    border-left: 4px solid $danger !important;
+}
+
+.border-left-warning {
+    border-left: 4px solid $warning !important;
+}
+
+.border-left-info {
+    border-left: 4px solid $info !important;
+}
+
+.shadow-sm {
+    box-shadow: $box-shadow-sm !important;
+}
+
+.shadow {
+    box-shadow: $box-shadow !important;
+}
+
+.shadow-lg {
+    box-shadow: $box-shadow-lg !important;
+}
+
+.shadow-xl {
+    box-shadow: $box-shadow-xl !important;
+}
+
+.gap-1 {
+    gap: 0.25rem !important;
+}
+
+.gap-2 {
+    gap: 0.5rem !important;
+}
+
+.gap-3 {
+    gap: 1rem !important;
+}
+
+.gap-4 {
+    gap: 1.5rem !important;
+}
+
+.gap-5 {
+    gap: 3rem !important;
+}
+
+.transition {
+    transition: $transition-base !important;
+}
+
+.opacity-50 {
+    opacity: 0.5 !important;
+}
+
+.opacity-75 {
+    opacity: 0.75 !important;
+}
+
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
+.cursor-default {
+    cursor: default !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.d-grid {
+    display: grid !important;
+}
+
+.d-none {
+    display: none !important;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.overflow-hidden {
+    overflow: hidden !important;
+}
+
+.overflow-auto {
+    overflow: auto !important;
+}
+
+.position-relative {
+    position: relative !important;
+}
+
+.position-absolute {
+    position: absolute !important;
+}
+
+.position-fixed {
+    position: fixed !important;
+}
+
+.w-100 {
+    width: 100% !important;
+}
+
+.h-100 {
+    height: 100% !important;
+}
+
+.min-h-100vh {
+    min-height: 100vh !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.text-justify {
+    text-align: justify !important;
+}
+
+.font-weight-light {
+    font-weight: $font-weight-light !important;
+}
+
+.font-weight-normal {
+    font-weight: $font-weight-normal !important;
+}
+
+.font-weight-medium {
+    font-weight: $font-weight-medium !important;
+}
+
+.font-weight-semibold {
+    font-weight: $font-weight-semibold !important;
+}
+
+.font-weight-bold {
+    font-weight: $font-weight-bold !important;
+}
+
+.font-italic {
+    font-style: italic !important;
+}
+
+.text-uppercase {
+    text-transform: uppercase !important;
+}
+
+.text-lowercase {
+    text-transform: lowercase !important;
+}
+
+.text-capitalize {
+    text-transform: capitalize !important;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.text-break {
+    word-break: break-word !important;
+}
+
+.text-decoration-none {
+    text-decoration: none !important;
+}
+
+.text-decoration-underline {
+    text-decoration: underline !important;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
+
+.portal-theme-credit-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none !important;
+    color: white;
+    box-shadow: $box-shadow-lg;
+    
+    .text-muted {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    h4, h5, h6 {
+        color: white;
+    }
+    
+    .row {
+        align-items: center;
+    }
+    
+    small {
+        color: rgba(255, 255, 255, 0.9);
+    }
+}
+
+.portal-theme-card {
+    border: none !important;
+    border-radius: $border-radius-lg;
+    box-shadow: $box-shadow-lg;
+    transition: $transition-base;
+    overflow: hidden;
+    
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: $box-shadow-xl;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+        color: white;
+        border-radius: $border-radius-lg $border-radius-lg 0 0;
+        border: none !important;
+        padding: 1.25rem 1.5rem;
+        
+        h4, h5, h6 {
+            color: white;
+            margin-bottom: 0;
+        }
+        
+        i {
+            color: white;
+        }
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid $border-color;
+        padding: 1rem 1.5rem;
+    }
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    
+    &:hover {
+        transform: translateY(-8px);
+        box-shadow: $box-shadow-lg;
+    }
+}
+
+.portal-b2b-theme {
+    .btn-primary {
+        background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($primary, 5%) 0%, darken($primary, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+        
+        &:active:not(:disabled) {
+            transform: translateY(0);
+        }
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, $success 0%, darken($success, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($success, 5%) 0%, darken($success, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+        
+        &:active:not(:disabled) {
+            transform: translateY(0);
+        }
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, $secondary 0%, darken($secondary, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($secondary, 5%) 0%, darken($secondary, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, $danger 0%, darken($danger, 10%) 100%);
+        border: none;
+        box-shadow: $box-shadow-sm;
+        transition: $transition-base;
+        
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, darken($danger, 5%) 0%, darken($danger, 15%) 100%);
+            box-shadow: $box-shadow-lg;
+            transform: translateY(-2px);
+        }
+    }
+}
+
+.portal-b2b-theme {
+    .table {
+        thead {
+            background: linear-gradient(135deg, $light 0%, darken($light, 5%) 100%);
+            
+            th {
+                border-bottom: 2px solid $border-color;
+                font-weight: $font-weight-semibold;
+                color: $text-muted;
+                text-transform: uppercase;
+                font-size: $font-size-sm;
+            }
+        }
+        
+        tbody {
+            tr {
+                transition: background-color 0.2s ease;
+                
+                &:hover {
+                    background-color: lighten($primary, 45%);
+                }
+                
+                td {
+                    vertical-align: middle;
+                }
+            }
+        }
+    }
+}
+
+.portal-b2b-theme {
+    .badge {
+        font-weight: $font-weight-semibold;
+        padding: 0.5em 0.85em;
+        border-radius: $border-radius-pill;
+        font-size: 0.875rem;
+    }
+}
+
+// ========== FORZAR OCULTACIÓN DE ELEMENTOS ODOO ESTÁNDAR ==========
+
+body .o_portal_submenu.breadcrumb,
+body ol.o_portal_submenu.breadcrumb,
+body .d-flex .o_portal_submenu.breadcrumb {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+body .d-flex:has(.o_portal_submenu.breadcrumb) {
+    display: none !important;
+}
+
+body .breadcrumb-item a[href^="/my/"],
+body .breadcrumb-item a[href="/my"],
+body .breadcrumb-item a[href="/my/home"],
+body .breadcrumb-item a[href="/my/purchase"] {
+    display: none !important;
+}
+
+body .breadcrumb-item:has(a[href^="/my/"]:only-child) {
+    display: none !important;
+}
+
+body .breadcrumb-item a[href="/my/home"] i.fa-home {
+    display: none !important;
+}
+
+body .breadcrumb-item:has(a[href="/my/home"] i.fa-home) {
+    display: none !important;
+}
+
+body .breadcrumb-item:empty {
+    display: none !important;
+}
+
+body .breadcrumb-item:has(a[href^="/my/"]:only-child) + .breadcrumb-item::before {
+    display: none !important;
+}
+
+// ========== MEJORAS DASHBOARD ==========
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, $primary 0%, darken($primary, 15%) 100%) !important;
+}
+
+.section-title {
+    font-weight: 600;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.5rem !important;
+}
+
+.card {
+    .card-header.bg-light {
+        background-color: #f8f9fa !important;
+        border-bottom: 2px solid #e9ecef;
+    }
+}
+
+// Iconos más grandes en cards
+.fa-4x {
+    font-size: 4em;
+}
+
+// Mejorar badges
+.badge.fs-6 {
+    font-size: 1rem !important;
+    padding: 0.5rem 1rem;
+}
+
+// Opacity utilities
+.opacity-75 {
+    opacity: 0.75 !important;
+}
+
+.opacity-50 {
+    opacity: 0.5 !important;
+}
+
+// ========== PANEL DE CONFIGURACIÓN ==========
+
+#settings-floating-btn {
+    .btn {
+        transition: all 0.3s ease;
+        
+        &:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        &:active {
+            transform: scale(0.95);
+        }
+    }
+}
+
+#settings-panel {
+    border: none !important;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+    
+    &.show {
+        display: block !important;
+        animation: slideInUp 0.3s ease-out;
+    }
+    
+    .card {
+        border: none;
+        
+        .card-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-label {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            
+            i {
+                color: $primary;
+                width: 16px;
+            }
+        }
+        
+        .form-select,
+        .form-check-input {
+            font-size: 0.875rem;
+        }
+        
+        .form-check {
+            margin-bottom: 0.5rem;
+            
+            .form-check-label {
+                font-size: 0.875rem;
+            }
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+// ========== TEMAS ==========
+
+// Tema oscuro
+html.theme-dark {
+    body {
+        background-color: #1a1a1a !important;
+        color: #e9ecef !important;
+    }
+    
+    .card {
+        background-color: #2d2d2d !important;
+        color: #e9ecef !important;
+        border-color: #404040 !important;
+    }
+    
+    .table {
+        color: #e9ecef !important;
+        
+        thead th {
+            background-color: #404040 !important;
+            color: #e9ecef !important;
+            border-color: #555 !important;
+        }
+        
+        tbody tr {
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+            }
+        }
+        
+        td, th {
+            border-color: #555 !important;
+        }
+    }
+    
+    .form-control,
+    .form-select {
+        background-color: #404040 !important;
+        border-color: #555 !important;
+        color: #e9ecef !important;
+        
+        &:focus {
+            background-color: #404040 !important;
+            border-color: $primary !important;
+            color: #e9ecef !important;
+        }
+    }
+    
+    .alert {
+        &.alert-info {
+            background-color: rgba(23, 162, 184, 0.2) !important;
+            border-color: rgba(23, 162, 184, 0.3) !important;
+            color: #b8daff !important;
+        }
+        
+        &.alert-warning {
+            background-color: rgba(255, 193, 7, 0.2) !important;
+            border-color: rgba(255, 193, 7, 0.3) !important;
+            color: #fff3cd !important;
+        }
+    }
+    
+    .navbar {
+        background-color: #2d2d2d !important;
+        border-color: #404040 !important;
+    }
+    
+    .breadcrumb {
+        .breadcrumb-item {
+            color: #adb5bd !important;
+            
+            a {
+                color: lighten($primary, 20%) !important;
+            }
+            
+            &.active {
+                color: #e9ecef !important;
+            }
+        }
+    }
+}
+
+// Alto contraste
+html.high-contrast {
+    body {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+    
+    .card {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+    }
+    
+    .btn-primary {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #ffffff !important;
+        
+        &:hover {
+            background-color: #cccccc !important;
+            color: #000000 !important;
+        }
+    }
+    
+    .btn-secondary {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+        
+        &:hover {
+            background-color: #333333 !important;
+        }
+    }
+    
+    .table {
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+        
+        thead th {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 1px solid #ffffff !important;
+        }
+        
+        td, th {
+            border: 1px solid #ffffff !important;
+        }
+        
+        tbody tr:hover {
+            background-color: #333333 !important;
+        }
+    }
+    
+    .form-control,
+    .form-select {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+        
+        &:focus {
+            background-color: #000000 !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25) !important;
+        }
+    }
+    
+    a {
+        color: #ffffff !important;
+        text-decoration: underline !important;
+        
+        &:hover {
+            color: #cccccc !important;
+        }
+    }
+}
+
+// Texto grande
+html.large-text {
+    body {
+        font-size: 1.125rem !important;
+    }
+    
+    h1 { font-size: 3rem !important; }
+    h2 { font-size: 2.5rem !important; }
+    h3 { font-size: 2rem !important; }
+    h4 { font-size: 1.75rem !important; }
+    h5 { font-size: 1.5rem !important; }
+    h6 { font-size: 1.25rem !important; }
+    
+    .btn {
+        font-size: 1.125rem !important;
+        padding: 0.75rem 1.5rem !important;
+    }
+    
+    .form-control,
+    .form-select {
+        font-size: 1.125rem !important;
+        padding: 0.75rem 1rem !important;
+    }
+    
+    .table {
+        font-size: 1.125rem !important;
+        
+        td, th {
+            padding: 1.25rem !important;
+        }
+    }
+}
+
+// Reducir animaciones
+html.reduce-motion {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+// Modo lector de pantalla
+html.screen-reader-mode {
+    .sr-only {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        clip: auto !important;
+        white-space: normal !important;
+    }
+    
+    // Añadir más texto descriptivo
+    .btn::after {
+        content: " (botón)";
+        font-size: 0;
+    }
+    
+    .card::before {
+        content: "Inicio de tarjeta: ";
+        font-size: 0;
+    }
+    
+    .card::after {
+        content: " Fin de tarjeta";
+        font-size: 0;
+    }
+}
+
+// Tema automático (respeta preferencias del sistema)
+@media (prefers-color-scheme: dark) {
+    html.theme-auto {
+        @extend html.theme-dark;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.theme-auto {
+        @extend html.reduce-motion;
+    }
+}
+
+// ========== RESPONSIVE PARA PANEL ==========
+
+@media (max-width: 768px) {
+    #settings-panel {
+        width: calc(100vw - 40px) !important;
+        right: 20px !important;
+        left: 20px !important;
+        max-height: 70vh !important;
+    }
+    
+    #settings-floating-btn {
+        bottom: 15px !important;
+        right: 15px !important;
+        
+        .btn {
+            width: 50px !important;
+            height: 50px !important;
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    #settings-panel {
+        bottom: 70px !important;
+        max-height: 60vh !important;
+    }
+}
+
+// ========== PANEL DE CONFIGURACIÓN - ESTILOS MEJORADOS ==========
+
+#settings-floating-btn {
+    .btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        &:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        &:active {
+            transform: scale(0.95) rotate(90deg);
+        }
+    }
+}
+
+#settings-panel {
+    // Animación de entrada
+    &.show {
+        display: block !important;
+        animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    // Animación de salida
+    &.hiding {
+        animation: slideOutDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .card {
+        .card-header {
+            background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+            
+            .btn-close-white {
+                opacity: 0.8;
+                transition: opacity 0.2s;
+                
+                &:hover {
+                    opacity: 1;
+                }
+            }
+        }
+        
+        .card-body {
+            // Scrollbar personalizado
+            &::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            &::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+            
+            &::-webkit-scrollbar-thumb {
+                background: lighten($primary, 20%);
+                border-radius: 10px;
+                
+                &:hover {
+                    background: $primary;
+                }
+            }
+            
+            .form-label {
+                i {
+                    width: 18px;
+                    text-align: center;
+                }
+            }
+            
+            .form-select,
+            .form-check-input {
+                cursor: pointer;
+                transition: all 0.2s;
+                
+                &:focus {
+                    border-color: $primary;
+                    box-shadow: 0 0 0 0.2rem rgba($primary, 0.25);
+                }
+            }
+            
+            .form-check {
+                padding-left: 1.75rem;
+                
+                .form-check-input {
+                    margin-top: 0.15rem;
+                    
+                    &:checked {
+                        background-color: $primary;
+                        border-color: $primary;
+                    }
+                }
+                
+                .form-check-label {
+                    cursor: pointer;
+                    user-select: none;
+                }
+            }
+            
+            hr {
+                opacity: 0.1;
+            }
+        }
+        
+        .card-footer {
+            .btn {
+                transition: all 0.2s;
+                
+                &:hover {
+                    transform: translateY(-1px);
+                }
+                
+                &:active {
+                    transform: translateY(0);
+                }
+            }
+        }
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+// Responsive para panel
+@media (max-width: 768px) {
+    #settings-panel {
+        width: calc(100vw - 40px) !important;
+        right: 20px !important;
+        left: 20px !important;
+        max-height: 70vh !important;
+        bottom: 80px !important;
+    }
+    
+    #settings-floating-btn {
+        bottom: 15px !important;
+        right: 15px !important;
+        
+        .btn {
+            width: 48px !important;
+            height: 48px !important;
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    #settings-panel {
+        bottom: 70px !important;
+        max-height: 60vh !important;
+        
+        .card-body {
+            max-height: 350px !important;
+        }
+    }
+}
+
+// Overlay oscuro cuando el panel está abierto (opcional)
+#settings-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 1030;
+    display: none;
+    
+    &.show {
+        display: block;
+        animation: fadeIn 0.3s;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

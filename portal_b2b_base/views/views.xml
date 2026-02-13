@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vistas backend para Portal B2B Base -->
+        <!-- Los modelos principales (res.partner, sale.order) tienen sus vistas en otros archivos -->
+        <!-- Este archivo se mantiene para compatibilidad futura -->
+        <!-- NOTA: Las vistas de portal se definen en portal_templates.xml y portal_menu.xml -->
+        <!-- NO duplicar vistas aquí para evitar conflictos de herencia -->
+    </data>
+</odoo>

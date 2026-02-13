@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Reporte de Pedido de Venta - Extensión B2B con Dirección de Entrega Personalizada -->
+    <template id="report_saleorder_document_delivery_b2b" inherit_id="sale.report_saleorder_document">
+        
+        <!-- Reemplazar bloque de dirección de envío para usar delivery_address_id -->
+        <xpath expr="//div[contains(@class, 'o_address_shipping')]" position="replace">
+            <div name="shipping_address_block">
+                <t t-if="doc.delivery_address_id">
+                    <!-- USAR DIRECCIÓN B2B PERSONALIZADA - Sin mostrar nombre del distribuidor -->
+                    <div class="row mt-2 mb-2">
+                        <div class="col-md-5 bm-2">
+                            <strong>Dirección de Entrega:</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-5">
+                            <!-- Nombre de la dirección (alias) -->
+                            <div>
+                                <strong t-field="doc.delivery_address_id.name"/>
+                            </div>
+                            
+                            <!-- Dirección completa desde delivery_address_id -->
+                            <div t-field="doc.delivery_address_id.street"/>
+                            <div t-if="doc.delivery_address_id.street2">
+                                <span t-field="doc.delivery_address_id.street2"/>
+                            </div>
+                            
+                            <!-- Ciudad, CP, Provincia -->
+                            <div>
+                                <span t-if="doc.delivery_address_id.zip" t-field="doc.delivery_address_id.zip"/>
+                                <span t-if="doc.delivery_address_id.city" t-field="doc.delivery_address_id.city"/>
+                            </div>
+                            
+                            <!-- Provincia -->
+                            <div t-if="doc.delivery_address_id.state_id">
+                                <span t-field="doc.delivery_address_id.state_id.name"/>
+                            </div>
+                            
+                            <!-- País -->
+                            <div t-if="doc.delivery_address_id.country_id">
+                                <span t-field="doc.delivery_address_id.country_id.name"/>
+                            </div>
+                            
+                            <!-- Contacto en destino -->
+                            <div t-if="doc.delivery_address_id.contact_name" class="mt-2">
+                                <strong>Contacto:</strong>
+                                <div t-field="doc.delivery_address_id.contact_name"/>
+                            </div>
+                            
+                            <!-- Teléfono contacto -->
+                            <div t-if="doc.delivery_address_id.contact_phone">
+                                <strong>Teléfono:</strong>
+                                <div t-field="doc.delivery_address_id.contact_phone"/>
+                            </div>
+                            
+                            <!-- Requisitos especiales -->
+                            <div t-if="doc.delivery_address_id.require_appointment or doc.delivery_address_id.tail_lift_required" class="mt-2 alert alert-warning alert">
+                                <t t-if="doc.delivery_address_id.require_appointment">
+                                    <div>⚠️ <strong>Requiere cita previa</strong></div>
+                                </t>
+                                <t t-if="doc.delivery_address_id.tail_lift_required">
+                                    <div>⚠️ <strong>Requiere camión con pluma</strong></div>
+                                </t>
+                            </div>
+                            
+                            <!-- Notas de entrega -->
+                            <div t-if="doc.delivery_address_id.delivery_notes" class="mt-2">
+                                <strong>Instrucciones:</strong>
+                                <div t-field="doc.delivery_address_id.delivery_notes" style="white-space: pre-wrap;"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <t t-else="">
+                    <!-- DIRECCIÓN ESTÁNDAR si no hay delivery_address_id -->
+                    <div t-field="doc.partner_shipping_id" 
+                         t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True}'/>
+                </t>
+            </div>
+        </xpath>
+        
+        <!-- Información del Cliente Final (si existe etiqueta) -->
+        <xpath expr="//div[contains(@class, 'o_address_shipping')]" position="after">
+            <t t-if="doc.distributor_label_id">
+                <div class="row mt-3 mb-2">
+                    <div class="col-md-5">
+                        <strong>Cliente Final:</strong>
+                        <div t-field="doc.distributor_label_id.customer_name"/>
+                        <t t-if="doc.distributor_label_id.customer_reference">
+                            <div>
+                                <strong>Referencia:</strong>
+                                <span t-field="doc.distributor_label_id.customer_reference"/>
+                            </div>
+                        </t>
+                        <t t-if="doc.distributor_label_id.customer_address">
+                            <div class="mt-2">
+                                <strong>Dirección:</strong>
+                                <div t-field="doc.distributor_label_id.customer_address" style="white-space: pre-wrap;"/>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+        
+    </template>
+    
+</odoo>

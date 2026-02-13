@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Layout personalizado para portal B2B -->
+    <template id="portal_theme_layout" name="Portal B2B Theme Layout" inherit_id="web.layout" priority="20">
+        
+        <!-- Agregar clase al body para estilos del tema -->
+        <xpath expr="//body" position="attributes">
+            <attribute name="class" add="portal-b2b-theme" separator=" "/>
+        </xpath>
+        
+    </template>
+    
+    <!-- Personalización del portal layout -->
+    <template id="portal_theme_portal_layout" name="Portal Theme - Portal Layout" inherit_id="portal.portal_layout" priority="20">
+        
+        <!-- Agregar clases personalizadas al contenedor principal -->
+        <xpath expr="//div[contains(@class, 'o_portal')]" position="attributes">
+            <attribute name="class" add="portal-b2b-custom" separator=" "/>
+        </xpath>
+        
+        <!-- Añadir panel de configuración al final del contenedor del portal -->
+        <xpath expr="//div[contains(@class, 'o_portal')]" position="inside">
+            <t t-if="request.env.user.partner_id.is_distributor">
+                
+                <!-- Botón flotante de configuración (esquina inferior derecha) -->
+                <div id="settings-floating-btn" class="position-fixed" style="bottom: 20px; right: 20px; z-index: 1050;">
+                    <button id="settings-btn" 
+                            class="btn btn-primary rounded-circle shadow-lg" 
+                            type="button"
+                            title="Configuración y Accesibilidad"
+                            aria-label="Abrir panel de configuración"
+                            style="width: 56px; height: 56px; padding: 0;">
+                        <i class="fa fa-cog fa-lg"></i>
+                    </button>
+                </div>
+                
+                <!-- Script de debugging mejorado -->
+                <script type="text/javascript">
+                <![CDATA[
+                    (function() {
+                        console.log('[DEBUG] ========== SCRIPT INLINE INICIANDO ==========');
+                        console.log('[DEBUG] readyState:', document.readyState);
+                        console.log('[DEBUG] Timestamp:', new Date().toISOString());
+                        
+                        function debugInit() {
+                            console.log('[DEBUG] ========== BUSCANDO ELEMENTOS ==========');
+                            
+                            const btn = document.getElementById('settings-btn');
+                            const panel = document.getElementById('settings-panel');
+                            
+                            console.log('[DEBUG] ✓ Botón encontrado:', !!btn);
+                            if (btn) {
+                                console.log('[DEBUG]   - ID:', btn.id);
+                                console.log('[DEBUG]   - Clase:', btn.className);
+                                console.log('[DEBUG]   - Visible:', btn.offsetParent !== null);
+                                console.log('[DEBUG]   - HTML:', btn.outerHTML.substring(0, 150));
+                            }
+                            
+                            console.log('[DEBUG] ✓ Panel encontrado:', !!panel);
+                            if (panel) {
+                                console.log('[DEBUG]   - ID:', panel.id);
+                                console.log('[DEBUG]   - Clase:', panel.className);
+                                console.log('[DEBUG]   - Display:', window.getComputedStyle(panel).display);
+                                console.log('[DEBUG]   - HTML:', panel.outerHTML.substring(0, 150));
+                            }
+                            
+                            if (btn && panel) {
+                                console.log('[DEBUG] ========== REGISTRANDO EVENT LISTENER ==========');
+                                
+                                btn.addEventListener('click', function(e) {
+                                    console.log('[DEBUG] 🎯 CLICK DETECTADO!');
+                                    console.log('[DEBUG]   - Event:', e.type);
+                                    console.log('[DEBUG]   - Target:', e.target.id);
+                                    console.log('[DEBUG]   - Timestamp:', new Date().toISOString());
+                                    
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    
+                                    const currentDisplay = panel.style.display;
+                                    console.log('[DEBUG]   - Display actual:', currentDisplay);
+                                    
+                                    if (currentDisplay === 'none' || !currentDisplay) {
+                                        panel.style.display = 'block';
+                                        panel.classList.add('show');
+                                        console.log('[DEBUG] ✓ Panel MOSTRADO');
+                                    } else {
+                                        panel.style.display = 'none';
+                                        panel.classList.remove('show');
+                                        console.log('[DEBUG] ✓ Panel OCULTADO');
+                                    }
+                                });
+                                
+                                console.log('[DEBUG] ✓ Event listener registrado correctamente');
+                                console.log('[DEBUG] ========== SCRIPT INLINE LISTO ==========');
+                            } else {
+                                console.error('[DEBUG] ✗ ELEMENTOS NO ENCONTRADOS');
+                                console.error('[DEBUG]   - Botón:', btn);
+                                console.error('[DEBUG]   - Panel:', panel);
+                                console.log('[DEBUG] Reintentando en 1 segundo...');
+                                setTimeout(debugInit, 1000);
+                            }
+                        }
+                        
+                        // Ejecutar cuando DOM esté listo
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', debugInit);
+                        } else {
+                            debugInit();
+                        }
+                    })();
+                ]]>
+                </script>
+                
+                <!-- Panel de configuración (oculto por defecto) -->
+                <div id="settings-panel" class="position-fixed shadow-lg" 
+                     style="bottom: 90px; right: 20px; width: 340px; max-height: 600px; z-index: 1040; display: none;">
+                    
+                    <div class="card border-0 rounded-lg overflow-hidden">
+                        
+                        <!-- Header -->
+                        <div class="card-header bg-primary text-white border-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-semibold">
+                                    <i class="fa fa-cog me-2"></i>
+                                    Configuración
+                                </h6>
+                                <button type="button" 
+                                        class="btn-close btn-close-white" 
+                                        id="settings-close-btn"
+                                        aria-label="Cerrar"></button>
+                            </div>
+                        </div>
+                        
+                        <!-- Body -->
+                        <div class="card-body p-3" style="max-height: 450px; overflow-y: auto;">
+                            
+                            <!-- Tema -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small mb-2">
+                                    <i class="fa fa-palette text-primary me-2"></i>
+                                    Tema Visual
+                                </label>
+                                <select id="theme-select" class="form-select form-select-sm">
+                                    <option value="light">☀️ Claro</option>
+                                    <option value="dark">🌙 Oscuro</option>
+                                    <option value="auto">🔄 Automático</option>
+                                </select>
+                            </div>
+                            
+                            <hr class="my-3"/>
+                            
+                            <!-- Accesibilidad -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small mb-2">
+                                    <i class="fa fa-universal-access text-primary me-2"></i>
+                                    Accesibilidad
+                                </label>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="contrast-check"/>
+                                    <label class="form-check-label small" for="contrast-check">
+                                        Alto contraste
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="text-check"/>
+                                    <label class="form-check-label small" for="text-check">
+                                        Texto grande
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="motion-check"/>
+                                    <label class="form-check-label small" for="motion-check">
+                                        Reducir animaciones
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" id="screen-reader-check"/>
+                                    <label class="form-check-label small" for="screen-reader-check">
+                                        Modo lector de pantalla
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-3"/>
+                            
+                            <!-- Layout Dashboard -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small mb-2">
+                                    <i class="fa fa-th text-primary me-2"></i>
+                                    Diseño del Dashboard
+                                </label>
+                                <select id="layout-select" class="form-select form-select-sm">
+                                    <option value="cards">📇 Tarjetas</option>
+                                    <option value="list">📋 Lista</option>
+                                    <option value="compact">📊 Compacto</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Pedidos por página -->
+                            <div class="mb-0">
+                                <label class="form-label fw-semibold small mb-2">
+                                    <i class="fa fa-list-ol text-primary me-2"></i>
+                                    Pedidos por página
+                                </label>
+                                <select id="per-page-select" class="form-select form-select-sm">
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="card-footer bg-light border-0 py-2">
+                            <div class="d-flex justify-content-between gap-2">
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        type="button" 
+                                        id="reset-preferences-btn">
+                                    <i class="fa fa-refresh me-1"></i>
+                                    Resetear
+                                </button>
+                                <button class="btn btn-primary btn-sm" 
+                                        type="button" 
+                                        id="save-preferences-btn">
+                                    <i class="fa fa-check me-1"></i>
+                                    Guardar
+                                </button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                
+            </t>
+        </xpath>
+        
+    </template>
+
+</odoo>

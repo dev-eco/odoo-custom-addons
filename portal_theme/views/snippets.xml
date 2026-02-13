@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Snippets drag & drop para el portal -->
+        
+        <!-- Snippet: Hero Section -->
+        <template id="portal_theme_snippet_hero" name="Hero Section" inherit_id="website.snippets">
+            <xpath expr="//div[@id='snippet_structure']" position="inside">
+                <div class="oe_snippet oe_snippet_text">
+                    <div class="oe_snippet_thumbnail">
+                        <img class="oe_snippet_thumbnail_img" src="/portal_theme/static/src/img/snippets/hero.png" alt="Hero Section"/>
+                        <span class="oe_snippet_thumbnail_title">Hero Section</span>
+                    </div>
+                    <div class="hero oe_snippet_body">
+                        <div class="container">
+                            <h1>Título Principal</h1>
+                            <p class="lead">Descripción o subtítulo del hero</p>
+                            <a href="#" class="btn btn-primary btn-lg">Botón de Acción</a>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </template>
+        
+        <!-- Snippet: Feature Cards -->
+        <template id="portal_theme_snippet_features" name="Feature Cards" inherit_id="website.snippets">
+            <xpath expr="//div[@id='snippet_structure']" position="inside">
+                <div class="oe_snippet oe_snippet_text">
+                    <div class="oe_snippet_thumbnail">
+                        <img class="oe_snippet_thumbnail_img" src="/portal_theme/static/src/img/snippets/features.png" alt="Feature Cards"/>
+                        <span class="oe_snippet_thumbnail_title">Feature Cards</span>
+                    </div>
+                    <div class="oe_snippet_body">
+                        <section class="section-light">
+                            <div class="container">
+                                <h2 class="text-center mb-5">Características Principales</h2>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="feature-card">
+                                            <div class="feature-icon">
+                                                <i class="fa fa-check"></i>
+                                            </div>
+                                            <h4>Característica 1</h4>
+                                            <p>Descripción de la característica</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="feature-card">
+                                            <div class="feature-icon">
+                                                <i class="fa fa-check"></i>
+                                            </div>
+                                            <h4>Característica 2</h4>
+                                            <p>Descripción de la característica</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="feature-card">
+                                            <div class="feature-icon">
+                                                <i class="fa fa-check"></i>
+                                            </div>
+                                            <h4>Característica 3</h4>
+                                            <p>Descripción de la característica</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </xpath>
+        </template>
+        
+    </data>
+</odoo>

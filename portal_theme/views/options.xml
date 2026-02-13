@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Opciones de personalización del tema -->
+        <template id="portal_theme_options" name="Portal Theme Options">
+            <!-- Aquí se pueden agregar opciones de personalización del tema -->
+        </template>
+    </data>
+</odoo>

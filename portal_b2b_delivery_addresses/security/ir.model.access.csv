@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_delivery_address_portal_b2b,delivery.address portal b2b,model_delivery_address,portal_b2b_base.group_portal_b2b,1,1,1,0
+access_delivery_address_internal,delivery.address internal,model_delivery_address,base.group_user,1,1,1,1
+access_distributor_label_portal_b2b,distributor.label portal b2b,model_distributor_label,portal_b2b_base.group_portal_b2b,1,1,1,0
+access_distributor_label_internal,distributor.label internal,model_distributor_label,base.group_user,1,1,1,1
+access_sale_order_portal_b2b_delivery,sale.order portal b2b delivery,sale.model_sale_order,portal_b2b_base.group_portal_b2b,1,1,1,0

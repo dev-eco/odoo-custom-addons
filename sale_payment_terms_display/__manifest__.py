@@ -53,9 +53,11 @@
         'views/payment_method_views.xml',
         'views/res_company_views.xml',
         'views/sale_order_views.xml',
+        'views/account_move_views.xml',
         
         # Reportes
         'reports/sale_order_payment_report.xml',
+        'reports/account_move_payment_report.xml',
     ],
     'assets': {
         'web.assets_backend': [
