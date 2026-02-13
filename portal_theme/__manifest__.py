@@ -85,11 +85,14 @@ Snippets disponibles:
             'portal_theme/static/src/scss/bootstrap_overrides.scss',
             'portal_theme/static/src/scss/portal_layout.scss',
             'portal_theme/static/src/scss/portal_components.scss',
+            'portal_theme/static/src/scss/dark_theme.scss',
+            'portal_theme/static/src/scss/accessibility.scss',
             'portal_theme/static/src/scss/custom.scss',
             
             # ========== JAVASCRIPT ==========
             'portal_theme/static/src/js/portal_theme.js',
             'portal_theme/static/src/js/animations.js',
+            'portal_theme/static/src/js/preferences.js',
         ],
     },
 

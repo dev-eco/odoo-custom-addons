@@ -34,6 +34,21 @@ class PortalB2B(CustomerPortal):
             'editable': False,
             'translatable': False,
         }
+        
+        # ACTIVAR LOGGING AUTOMÁTICO
+        partner = request.env.user.partner_id
+        if partner.is_distributor:
+            try:
+                # Log de acceso a página
+                current_route = request.httprequest.path
+                if current_route not in ['/web/webclient/load_menus', '/web/dataset/call_kw']:
+                    request.env['portal.audit.log'].sudo().log_action(
+                        action='page_view',
+                        description=f'Acceso a {current_route}'
+                    )
+            except Exception as e:
+                _logger.debug(f"Error en logging automático: {str(e)}")
+        
         return values
 
     # ========== REDIRECCIONES AUTOMÁTICAS (PRIORIDAD ALTA) ==========
@@ -1099,6 +1114,487 @@ class PortalB2B(CustomerPortal):
             _logger.error(f"Error al actualizar datos de partner: {str(e)}")
             return {'error': _('Error al actualizar los datos')}
 
+    # ========== NOTIFICACIONES ==========
+
+    @http.route(['/mis-notificaciones'], type='http', auth='user', website=True)
+    def portal_notifications(self, **kw):
+        """Lista de notificaciones."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            notifications = request.env['portal.notification'].get_recent_notifications(
+                partner.id, limit=50
+            )
+        except Exception as e:
+            _logger.warning(f"Error obteniendo notificaciones: {str(e)}")
+            notifications = []
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'notifications',
+            'notifications': notifications,
+        })
+        
+        return request.render('portal_b2b_base.portal_notifications', values)
+
+    # ========== MENSAJES ==========
+
+    @http.route(['/mis-mensajes'], type='http', auth='user', website=True)
+    def portal_messages(self, **kw):
+        """Lista de mensajes."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            messages = request.env['portal.message'].get_recent_messages(
+                partner.id, limit=50
+            )
+        except Exception as e:
+            _logger.warning(f"Error obteniendo mensajes: {str(e)}")
+            messages = []
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'messages',
+            'messages': messages,
+        })
+        
+        return request.render('portal_b2b_base.portal_messages', values)
+
+    @http.route(['/api/mensajes/enviar'], type='json', auth='user', methods=['POST'])
+    def api_send_message(self, subject, message, parent_id=None, **kw):
+        """Envía un mensaje."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            message_data = {
+                'partner_id': partner.id,
+                'subject': subject,
+                'message': message,
+                'sender_type': 'distributor',
+            }
+            
+            if parent_id:
+                message_data['parent_id'] = parent_id
+            
+            new_message = request.env['portal.message'].create(message_data)
+            
+            return {
+                'success': True,
+                'message_id': new_message.id
+            }
+        except Exception as e:
+            _logger.error(f"Error enviando mensaje: {str(e)}")
+            return {'error': str(e)}
+
+    # ========== DEVOLUCIONES ==========
+
+    @http.route(['/mis-devoluciones'], type='http', auth='user', website=True)
+    def portal_returns(self, **kw):
+        """Lista de devoluciones."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            returns = request.env['sale.return'].search([
+                ('partner_id', '=', partner.id)
+            ], order='create_date desc')
+        except Exception as e:
+            _logger.warning(f"Error obteniendo devoluciones: {str(e)}")
+            returns = []
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'returns',
+            'returns': returns,
+        })
+        
+        return request.render('portal_b2b_base.portal_returns', values)
+
+    @http.route(['/crear-devolucion'], type='http', auth='user', website=True)
+    def portal_create_return(self, order_id=None, **kw):
+        """Formulario para crear una devolución."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        order = None
+        if order_id:
+            try:
+                order = request.env['sale.order'].browse(int(order_id))
+                if not order.exists() or order.partner_id != partner:
+                    order = None
+            except Exception:
+                order = None
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'create_return',
+            'order': order,
+        })
+        
+        return request.render('portal_b2b_base.portal_create_return', values)
+
+    @http.route(['/crear-devolucion/submit'], type='http', auth='user', 
+                website=True, methods=['POST'], csrf=True)
+    def portal_create_return_submit(self, **kw):
+        """Procesa la creación de una nueva devolución."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            # Obtener datos del formulario
+            reason = kw.get('reason')
+            reason_description = kw.get('reason_description')
+            customer_notes = kw.get('customer_notes', '')
+            refund_method = kw.get('refund_method', 'credit_note')
+            order_id = kw.get('order_id')
+            
+            # Validaciones básicas
+            if not reason or not reason_description:
+                return request.redirect('/crear-devolucion?error=missing_data')
+            
+            # Crear devolución
+            return_vals = {
+                'partner_id': partner.id,
+                'reason': reason,
+                'reason_description': reason_description,
+                'customer_notes': customer_notes,
+                'refund_method': refund_method,
+            }
+            
+            if order_id:
+                return_vals['order_id'] = int(order_id)
+            
+            return_obj = request.env['sale.return'].create(return_vals)
+            
+            # Procesar líneas de productos
+            product_ids = kw.getlist('product_id[]')
+            quantities = kw.getlist('quantity[]')
+            unit_prices = kw.getlist('unit_price[]')
+            
+            for i, product_id in enumerate(product_ids):
+                if product_id and quantities[i] and unit_prices[i]:
+                    try:
+                        request.env['sale.return.line'].create({
+                            'return_id': return_obj.id,
+                            'product_id': int(product_id),
+                            'quantity': float(quantities[i]),
+                            'unit_price': float(unit_prices[i]),
+                        })
+                    except Exception as e:
+                        _logger.warning(f"Error creando línea de devolución: {str(e)}")
+            
+            # Enviar para aprobación si tiene líneas
+            if return_obj.line_ids:
+                return_obj.action_submit()
+            
+            _logger.info(f"Devolución {return_obj.name} creada por {partner.name}")
+            
+            return request.redirect(f'/mis-devoluciones?created=success')
+            
+        except Exception as e:
+            _logger.error(f"Error creando devolución: {str(e)}")
+            return request.redirect('/crear-devolucion?error=create_failed')
+
+    # ========== PLANTILLAS ==========
+
+    @http.route(['/mis-plantillas'], type='http', auth='user', website=True)
+    def portal_templates(self, **kw):
+        """Lista de plantillas de pedidos."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            templates = request.env['sale.order.template'].search([
+                ('partner_id', '=', partner.id)
+            ], order='name asc')
+        except Exception as e:
+            _logger.warning(f"Error obteniendo plantillas: {str(e)}")
+            templates = []
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'templates',
+            'templates': templates,
+        })
+        
+        return request.render('portal_b2b_base.portal_my_templates', values)
+
+    @http.route(['/mis-plantillas/crear'], type='http', auth='user', website=True)
+    def portal_create_template(self, **kw):
+        """Formulario para crear una nueva plantilla."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'create_template',
+        })
+        
+        return request.render('portal_b2b_base.portal_create_template', values)
+
+    @http.route(['/mis-plantillas/crear/submit'], type='json', auth='user', 
+                methods=['POST'], csrf=True)
+    def portal_create_template_submit(self, **kw):
+        """Procesa la creación de una nueva plantilla."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            name = kw.get('name')
+            notes = kw.get('notes', '')
+            lines_data = kw.get('lines', [])
+            
+            if not name:
+                return {'error': _('El nombre es obligatorio')}
+            
+            if not lines_data:
+                return {'error': _('Debe agregar al menos un producto')}
+            
+            # Crear plantilla
+            template = request.env['sale.order.template'].create({
+                'name': name,
+                'partner_id': partner.id,
+                'notes': notes,
+            })
+            
+            # Crear líneas
+            for line_data in lines_data:
+                request.env['sale.order.template.line'].create({
+                    'template_id': template.id,
+                    'product_id': line_data['product_id'],
+                    'quantity': line_data['quantity'],
+                    'notes': line_data.get('notes', ''),
+                })
+            
+            return {
+                'success': True,
+                'template_id': template.id,
+                'redirect_url': f'/mis-plantillas/{template.id}',
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error creando plantilla: {str(e)}")
+            return {'error': _('Error al crear la plantilla')}
+
+    @http.route(['/mis-plantillas/<int:template_id>'], type='http', auth='user', website=True)
+    def portal_template_detail(self, template_id, **kw):
+        """Detalle de una plantilla."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            template = request.env['sale.order.template'].browse(template_id)
+            if not template.exists() or template.partner_id != partner:
+                return request.redirect('/mis-plantillas')
+        except Exception:
+            return request.redirect('/mis-plantillas')
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'template_detail',
+            'template': template,
+        })
+        
+        return request.render('portal_b2b_base.portal_template_detail', values)
+
+    @http.route(['/mis-plantillas/<int:template_id>/usar'], 
+                type='http', auth='user', website=True, methods=['POST'], csrf=True)
+    def portal_use_template(self, template_id, **kw):
+        """Usa una plantilla para crear un nuevo pedido."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            template = request.env['sale.order.template'].browse(template_id)
+            if not template.exists() or template.partner_id != partner:
+                return request.redirect('/mis-plantillas')
+            
+            # Crear pedido desde plantilla
+            order = template.action_create_order_from_template()
+            
+            return request.redirect(f'/mis-pedidos/{order.id}')
+        except Exception as e:
+            _logger.error(f"Error usando plantilla: {str(e)}")
+            return request.redirect('/mis-plantillas?error=use_failed')
+
+    @http.route(['/mis-plantillas/<int:template_id>/eliminar'], 
+                type='http', auth='user', website=True, methods=['POST'], csrf=True)
+    def portal_delete_template(self, template_id, **kw):
+        """Elimina una plantilla."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        try:
+            template = request.env['sale.order.template'].browse(template_id)
+            if not template.exists() or template.partner_id != partner:
+                return request.redirect('/mis-plantillas')
+            
+            template.unlink()
+            
+            return request.redirect('/mis-plantillas?deleted=success')
+        except Exception as e:
+            _logger.error(f"Error eliminando plantilla: {str(e)}")
+            return request.redirect('/mis-plantillas?error=delete_failed')
+
+    # ========== ESTADÍSTICAS ==========
+
+    @http.route(['/mi-portal/estadisticas'], type='http', auth='user', website=True)
+    def portal_statistics_dashboard(self, period='month', **kwargs):
+        """Dashboard de estadísticas del distribuidor."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        from datetime import datetime, timedelta
+        today = datetime.today().date()
+        
+        if period == 'week':
+            start_date = today - timedelta(days=7)
+        elif period == 'month':
+            start_date = today - timedelta(days=30)
+        elif period == 'quarter':
+            start_date = today - timedelta(days=90)
+        elif period == 'year':
+            start_date = today - timedelta(days=365)
+        else:
+            start_date = today - timedelta(days=30)
+        
+        try:
+            stats_model = request.env['distributor.statistics']
+            stats = stats_model.search([
+                ('partner_id', '=', partner.id),
+                ('period_start', '=', start_date),
+                ('period_end', '=', today)
+            ], limit=1)
+            
+            if not stats:
+                stats = stats_model.create({
+                    'partner_id': partner.id,
+                    'period_start': start_date,
+                    'period_end': today
+                })
+            
+            dashboard_data = stats.get_statistics_for_portal()
+        except Exception as e:
+            _logger.warning(f"Error obteniendo estadísticas: {str(e)}")
+            dashboard_data = {
+                'orders': {'total': 0, 'confirmed': 0, 'total_amount': 0, 'average_value': 0},
+                'products': {'total_ordered': 0, 'top_products': []},
+                'invoicing': {'total_invoiced': 0, 'total_paid': 0, 'pending_payment': 0},
+            }
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'dashboard_data': dashboard_data,
+            'period': period,
+            'page_name': 'statistics',
+        })
+        
+        return request.render('portal_b2b_base.portal_statistics_dashboard', values)
+
+    # ========== HISTORIAL ==========
+
+    @http.route(['/mi-historial'], type='http', auth='user', website=True)
+    def portal_activity_history(self, page=1, action_filter=None, **kw):
+        """Historial de actividad del distribuidor."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return request.redirect('/mi-portal')
+        
+        from odoo.addons.portal.controllers.portal import pager as portal_pager
+        
+        domain = [('partner_id', '=', partner.id)]
+        
+        if action_filter:
+            domain.append(('action', '=', action_filter))
+        
+        try:
+            log_count = request.env['portal.audit.log'].search_count(domain)
+            
+            pager = portal_pager(
+                url='/mi-historial',
+                url_args={'action_filter': action_filter},
+                total=log_count,
+                page=page,
+                step=50,
+            )
+            
+            logs = request.env['portal.audit.log'].search(
+                domain,
+                limit=50,
+                offset=pager['offset'],
+                order='create_date desc'
+            )
+        except Exception as e:
+            _logger.warning(f"Error obteniendo historial: {str(e)}")
+            logs = []
+            log_count = 0
+            pager = {}
+        
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'logs': logs,
+            'log_count': log_count,
+            'page_name': 'historial',
+            'pager': pager,
+            'action_filter': action_filter,
+        })
+        
+        return request.render('portal_b2b_base.portal_activity_history', values)
+
+    # ========== API ENDPOINTS ADICIONALES ==========
+
+    @http.route(['/api/notificaciones/marcar-leida'], type='json', auth='user', methods=['POST'])
+    def api_mark_notification_read(self, notification_id, **kw):
+        """Marca una notificación como leída."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            notification = request.env['portal.notification'].browse(notification_id)
+            
+            if not notification.exists() or notification.partner_id != partner:
+                return {'error': _('Notificación no encontrada')}
+            
+            notification.action_mark_read()
+            
+            return {'success': True}
+            
+        except Exception as e:
+            _logger.error(f"Error marcando notificación: {str(e)}")
+            return {'error': str(e)}
+
     # ========== GESTIÓN DOCUMENTOS DISTRIBUIDOR ==========
 
     @http.route(['/mis-pedidos/<int:order_id>/documentos'], 
@@ -1257,7 +1753,7 @@ class PortalB2B(CustomerPortal):
 
             if attachment.res_model != 'sale.order' or attachment.res_id != order_id:
                 return request.redirect(
-                    f'/mis-pe didos/{order_id}/documentos?error=unauthorized'
+                    f'/mis-pedidos/{order_id}/documentos?error=unauthorized'
                 )
 
             doc_name = attachment.name
@@ -1270,7 +1766,7 @@ class PortalB2B(CustomerPortal):
             )
 
             _logger.info(
-                f"Documento '{doc_name}' eliminado del pedido {order_sudo.name} "
+                f"Documento '{doc_name}' eliminado del pedido {order.name} "
                 f"por {partner.name}"
             )
 
@@ -1283,6 +1779,54 @@ class PortalB2B(CustomerPortal):
             return request.redirect(
                 f'/mis-pedidos/{order_id}/documentos?error=delete_failed'
             )
+
+    # ========== API PREFERENCIAS ==========
+
+    @http.route(['/api/preferencias/actualizar'], type='json', auth='user', methods=['POST'])
+    def api_update_preferences(self, **preferences):
+        """Actualiza preferencias del usuario."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            # Guardar preferencias en el partner o en un modelo específico
+            # Por ahora solo confirmamos que se recibieron
+            _logger.info(f"Preferencias actualizadas para {partner.name}: {preferences}")
+            
+            return {'success': True}
+            
+        except Exception as e:
+            _logger.error(f"Error actualizando preferencias: {str(e)}")
+            return {'error': str(e)}
+
+    @http.route(['/api/preferencias/obtener'], type='json', auth='user', methods=['POST'])
+    def api_get_preferences(self, **kw):
+        """Obtiene preferencias del usuario."""
+        partner = request.env.user.partner_id
+        
+        if not partner.is_distributor:
+            return {'error': _('No autorizado')}
+        
+        try:
+            # Por ahora devolver preferencias por defecto
+            # En el futuro se pueden guardar en base de datos
+            preferences = {
+                'theme_mode': 'light',
+                'high_contrast': False,
+                'large_text': False,
+                'reduce_motion': False,
+                'screen_reader_mode': False,
+                'dashboard_layout': 'cards',
+                'orders_per_page': 20,
+            }
+            
+            return {'success': True, 'preferences': preferences}
+            
+        except Exception as e:
+            _logger.error(f"Error obteniendo preferencias: {str(e)}")
+            return {'error': str(e)}
 
     # ========== API JSON ==========
 
@@ -1483,458 +2027,3 @@ class PortalB2B(CustomerPortal):
             _logger.error(f"Error marcando notificación como leída: {str(e)}")
             return {'error': str(e)}
 
-    @http.route(['/mi-historial'], type='http', auth='user', website=True)
-    def portal_activity_history(self, page=1, action_filter=None, **kw):
-        """Historial de actividad del distribuidor."""
-        partner = request.env.user.partner_id
-        
-        if not partner.is_distributor:
-            return request.redirect('/mi-portal')
-        
-        # Paginación
-        from odoo.addons.portal.controllers.portal import pager as portal_pager
-        
-        # Domain base
-        domain = [('partner_id', '=', partner.id)]
-        
-        # Filtro por acción
-        if action_filter:
-            domain.append(('action', '=', action_filter))
-        
-        log_count = request.env['portal.audit.log'].search_count(domain)
-        
-        pager = portal_pager(
-            url='/mi-historial',
-            url_args={'action_filter': action_filter},
-            total=log_count,
-            page=page,
-            step=50,
-        )
-        
-        logs = request.env['portal.audit.log'].search(
-            domain,
-            limit=50,
-            offset=pager['offset'],
-            order='create_date desc'
-        )
-        
-        values = self._prepare_portal_layout_values()
-        values.update({
-            'logs': logs,
-            'log_count': log_count,
-            'page_name': 'historial',
-            'pager': pager,
-            'action_filter': action_filter,
-        })
-        
-        return request.render('portal_b2b_base.portal_activity_history', values)
-
-    @http.route(['/mi-portal/estadisticas'], type='http', auth='user', website=True)
-    def portal_statistics_dashboard(self, period='month', **kwargs):
-        """Dashboard de estadísticas del distribuidor."""
-        partner = request.env.user.partner_id
-        
-        if not partner.is_distributor:
-            return request.redirect('/mi-portal')
-        
-        # Obtener datos del dashboard
-        from datetime import datetime, timedelta
-        today = datetime.today().date()
-        
-        if period == 'week':
-            start_date = today - timedelta(days=7)
-        elif period == 'month':
-            start_date = today - timedelta(days=30)
-        elif period == 'quarter':
-            start_date = today - timedelta(days=90)
-        elif period == 'year':
-            start_date = today - timedelta(days=365)
-        else:
-            start_date = today - timedelta(days=30)
-        
-        # Buscar o crear estadísticas
-        stats_model = request.env['distributor.statistics']
-        stats = stats_model.search([
-            ('partner_id', '=', partner.id),
-            ('period_start', '=', start_date),
-            ('period_end', '=', today)
-        ], limit=1)
-        
-        if not stats:
-            stats = stats_model.create({
-                'partner_id': partner.id,
-                'period_start': start_date,
-                'period_end': today
-            })
-        
-        dashboard_data = stats.get_statistics_for_portal()
-        
-        values = self._prepare_portal_layout_values()
-        values.update({
-            'dashboard_data': dashboard_data,
-            'period': period,
-            'page_name': 'statistics',
-        })
-        
-        return request.render('portal_b2b_base.portal_statistics_dashboard', values)
-# -*- coding: utf-8 -*-
-
-import logging
-from odoo import http, _
-from odoo.http import request
-from odoo.addons.portal.controllers.portal import CustomerPortal
-
-_logger = logging.getLogger(__name__)
-
-
-class PortalB2BOrders(CustomerPortal):
-    """Controlador de pedidos para portal B2B."""
-    
-    @http.route(['/mi-portal'], type='http', auth='user', website=True)
-    def portal_home(self, **kw):
-        """Dashboard principal del portal B2B."""
-        partner = request.env.user.partner_id
-        
-        values = {
-            'page_name': 'portal_home',
-            'partner': partner,
-            'is_distributor': partner.is_distributor if hasattr(partner, 'is_distributor') else False,
-            'credit_limit': partner.credit_limit if hasattr(partner, 'credit_limit') else 0,
-            'available_credit': partner.available_credit if hasattr(partner, 'available_credit') else 0,
-            'total_invoiced_year': partner.total_invoiced_year if hasattr(partner, 'total_invoiced_year') else 0,
-            'order_count': 0,
-            'invoice_count': 0,
-            'recent_orders': [],
-            'has_delivery_module': False,
-        }
-        
-        # Obtener contadores si es distribuidor
-        if values['is_distributor']:
-            values['order_count'] = request.env['sale.order'].search_count([
-                ('partner_id', '=', partner.id)
-            ])
-            values['invoice_count'] = request.env['account.move'].search_count([
-                ('partner_id', '=', partner.id),
-                ('move_type', '=', 'out_invoice'),
-                ('state', '=', 'posted')
-            ])
-            
-            # Obtener últimos 5 pedidos
-            recent_orders = request.env['sale.order'].search([
-                ('partner_id', '=', partner.id),
-                ('state', '!=', 'cancel')
-            ], order='date_order desc', limit=5)
-            values['recent_orders'] = recent_orders
-            
-            # Verificar si módulo de direcciones está instalado
-            try:
-                request.env['delivery.address']
-                values['has_delivery_module'] = True
-            except Exception:
-                values['has_delivery_module'] = False
-        
-        return request.render('portal_b2b_base.portal_b2b_dashboard_home', values)
-    
-    @http.route(['/mis-pedidos', '/mis-pedidos/page/<int:page>'], 
-                type='http', auth='user', website=True)
-    def portal_my_orders(self, page=1, date_begin=None, date_end=None, 
-                        sortby=None, search=None, search_in='name', **kw):
-        """Lista paginada de pedidos del distribuidor."""
-        partner = request.env.user.partner_id
-
-        if not partner.is_distributor:
-            return request.redirect('/mi-portal')
-
-        SaleOrder = request.env['sale.order']
-
-        searchbar_sortings = {
-            'date': {'label': 'Fecha Pedido', 'order': 'date_order desc'},
-            'name': {'label': 'Referencia', 'order': 'name desc'},
-            'state': {'label': 'Estado', 'order': 'state'},
-            'amount': {'label': 'Total', 'order': 'amount_total desc'},
-        }
-
-        searchbar_inputs = {
-            'name': {'input': 'name', 'label': 'Buscar en Referencia'},
-            'client_order_ref': {'input': 'client_order_ref', 'label': 'Buscar en Su Referencia'},
-            'all': {'input': 'all', 'label': 'Buscar en Todo'},
-        }
-
-        searchbar_filters = {
-            'all': {'label': 'Todos', 'domain': []},
-            'draft': {'label': 'Presupuestos', 'domain': [('state', 'in', ['draft', 'sent'])]},
-            'confirmed': {'label': 'Confirmados', 'domain': [('state', 'in', ['sale', 'done'])]},
-        }
-
-        if not sortby:
-            sortby = 'date'
-        order = searchbar_sortings[sortby]['order']
-
-        if not search_in:
-            search_in = 'name'
-
-        domain = [('partner_id', '=', partner.id), ('state', '!=', 'cancel')]
-
-        if date_begin and date_end:
-            domain += [('date_order', '>=', date_begin), ('date_order', '<=', date_end)]
-
-        if search and search_in:
-            if search_in == 'all':
-                domain += ['|', '|', 
-                          ('name', 'ilike', search),
-                          ('client_order_ref', 'ilike', search),
-                          ('partner_id.name', 'ilike', search)]
-            elif search_in == 'client_order_ref':
-                domain += [('client_order_ref', 'ilike', search)]
-            else:
-                domain += [(searchbar_inputs[search_in]['input'], 'ilike', search)]
-
-        order_count = SaleOrder.search_count(domain)
-
-        from odoo.addons.portal.controllers.portal import pager as portal_pager
-        pager = portal_pager(
-            url='/mis-pedidos',
-            url_args={'date_begin': date_begin, 'date_end': date_end, 'sortby': sortby, 
-                     'search_in': search_in, 'search': search},
-            total=order_count,
-            page=page,
-            step=20,
-        )
-
-        orders = SaleOrder.search(domain, order=order, limit=20, offset=pager['offset'])
-        
-        # Asegurar valores por defecto para campos computed
-        for order_item in orders:
-            try:
-                if not hasattr(order_item, 'order_status') or not order_item.order_status:
-                    order_item.order_status = 'new'
-                if not hasattr(order_item, 'picking_status') or not order_item.picking_status:
-                    order_item.picking_status = 'not_created'
-                if not hasattr(order_item, 'distributor_document_count'):
-                    order_item.distributor_document_count = 0
-            except Exception as e:
-                _logger.warning(f"Error procesando pedido {order_item.id}: {str(e)}")
-        
-        # Calcular total general
-        all_orders = SaleOrder.search(domain)
-        grand_total = sum(float(o.amount_total) for o in all_orders)
-
-        values = {
-            'orders': orders,
-            'order_count': order_count,
-            'grand_total': grand_total,
-            'page_name': 'mis_pedidos',
-            'pager': pager,
-            'default_url': '/mis-pedidos',
-            'searchbar_sortings': searchbar_sortings,
-            'searchbar_inputs': searchbar_inputs,
-            'searchbar_filters': searchbar_filters,
-            'sortby': sortby,
-            'search_in': search_in,
-            'search': search,
-            'date_begin': date_begin,
-            'date_end': date_end,
-        }
-
-        return request.render('portal_b2b_base.portal_mis_pedidos', values)
-
-    @http.route(['/mis-pedidos/<int:order_id>'], type='http', auth='user', website=True)
-    def portal_pedido_detalle(self, order_id, access_token=None, **kw):
-        """Detalle de un pedido específico."""
-        try:
-            order_sudo = self._document_check_access('sale.order', order_id, access_token)
-        except Exception:
-            return request.redirect('/mis-pedidos')
-
-        partner = request.env.user.partner_id
-        if order_sudo.partner_id != partner:
-            return request.redirect('/mis-pedidos')
-
-        productos_sin_stock = []
-
-        values = {
-            'order': order_sudo,
-            'page_name': 'pedido_detalle',
-            'productos_sin_stock': productos_sin_stock,
-            'can_cancel': order_sudo.state in ['draft', 'sent'],
-        }
-
-        return request.render('portal_b2b_base.portal_pedido_detalle', values)
-
-    @http.route(['/crear-pedido'], type='http', auth='user', website=True)
-    def portal_crear_pedido(self, redirect=None, **kw):
-        """Formulario para crear un nuevo pedido."""
-        partner = request.env.user.partner_id
-
-        if not partner.is_distributor:
-            return request.redirect('/mi-portal')
-
-        delivery_addresses = []
-        default_address = None
-        has_delivery_module = False
-        
-        try:
-            DeliveryAddress = request.env['delivery.address']
-            delivery_addresses = DeliveryAddress.search([
-                ('partner_id', '=', partner.id),
-                ('active', '=', True)
-            ], order='is_default desc, name asc')
-            
-            default_address = delivery_addresses.filtered(lambda a: a.is_default)[:1]
-            has_delivery_module = True
-        except Exception as e:
-            _logger.debug(f"Módulo delivery_addresses no disponible: {str(e)}")
-
-        distributor_labels = []
-        try:
-            DistributorLabel = request.env['distributor.label']
-            distributor_labels = DistributorLabel.search([
-                ('partner_id', '=', partner.id),
-                ('active', '=', True)
-            ], order='name asc')
-        except Exception as e:
-            _logger.debug(f"Módulo distributor_label no disponible: {str(e)}")
-
-        values = {
-            'page_name': 'crear_pedido',
-            'partner': partner,
-            'credit_limit': float(partner.credit_limit or 0.0),
-            'available_credit': float(partner.available_credit or 0.0),
-            'currency_id': partner.currency_id,
-            'delivery_addresses': delivery_addresses,
-            'default_address': default_address,
-            'has_delivery_module': has_delivery_module,
-            'distributor_labels': distributor_labels,
-            'redirect_url': redirect or '/mis-pedidos',
-        }
-
-        return request.render('portal_b2b_base.portal_crear_pedido', values)
-
-    @http.route(['/mis-facturas', '/mis-facturas/page/<int:page>'], 
-                type='http', auth='user', website=True)
-    def portal_mis_facturas(self, page=1, date_begin=None, date_end=None, 
-                           sortby=None, search=None, **kw):
-        """Lista paginada de facturas del distribuidor."""
-        partner = request.env.user.partner_id
-
-        if not partner.is_distributor:
-            return request.redirect('/mi-portal')
-
-        AccountMove = request.env['account.move']
-
-        searchbar_sortings = {
-            'date': {'label': 'Fecha Factura', 'order': 'invoice_date desc'},
-            'name': {'label': 'Número', 'order': 'name desc'},
-            'amount': {'label': 'Total', 'order': 'amount_total desc'},
-        }
-
-        if not sortby:
-            sortby = 'date'
-        order = searchbar_sortings[sortby]['order']
-
-        domain = [('partner_id', '=', partner.id), ('move_type', '=', 'out_invoice')]
-
-        if date_begin and date_end:
-            domain += [('invoice_date', '>=', date_begin), ('invoice_date', '<=', date_end)]
-
-        if search:
-            domain += [('name', 'ilike', search)]
-
-        invoice_count = AccountMove.search_count(domain)
-
-        from odoo.addons.portal.controllers.portal import pager as portal_pager
-        pager = portal_pager(
-            url='/mis-facturas',
-            url_args={'date_begin': date_begin, 'date_end': date_end, 
-                     'sortby': sortby, 'search': search},
-            total=invoice_count,
-            page=page,
-            step=20,
-        )
-
-        invoices = AccountMove.search(domain, order=order, limit=20, offset=pager['offset'])
-
-        from odoo import fields
-        current_year = fields.Date.today().year
-        year_domain = domain + [
-            ('invoice_date', '>=', f'{current_year}-01-01'),
-            ('invoice_date', '<=', f'{current_year}-12-31'),
-            ('state', '=', 'posted'),
-        ]
-        year_invoices = AccountMove.search(year_domain)
-        total_year = sum(year_invoices.mapped('amount_total'))
-
-        values = {
-            'invoices': invoices,
-            'page_name': 'mis_facturas',
-            'pager': pager,
-            'default_url': '/mis-facturas',
-            'searchbar_sortings': searchbar_sortings,
-            'sortby': sortby,
-            'search': search,
-            'date_begin': date_begin,
-            'date_end': date_end,
-            'total_year': float(total_year or 0.0),
-        }
-
-        return request.render('portal_b2b_base.portal_mis_facturas', values)
-
-    @http.route(['/mi-cuenta'], type='http', auth='user', website=True)
-    def portal_mi_cuenta(self, **kw):
-        """Página de gestión de cuenta del distribuidor."""
-        partner = request.env.user.partner_id
-
-        if not partner.is_distributor:
-            return request.redirect('/mi-portal')
-
-        values = {
-            'page_name': 'mi_cuenta',
-            'partner': partner,
-            'user': request.env.user,
-        }
-
-        return request.render('portal_b2b_base.portal_mi_cuenta', values)
-
-    @http.route(['/api/productos/buscar'], type='json', auth='user', methods=['POST'])
-    def api_productos_buscar(self, query='', limit=10, **kw):
-        """API para búsqueda de productos (autocompletado)."""
-        partner = request.env.user.partner_id
-
-        if not partner.is_distributor:
-            return {'error': _('Usuario no autorizado')}
-
-        try:
-            if not query or not query.strip():
-                return {'products': []}
-
-            query = query.strip()
-            limit = int(limit) if limit else 10
-
-            domain = [
-                ('sale_ok', '=', True),
-                ('active', '=', True),
-                '|',
-                ('name', 'ilike', query),
-                ('default_code', 'ilike', query),
-            ]
-
-            products = request.env['product.product'].sudo().search(domain, limit=limit)
-            
-            result = []
-            for product in products:
-                price = float(product.list_price or 0.0)
-                
-                result.append({
-                    'id': product.id,
-                    'name': product.name,
-                    'default_code': product.default_code or '',
-                    'list_price': price,
-                    'qty_available': float(product.qty_available) if product.type == 'product' else 999,
-                    'uom_name': product.uom_id.name,
-                })
-
-            return {'products': result}
-
-        except Exception as e:
-            _logger.error(f"Error en búsqueda de productos: {str(e)}", exc_info=True)
-            return {'error': _('Error en la búsqueda')}

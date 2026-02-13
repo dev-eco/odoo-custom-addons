@@ -8,3 +8,4 @@ from . import portal_notification
 from . import portal_audit_log
 from . import portal_message
 from . import sale_return
+from . import portal_user_preferences

@@ -1629,6 +1629,118 @@
         </t>
     </template>
 
+    <!-- Template: Crear Nueva Plantilla -->
+    <template id="portal_create_template" name="Crear Nueva Plantilla">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-8 offset-lg-2">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-plantillas">Mis Plantillas</a></li>
+                                <li class="breadcrumb-item active">Nueva Plantilla</li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-bookmark me-2" aria-hidden="true"/>
+                                    Crear Nueva Plantilla
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <form id="form-create-template">
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label" for="template-name">
+                                            <strong>Nombre de la Plantilla</strong>
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               id="template-name" 
+                                               class="form-control" 
+                                               placeholder="Ej: Pedido Mensual Almacén A"
+                                               required="required"/>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <h5>Buscar Productos</h5>
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <input type="text" 
+                                                       id="product-search" 
+                                                       class="form-control" 
+                                                       placeholder="Buscar por nombre o referencia..."/>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button type="button" 
+                                                        id="btn-search-product" 
+                                                        class="btn btn-primary w-100">
+                                                    <i class="fa fa-search me-2" aria-hidden="true"/>
+                                                    Buscar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="product-results" class="list-group mt-2" style="display: none;"></div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <h5>Productos de la Plantilla</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped" id="template-lines-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Producto</th>
+                                                        <th class="text-center">Cantidad</th>
+                                                        <th>Notas</th>
+                                                        <th class="text-center">Acción</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="template-lines-body">
+                                                    <tr id="empty-template-message">
+                                                        <td colspan="4" class="text-center text-muted">
+                                                            No hay productos agregados. Use el buscador arriba.
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label" for="template-notes">Notas de la Plantilla</label>
+                                        <textarea id="template-notes" 
+                                                  class="form-control" 
+                                                  rows="3" 
+                                                  placeholder="Notas o descripción de la plantilla..."></textarea>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <a href="/mis-plantillas" class="btn btn-secondary me-2">
+                                            <i class="fa fa-times me-2" aria-hidden="true"/>
+                                            Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-check me-2" aria-hidden="true"/>
+                                            Crear Plantilla
+                                        </button>
+                                    </div>
+                                    
+                                </form>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
     <!-- Template: Crear Plantilla desde Pedido -->
     <template id="portal_create_template_from_order" name="Crear Plantilla desde Pedido">
         <t t-call="portal.portal_layout">
@@ -2136,6 +2248,190 @@
         </t>
     </template>
 
+    <!-- ========================================== -->
+    <!-- CREAR DEVOLUCIÓN -->
+    <!-- ========================================== -->
+
+    <template id="portal_create_return" name="Crear Devolución">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-8 offset-lg-2">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-devoluciones">Mis Devoluciones</a></li>
+                                <li class="breadcrumb-item active">Nueva Devolución</li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-undo me-2" aria-hidden="true"/>
+                                    Crear Nueva Devolución (RMA)
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <div class="alert alert-info">
+                                    <i class="fa fa-info-circle me-2" aria-hidden="true"/>
+                                    Complete el formulario para solicitar una devolución. Nuestro equipo revisará su solicitud.
+                                </div>
+                                
+                                <form id="form-create-return" method="post" action="/crear-devolucion/submit">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    
+                                    <!-- Pedido original (opcional) -->
+                                    <t t-if="order">
+                                        <div class="mb-4">
+                                            <h5>Pedido Original</h5>
+                                            <div class="alert alert-secondary">
+                                                <strong>Pedido:</strong> <t t-esc="order.name"/><br/>
+                                                <strong>Fecha:</strong> <t t-esc="order.date_order" t-options="{'widget': 'date'}"/><br/>
+                                                <strong>Total:</strong> <t t-esc="'%.2f' % order.amount_total"/> €
+                                            </div>
+                                            <input type="hidden" name="order_id" t-att-value="order.id"/>
+                                        </div>
+                                    </t>
+                                    
+                                    <!-- Motivo de devolución -->
+                                    <div class="mb-4">
+                                        <label class="form-label" for="reason">
+                                            <strong>Motivo de Devolución</strong>
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <select id="reason" name="reason" class="form-control" required="required">
+                                            <option value="">Seleccione un motivo...</option>
+                                            <option value="defective">Producto Defectuoso</option>
+                                            <option value="wrong_item">Producto Incorrecto</option>
+                                            <option value="damaged">Dañado en Transporte</option>
+                                            <option value="not_needed">No Necesario</option>
+                                            <option value="quality">Problema de Calidad</option>
+                                            <option value="other">Otro</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Descripción detallada -->
+                                    <div class="mb-4">
+                                        <label class="form-label" for="reason_description">
+                                            <strong>Descripción Detallada</strong>
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <textarea id="reason_description" 
+                                                  name="reason_description" 
+                                                  class="form-control" 
+                                                  rows="4" 
+                                                  required="required"
+                                                  placeholder="Describa detalladamente el problema o motivo de la devolución..."></textarea>
+                                    </div>
+                                    
+                                    <!-- Productos a devolver -->
+                                    <div class="mb-4">
+                                        <h5>Productos a Devolver</h5>
+                                        <div id="return-products">
+                                            <div class="product-return-line mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Producto</label>
+                                                        <input type="text" 
+                                                               name="product_search[]" 
+                                                               class="form-control product-search" 
+                                                               placeholder="Buscar producto..."/>
+                                                        <input type="hidden" name="product_id[]" class="product-id"/>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Cantidad</label>
+                                                        <input type="number" 
+                                                               name="quantity[]" 
+                                                               class="form-control" 
+                                                               min="1" 
+                                                               step="1" 
+                                                               value="1"/>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Precio Unit.</label>
+                                                        <input type="number" 
+                                                               name="unit_price[]" 
+                                                               class="form-control" 
+                                                               min="0" 
+                                                               step="0.01"/>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Acción</label>
+                                                        <button type="button" class="btn btn-danger btn-sm w-100 remove-product">
+                                                            <i class="fa fa-trash" aria-hidden="true"/>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-product" class="btn btn-secondary btn-sm">
+                                            <i class="fa fa-plus me-2" aria-hidden="true"/>
+                                            Añadir Producto
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Método de reembolso preferido -->
+                                    <div class="mb-4">
+                                        <label class="form-label">
+                                            <strong>Método de Reembolso Preferido</strong>
+                                        </label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="refund_method" value="credit_note" id="credit_note" checked="checked"/>
+                                            <label class="form-check-label" for="credit_note">
+                                                Nota de Crédito
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="refund_method" value="replacement" id="replacement"/>
+                                            <label class="form-check-label" for="replacement">
+                                                Reemplazo de Producto
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="refund_method" value="store_credit" id="store_credit"/>
+                                            <label class="form-check-label" for="store_credit">
+                                                Crédito en Cuenta
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Notas adicionales -->
+                                    <div class="mb-4">
+                                        <label class="form-label" for="customer_notes">
+                                            <strong>Notas Adicionales</strong>
+                                        </label>
+                                        <textarea id="customer_notes" 
+                                                  name="customer_notes" 
+                                                  class="form-control" 
+                                                  rows="3" 
+                                                  placeholder="Información adicional que considere relevante..."></textarea>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <a href="/mis-devoluciones" class="btn btn-secondary me-2">
+                                            <i class="fa fa-times me-2" aria-hidden="true"/>
+                                            Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="fa fa-check me-2" aria-hidden="true"/>
+                                            Crear Devolución
+                                        </button>
+                                    </div>
+                                    
+                                </form>
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
     <!-- Template: Mi Cuenta -->
     <template id="portal_mi_cuenta" name="Mi Cuenta">
         <t t-call="portal.portal_layout">
@@ -2214,6 +2510,421 @@
                 </div>
             </div>
             
+        </t>
+    </template>
+
+    <!-- ========================================== -->
+    <!-- NOTIFICACIONES -->
+    <!-- ========================================== -->
+    
+    <template id="portal_notifications" name="Mis Notificaciones">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-bell me-2" aria-hidden="true"/>
+                                    Mis Notificaciones
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <t t-if="notifications">
+                                    <div class="list-group">
+                                        <t t-foreach="notifications" t-as="notif">
+                                            <div t-attf-class="list-group-item #{not notif.get('is_read', False) and 'list-group-item-warning' or ''}">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">
+                                                        <t t-if="not notif.get('is_read', False)">
+                                                            <i class="fa fa-circle text-warning me-2" aria-hidden="true"/>
+                                                        </t>
+                                                        <t t-esc="notif.get('title', '')"/>
+                                                    </h6>
+                                                    <small><t t-esc="notif.get('create_date', '')"/></small>
+                                                </div>
+                                                <p class="mb-1"><t t-esc="notif.get('message', '')"/></p>
+                                                <t t-if="notif.get('action_url') and notif.get('action_url') != '#'">
+                                                    <a t-att-href="notif.get('action_url')" class="btn btn-sm btn-primary">
+                                                        Ver Detalle
+                                                    </a>
+                                                </t>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info text-center">
+                                        <i class="fa fa-info-circle fa-3x mb-3" aria-hidden="true"/>
+                                        <p class="mb-0">No tienes notificaciones.</p>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ========================================== -->
+    <!-- MENSAJES/CHAT -->
+    <!-- ========================================== -->
+    
+    <template id="portal_messages" name="Mis Mensajes">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-comments me-2" aria-hidden="true"/>
+                                            Mis Mensajes
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+                                            <i class="fa fa-plus me-2" aria-hidden="true"/>
+                                            Nuevo Mensaje
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <t t-if="messages">
+                                    <div class="list-group">
+                                        <t t-foreach="messages" t-as="msg">
+                                            <div t-attf-class="list-group-item #{not msg.get('is_read', False) and 'list-group-item-info' or ''}">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">
+                                                        <t t-if="not msg.get('is_read', False)">
+                                                            <i class="fa fa-envelope text-primary me-2" aria-hidden="true"/>
+                                                        </t>
+                                                        <t t-esc="msg.get('subject', '')"/>
+                                                    </h6>
+                                                    <small>
+                                                        <span t-attf-class="badge bg-#{msg.get('sender_type') == 'company' and 'success' or 'secondary'}">
+                                                            <t t-if="msg.get('sender_type') == 'company'">Empresa</t>
+                                                            <t t-else="">Yo</t>
+                                                        </span>
+                                                        <t t-esc="msg.get('create_date', '')"/>
+                                                    </small>
+                                                </div>
+                                                <p class="mb-1"><t t-esc="msg.get('message', '')"/></p>
+                                                <small>
+                                                    Estado: 
+                                                    <span t-attf-class="badge bg-#{
+                                                        'success' if msg.get('state') == 'answered' else
+                                                        'warning' if msg.get('state') == 'open' else
+                                                        'secondary'
+                                                    }">
+                                                        <t t-if="msg.get('state') == 'open'">Abierto</t>
+                                                        <t t-elif="msg.get('state') == 'answered'">Respondido</t>
+                                                        <t t-else="">Cerrado</t>
+                                                    </span>
+                                                    | Respuestas: <t t-esc="msg.get('reply_count', 0)"/>
+                                                </small>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info text-center">
+                                        <i class="fa fa-info-circle fa-3x mb-3" aria-hidden="true"/>
+                                        <p class="mb-0">No tienes mensajes.</p>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Nuevo Mensaje -->
+            <div class="modal fade" id="newMessageModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Nuevo Mensaje</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="newMessageForm">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Asunto</label>
+                                    <input type="text" class="form-control" name="subject" required="required"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Mensaje</label>
+                                    <textarea class="form-control" name="message" rows="5" required="required"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Enviar Mensaje</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ========================================== -->
+    <!-- DEVOLUCIONES -->
+    <!-- ========================================== -->
+    
+    <template id="portal_returns" name="Mis Devoluciones">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-undo me-2" aria-hidden="true"/>
+                                            Mis Devoluciones (RMA)
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <a href="/crear-devolucion" class="btn btn-success btn-sm">
+                                            <i class="fa fa-plus me-2" aria-hidden="true"/>
+                                            Nueva Devolución
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <t t-if="returns">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Número RMA</th>
+                                                    <th>Pedido Original</th>
+                                                    <th>Fecha</th>
+                                                    <th>Motivo</th>
+                                                    <th>Estado</th>
+                                                    <th class="text-end">Total</th>
+                                                    <th class="text-center">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="returns" t-as="return_item">
+                                                    <tr>
+                                                        <td><strong t-esc="return_item.name"/></td>
+                                                        <td>
+                                                            <t t-if="return_item.order_id">
+                                                                <a t-attf-href="/mis-pedidos/#{return_item.order_id.id}">
+                                                                    <t t-esc="return_item.order_id.name"/>
+                                                                </a>
+                                                            </t>
+                                                            <t t-else="">-</t>
+                                                        </td>
+                                                        <td t-esc="return_item.return_date" t-options="{'widget': 'date'}"/>
+                                                        <td>
+                                                            <t t-if="return_item.reason == 'defective'">Producto Defectuoso</t>
+                                                            <t t-elif="return_item.reason == 'wrong_item'">Producto Incorrecto</t>
+                                                            <t t-elif="return_item.reason == 'damaged'">Dañado en Transporte</t>
+                                                            <t t-elif="return_item.reason == 'not_needed'">No Necesario</t>
+                                                            <t t-elif="return_item.reason == 'quality'">Problema de Calidad</t>
+                                                            <t t-else="">Otro</t>
+                                                        </td>
+                                                        <td>
+                                                            <span t-attf-class="badge bg-#{
+                                                                'secondary' if return_item.state == 'draft' else
+                                                                'primary' if return_item.state == 'submitted' else
+                                                                'info' if return_item.state == 'received' else
+                                                                'success' if return_item.state == 'approved' else
+                                                                'danger' if return_item.state == 'rejected' else
+                                                                'dark'
+                                                            }">
+                                                                <t t-if="return_item.state == 'draft'">Borrador</t>
+                                                                <t t-elif="return_item.state == 'submitted'">Enviado</t>
+                                                                <t t-elif="return_item.state == 'received'">Recibido</t>
+                                                                <t t-elif="return_item.state == 'approved'">Aprobado</t>
+                                                                <t t-elif="return_item.state == 'rejected'">Rechazado</t>
+                                                                <t t-else="">Procesado</t>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong t-field="return_item.total_amount"
+                                                                    t-options="{'widget': 'monetary', 'display_currency': return_item.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <a t-attf-href="/mis-devoluciones/#{return_item.id}" 
+                                                               class="btn btn-sm btn-primary">
+                                                                <i class="fa fa-eye" aria-hidden="true"/>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info text-center">
+                                        <i class="fa fa-info-circle fa-3x mb-3" aria-hidden="true"/>
+                                        <p class="mb-0">No tienes devoluciones registradas.</p>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ========================================== -->
+    <!-- DASHBOARD MEJORADO -->
+    <!-- ========================================== -->
+    
+    <template id="portal_dashboard" name="Dashboard Portal B2B">
+        <t t-call="portal.portal_layout">
+            <div class="container-fluid mt-4">
+                
+                <!-- KPIs Principales -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-left-primary shadow h-100">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                            Pedidos Este Mes
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold">
+                                            <t t-esc="dashboard_data.get('orders', {}).get('total', 0)"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fa fa-shopping-cart fa-2x text-gray-300" aria-hidden="true"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-left-success shadow h-100">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                            Facturación Mes
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold">
+                                            <t t-esc="'%.2f' % dashboard_data.get('orders', {}).get('total_amount', 0)"/> €
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fa fa-euro fa-2x text-gray-300" aria-hidden="true"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-left-info shadow h-100">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                            Crédito Disponible
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold">
+                                            <t t-esc="'%.2f' % available_credit"/> €
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fa fa-credit-card fa-2x text-gray-300" aria-hidden="true"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-left-warning shadow h-100">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                            Pendiente Pago
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold">
+                                            <t t-esc="'%.2f' % dashboard_data.get('invoicing', {}).get('pending_payment', 0)"/> €
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fa fa-clock-o fa-2x text-gray-300" aria-hidden="true"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Accesos Rápidos -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Accesos Rápidos</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-2 col-6 mb-3">
+                                        <a href="/crear-pedido" class="btn btn-primary btn-lg w-100">
+                                            <i class="fa fa-plus-circle fa-2x mb-2" aria-hidden="true"/>
+                                            <br/>Nuevo Pedido
+                                        </a>
+                                    </div>
+                                    <div class="col-md-2 col-6 mb-3">
+                                        <a href="/mis-pedidos" class="btn btn-info btn-lg w-100">
+                                            <i class="fa fa-shopping-cart fa-2x mb-2" aria-hidden="true"/>
+                                            <br/>Mis Pedidos
+                                        </a>
+                                    </div>
+                                    <div class="col-md-2 col-6 mb-3">
+                                        <a href="/mis-facturas" class="btn btn-success btn-lg w-100">
+                                            <i class="fa fa-file-text fa-2x mb-2" aria-hidden="true"/>
+                                            <br/>Mis Facturas
+                                        </a>
+                                    </div>
+                                    <div class="col-md-2 col-6 mb-3">
+                                        <a href="/mis-plantillas" class="btn btn-warning btn-lg w-100">
+                                            <i class="fa fa-bookmark fa-2x mb-2" aria-hidden="true"/>
+                                            <br/>Plantillas
+                                        </a>
+                                    </div>
+                                    <div class="col-md-2 col-6 mb-3">
+                                        <a href="/mis-devoluciones" class="btn btn-danger btn-lg w-100">
+                                            <i class="fa fa-undo fa-2x mb-2" aria-hidden="true"/>
+                                            <br/>Devoluciones
+                                        </a>
+                                    </div>
+                                    <div class="col-md-2 col-6 mb-3">
+                                        <a href="/mi-portal/estadisticas" class="btn btn-secondary btn-lg w-100">
+                                            <i class="fa fa-chart-bar fa-2x mb-2" aria-hidden="true"/>
+                                            <br/>Estadísticas
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
         </t>
     </template>
 
