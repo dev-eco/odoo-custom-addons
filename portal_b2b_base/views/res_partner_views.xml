@@ -148,6 +148,6 @@
               name="Distribuidores B2B"
               parent="sale.sale_menu_root"
               action="action_partner_distributor"
-              sequence="5"/>
+              sequence="100"/>
 
 </odoo>

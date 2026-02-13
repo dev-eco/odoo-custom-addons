@@ -2,7 +2,7 @@
 <odoo>
     
     <!-- Dashboard principal del portal B2B -->
-    <template id="portal_b2b_dashboard_home" name="Portal B2B Dashboard Home">
+    <template id="portal_b2b_dashboard_home" name="Panel de Control del Distribuidor">
         <t t-call="portal.portal_layout">
             
             <div class="container-fluid mt-4 px-4">

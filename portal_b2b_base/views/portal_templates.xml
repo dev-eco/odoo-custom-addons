@@ -302,7 +302,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item active">Crear Pedido</li>
                             </ol>
                         </nav>
@@ -769,7 +769,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-pedidos">Mis Pedidos</a></li>
                                 <li class="breadcrumb-item active"><t t-esc="order.name"/></li>
                             </ol>
@@ -1179,7 +1179,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-pedidos">Mis Pedidos</a></li>
                                 <li class="breadcrumb-item"><a t-attf-href="/mis-pedidos/#{order.id}"><t t-esc="order.name"/></a></li>
                                 <li class="breadcrumb-item active">Documentos</li>
@@ -1595,7 +1595,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-plantillas">Mis Plantillas</a></li>
                                 <li class="breadcrumb-item active"><t t-esc="template.name"/></li>
                             </ol>
@@ -1790,7 +1790,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-plantillas">Mis Plantillas</a></li>
                                 <li class="breadcrumb-item active">Nueva Plantilla</li>
                             </ol>
@@ -2197,7 +2197,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item active">Estadísticas</li>
                             </ol>
                         </nav>
@@ -2412,7 +2412,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-devoluciones">Mis Devoluciones</a></li>
                                 <li class="breadcrumb-item active">Nueva Devolución</li>
                             </ol>
@@ -2594,7 +2594,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item active">Mi Cuenta</li>
                             </ol>
                         </nav>
