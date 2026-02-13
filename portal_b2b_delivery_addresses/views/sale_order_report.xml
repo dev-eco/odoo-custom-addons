@@ -5,7 +5,7 @@
     <template id="report_saleorder_document_delivery_b2b" inherit_id="sale.report_saleorder_document">
         
         <!-- Reemplazar bloque de dirección de envío para usar delivery_address_id -->
-        <xpath expr="//div[@name='shipping_address_block']" position="replace">
+        <xpath expr="//div[contains(@class, 'o_address_shipping')]" position="replace">
             <div name="shipping_address_block">
                 <t t-if="doc.delivery_address_id">
                     <!-- USAR DIRECCIÓN B2B PERSONALIZADA - Sin mostrar nombre del distribuidor -->
@@ -83,7 +83,7 @@
         </xpath>
         
         <!-- Información del Cliente Final (si existe etiqueta) -->
-        <xpath expr="//div[@name='shipping_address_block']" position="after">
+        <xpath expr="//div[contains(@class, 'o_address_shipping')]" position="after">
             <t t-if="doc.distributor_label_id">
                 <div class="row mt-3 mb-2">
                     <div class="col-md-5">

@@ -9,7 +9,7 @@
         <field name="arch" type="xml">
             
             <!-- Añadir columna de documentos ANTES de la columna de estado -->
-            <xpath expr="//field[@name='state']" position="before">
+            <xpath expr="//tree/field[@name='state']" position="before">
                 <field name="distributor_document_count" string="📎 Docs" optional="show"/>
                 <field name="has_new_distributor_documents" invisible="1"/>
                 <field name="distributor_documents_reviewed" invisible="1"/>
@@ -17,8 +17,8 @@
             
             <!-- Decoración de filas con documentos nuevos -->
             <xpath expr="//tree" position="attributes">
-                <attribute name="decoration-danger">has_new_distributor_documents</attribute>
-                <attribute name="decoration-info">distributor_document_count > 0 and not has_new_distributor_documents</attribute>
+                <attribute name="decoration-danger">has_new_distributor_documents == True</attribute>
+                <attribute name="decoration-info">distributor_document_count &gt; 0 and has_new_distributor_documents == False</attribute>
             </xpath>
             
         </field>
@@ -33,7 +33,7 @@
             
             
             <!-- Notificación visual de documentos nuevos (MEJORADA) -->
-            <xpath expr="//sheet" position="before">
+            <xpath expr="//form/sheet" position="before">
                 <!-- Alerta de documentos NUEVOS sin revisar -->
                 <div class="alert alert-warning mb-0"
                      role="alert"
@@ -96,7 +96,7 @@
             </xpath>
             
             <!-- Campos ocultos necesarios para los computed -->
-            <xpath expr="//sheet" position="inside">
+            <xpath expr="//form/sheet" position="inside">
                 <field name="has_new_distributor_documents" invisible="1"/>
                 <field name="distributor_documents_reviewed" invisible="1"/>
             </xpath>

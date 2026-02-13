@@ -15,12 +15,12 @@
     <template id="portal_theme_portal_layout" name="Portal Theme - Portal Layout" inherit_id="portal.portal_layout" priority="20">
         
         <!-- Agregar clases personalizadas al contenedor principal -->
-        <xpath expr="//div[hasclass('o_portal')]" position="attributes">
+        <xpath expr="//div[contains(@class, 'o_portal')]" position="attributes">
             <attribute name="class" add="portal-b2b-custom" separator=" "/>
         </xpath>
         
         <!-- Añadir panel de configuración al final del contenedor del portal -->
-        <xpath expr="//div[hasclass('o_portal')]" position="inside">
+        <xpath expr="//div[contains(@class, 'o_portal')]" position="inside">
             <t t-if="request.env.user.partner_id.is_distributor">
                 
                 <!-- Botón flotante de configuración (esquina inferior derecha) -->

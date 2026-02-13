@@ -27,62 +27,121 @@
                 <form string="Devolución">
                     <header>
                         <button name="action_submit" type="object" string="Enviar Solicitud" 
-                                class="btn-primary" invisible="state != 'draft'"/>
+                                class="btn-primary" 
+                                invisible="state != 'draft'" 
+                                groups="portal_b2b_base.group_portal_b2b"/>
                         <button name="action_mark_received" type="object" string="Marcar Recibida" 
-                                invisible="state != 'submitted'"/>
+                                invisible="state != 'submitted'"
+                                groups="base.group_user"/>
                         <button name="action_approve" type="object" string="Aprobar" 
-                                class="btn-success" invisible="state != 'received'"/>
+                                class="btn-success" 
+                                invisible="state != 'received'"
+                                groups="base.group_user"/>
                         <button name="action_reject" type="object" string="Rechazar" 
-                                class="btn-danger" invisible="state not in ['submitted', 'received']"/>
+                                class="btn-danger" 
+                                invisible="state not in ('submitted', 'received')"
+                                groups="base.group_user"/>
                         <button name="action_process" type="object" string="Procesar" 
-                                invisible="state != 'approved'"/>
+                                invisible="state != 'approved'"
+                                groups="base.group_user"/>
                         <button name="action_close" type="object" string="Cerrar" 
-                                class="btn-secondary" invisible="state not in ['approved', 'rejected']"/>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,submitted,received,approved,processed"/>
+                                class="btn-secondary" 
+                                invisible="state not in ('approved', 'rejected')"
+                                groups="base.group_user"/>
+                        <field name="state" widget="statusbar" 
+                               statusbar_visible="draft,submitted,received,approved,processed"/>
                     </header>
                     <sheet>
                         <div class="oe_title">
                             <h1>
-                                <field name="name" readonly="1"/>
+                                <field name="name" readonly="1" 
+                                       invisible="name in ('/', False)"/>
+                                <span invisible="name not in ('/', False)">
+                                    Nueva Solicitud de Devolución
+                                </span>
                             </h1>
                         </div>
                         <group>
                             <group>
                                 <field name="partner_id" readonly="1"/>
-                                <field name="order_id"/>
-                                <field name="reason"/>
+                                <field name="order_id" 
+                                       options="{'no_create': True, 'no_open': True}"
+                                       domain="[('partner_id', '=', partner_id), ('state', 'in', ['sale', 'done'])]"
+                                       readonly="state != 'draft'"/>
+                                <field name="reason" readonly="state != 'draft'"/>
                             </group>
                             <group>
-                                <field name="return_date"/>
-                                <field name="received_date" readonly="1"/>
-                                <field name="approval_date" readonly="1"/>
-                                <field name="approval_user_id" readonly="1"/>
+                                <field name="return_date" readonly="1"/>
+                                <field name="received_date" readonly="1" 
+                                       invisible="not received_date"/>
+                                <field name="approval_date" readonly="1" 
+                                       invisible="not approval_date"/>
+                                <field name="approval_user_id" readonly="1" 
+                                       invisible="not approval_user_id"/>
                             </group>
                         </group>
-                        <group string="Descripción">
-                            <field name="reason_description" nolabel="1"/>
-                        </group>
-                        <group string="Notas Internas">
-                            <field name="notes" nolabel="1"/>
-                        </group>
-                        <group string="Líneas de Devolución">
-                            <field name="line_ids" nolabel="1">
-                                <tree editable="bottom">
-                                    <field name="product_id"/>
-                                    <field name="quantity"/>
-                                    <field name="unit_price"/>
-                                    <field name="subtotal" readonly="1"/>
-                                    <field name="notes"/>
-                                </tree>
-                            </field>
-                        </group>
-                        <group>
-                            <field name="total_amount" readonly="1"/>
-                        </group>
-                        <group string="Documentos">
-                            <field name="attachment_ids" nolabel="1"/>
-                        </group>
+                        
+                        <notebook>
+                            <page string="Productos a Devolver">
+                                <field name="available_product_ids" invisible="1"/>
+                                <field name="line_ids" readonly="state != 'draft'">
+                                    <tree editable="bottom">
+                                        <field name="product_id" 
+                                               domain="[('id', 'in', parent.available_product_ids)]"
+                                               options="{'no_create': True}"/>
+                                        <field name="quantity"/>
+                                        <field name="unit_price" readonly="1" 
+                                               groups="base.group_user" optional="hide"/>
+                                        <field name="subtotal" readonly="1" 
+                                               groups="base.group_user" optional="hide"/>
+                                        <field name="condition" readonly="1" 
+                                               groups="base.group_user" optional="hide"/>
+                                        <field name="notes"/>
+                                    </tree>
+                                </field>
+                                <group class="oe_subtotal_footer oe_right" 
+                                       groups="base.group_user">
+                                    <field name="total_amount" readonly="1" 
+                                           widget="monetary"/>
+                                </group>
+                            </page>
+                            
+                            <page string="Descripción">
+                                <field name="reason_description" nolabel="1" 
+                                       placeholder="Describa detalladamente el motivo de la devolución..."
+                                       readonly="state != 'draft'"/>
+                            </page>
+                            
+                            <page string="Notas del Distribuidor">
+                                <field name="customer_notes" nolabel="1"
+                                       placeholder="Información adicional..."
+                                       readonly="state != 'draft'"/>
+                            </page>
+                            
+                            <page string="Notas Internas" groups="base.group_user">
+                                <field name="notes" nolabel="1"/>
+                            </page>
+                            
+                            <page string="Documentos">
+                                <field name="attachment_ids" nolabel="1" 
+                                       widget="many2many_binary"/>
+                            </page>
+                            
+                            <page string="Gestión" groups="base.group_user">
+                                <group>
+                                    <field name="refund_method"/>
+                                    <field name="credit_note_id" readonly="1" 
+                                           invisible="not credit_note_id"/>
+                                    <field name="rejection_reason" readonly="1" 
+                                           invisible="state != 'rejected'"/>
+                                </group>
+                            </page>
+                        </notebook>
                     </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="message_ids"/>
+                    </div>
                 </form>
             </field>
         </record>

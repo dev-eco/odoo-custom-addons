@@ -80,6 +80,7 @@ Licencia: LGPL-3
         # Configuración del sitio web
         'data/website_config.xml',
         'data/email_templates.xml',
+        'data/mail_template_data.xml',
         'data/sequences.xml',
         'data/cron.xml',
 
@@ -92,6 +93,7 @@ Licencia: LGPL-3
         'views/sale_order_template_views.xml',
         'views/portal_message_views.xml',
         'views/sale_return_views.xml',
+        'views/res_config_settings_views.xml',
 
         # Templates portal
         'views/portal_templates.xml',
@@ -111,6 +113,7 @@ Licencia: LGPL-3
             # Scripts del portal
             'portal_b2b_base/static/src/js/portal.js',
             'portal_b2b_base/static/src/js/product_grid.js',
+            'portal_b2b_base/static/src/js/returns.js',
         ],
     },
     'external_dependencies': {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo xmlns:xi="http://www.w3.org/2001/XInclude">
     <data>
         <!-- Vistas backend para Direcciones de Entrega -->
         <!-- Los modelos principales (delivery.address, distributor.label) tienen sus vistas en otros archivos -->

@@ -1270,19 +1270,39 @@ class PortalB2B(CustomerPortal):
         if not partner.is_distributor:
             return request.redirect('/mi-portal')
         
-        order = None
+        # Obtener pedidos confirmados/entregados del distribuidor
+        orders = request.env['sale.order'].search([
+            ('partner_id', '=', partner.id),
+            ('state', 'in', ['sale', 'done'])
+        ], order='date_order desc')
+        
+        # Si viene order_id, obtener productos del pedido
+        selected_order = None
+        order_products = []
+        
         if order_id:
             try:
-                order = request.env['sale.order'].browse(int(order_id))
-                if not order.exists() or order.partner_id != partner:
-                    order = None
-            except Exception:
-                order = None
+                selected_order = request.env['sale.order'].browse(int(order_id))
+                if selected_order.exists() and selected_order.partner_id == partner:
+                    # Obtener productos únicos del pedido
+                    for line in selected_order.order_line:
+                        if line.product_id:
+                            order_products.append({
+                                'id': line.product_id.id,
+                                'name': line.product_id.name,
+                                'default_code': line.product_id.default_code or '',
+                                'quantity_ordered': line.product_uom_qty,
+                                'price_unit': line.price_unit,
+                            })
+            except Exception as e:
+                _logger.warning(f"Error obteniendo pedido {order_id}: {str(e)}")
         
         values = self._prepare_portal_layout_values()
         values.update({
             'page_name': 'create_return',
-            'order': order,
+            'orders': orders,
+            'selected_order': selected_order,
+            'order_products': order_products,
         })
         
         return request.render('portal_b2b_base.portal_create_return', values)
@@ -1298,57 +1318,94 @@ class PortalB2B(CustomerPortal):
         
         try:
             # Obtener datos del formulario
-            reason = kw.get('reason')
-            reason_description = kw.get('reason_description')
-            customer_notes = kw.get('customer_notes', '')
-            refund_method = kw.get('refund_method', 'credit_note')
             order_id = kw.get('order_id')
+            reason = kw.get('reason')
+            reason_description = kw.get('reason_description', '')
+            customer_notes = kw.get('customer_notes', '')
             
             # Validaciones básicas
-            if not reason or not reason_description:
+            if not order_id or not reason:
                 return request.redirect('/crear-devolucion?error=missing_data')
+            
+            # Verificar que el pedido pertenece al distribuidor
+            order = request.env['sale.order'].browse(int(order_id))
+            if not order.exists() or order.partner_id != partner:
+                return request.redirect('/crear-devolucion?error=invalid_order')
             
             # Crear devolución
             return_vals = {
                 'partner_id': partner.id,
+                'order_id': order.id,
                 'reason': reason,
                 'reason_description': reason_description,
                 'customer_notes': customer_notes,
-                'refund_method': refund_method,
+                'state': 'draft',
             }
-            
-            if order_id:
-                return_vals['order_id'] = int(order_id)
             
             return_obj = request.env['sale.return'].create(return_vals)
             
             # Procesar líneas de productos
             product_ids = kw.getlist('product_id[]')
             quantities = kw.getlist('quantity[]')
-            unit_prices = kw.getlist('unit_price[]')
+            notes_list = kw.getlist('notes[]')
+            
+            if not product_ids or not quantities:
+                return_obj.unlink()
+                return request.redirect('/crear-devolucion?error=no_products')
             
             for i, product_id in enumerate(product_ids):
-                if product_id and quantities[i] and unit_prices[i]:
+                if product_id and quantities[i]:
                     try:
+                        qty = float(quantities[i])
+                        if qty <= 0:
+                            continue
+                        
+                        product = request.env['product.product'].browse(int(product_id))
+                        if not product.exists():
+                            continue
+                        
+                        # Obtener precio del pedido original
+                        order_line = order.order_line.filtered(
+                            lambda l: l.product_id.id == product.id
+                        )
+                        unit_price = order_line[0].price_unit if order_line else product.list_price
+                        
                         request.env['sale.return.line'].create({
                             'return_id': return_obj.id,
                             'product_id': int(product_id),
-                            'quantity': float(quantities[i]),
-                            'unit_price': float(unit_prices[i]),
+                            'quantity': qty,
+                            'unit_price': unit_price,
+                            'notes': notes_list[i] if i < len(notes_list) else '',
                         })
-                    except Exception as e:
-                        _logger.warning(f"Error creando línea de devolución: {str(e)}")
+                    except (ValueError, IndexError) as e:
+                        _logger.warning(f"Error procesando línea {i}: {str(e)}")
+                        continue
             
-            # Enviar para aprobación si tiene líneas
-            if return_obj.line_ids:
-                return_obj.action_submit()
+            # Verificar que se crearon líneas
+            if not return_obj.line_ids:
+                return_obj.unlink()
+                return request.redirect('/crear-devolucion?error=no_valid_products')
             
-            _logger.info(f"Devolución {return_obj.name} creada por {partner.name}")
+            # Enviar para aprobación automáticamente
+            return_obj.action_submit()
+            
+            _logger.info(f"Devolución creada y enviada por {partner.name} para pedido {order.name}")
+            
+            # ✅ LOGGING
+            try:
+                request.env['portal.audit.log'].log_action(
+                    action='create_return',
+                    model_name='sale.return',
+                    record_id=return_obj.id,
+                    description=f'Solicitud de devolución creada para pedido {order.name}'
+                )
+            except Exception as log_error:
+                _logger.warning(f"Error logging action: {str(log_error)}")
             
             return request.redirect(f'/mis-devoluciones?created=success')
             
         except Exception as e:
-            _logger.error(f"Error creando devolución: {str(e)}")
+            _logger.error(f"Error creando devolución: {str(e)}", exc_info=True)
             return request.redirect('/crear-devolucion?error=create_failed')
 
     # ========== PLANTILLAS ==========

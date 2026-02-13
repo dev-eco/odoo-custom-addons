@@ -439,7 +439,7 @@
             const confirmCheckbox = document.getElementById('confirm-order-checkbox');
             if (!confirmCheckbox || !confirmCheckbox.checked) {
                 alert('Debe confirmar que ha revisado el pedido');
-                confirmCheckbox.focus();
+                if (confirmCheckbox) confirmCheckbox.focus();
                 return;
             }
 
@@ -458,24 +458,23 @@
             btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Creando...';
 
             try {
-                const notesElement = document.getElementById('order-notes');
+                // Recopilar datos del formulario
                 const deliveryAddressSelect = document.getElementById('delivery-address-select');
                 const distributorLabelSelect = document.getElementById('distributor-label-select');
-                const customerDeliveryRef = document.getElementById('customer-delivery-ref');
+                const notesElement = document.getElementById('order-notes');
                 const deliveryScheduleElement = document.getElementById('delivery-schedule');
                 const clientOrderRefElement = document.getElementById('client-order-ref');
 
-                const notes = notesElement ? notesElement.value : '';
-                const deliveryAddressId = deliveryAddressSelect ? deliveryAddressSelect.value : null;
-                const distributorLabelId = distributorLabelSelect ? distributorLabelSelect.value : null;
-                const customerDeliveryReference = customerDeliveryRef ? customerDeliveryRef.value : '';
-                const deliverySchedule = deliveryScheduleElement ? deliveryScheduleElement.value : '';
-                const clientOrderRef = clientOrderRefElement ? clientOrderRefElement.value : '';
+                const formData = {
+                    lines: orderLines,
+                    notes: notesElement ? notesElement.value : '',
+                    delivery_address_id: deliveryAddressSelect ? deliveryAddressSelect.value : null,
+                    distributor_label_id: distributorLabelSelect ? distributorLabelSelect.value : null,
+                    delivery_schedule: deliveryScheduleElement ? deliveryScheduleElement.value : '',
+                    client_order_ref: clientOrderRefElement ? clientOrderRefElement.value : '',
+                };
 
-                // Procesar archivos adjuntos
-                const transportLabelsFiles = await procesarArchivos(document.getElementById('transport-labels'));
-                const customerNotesFiles = await procesarArchivos(document.getElementById('customer-delivery-notes'));
-                const otherDocsFiles = await procesarArchivos(document.getElementById('other-documents'));
+                console.log('Portal B2B: Enviando datos del pedido:', formData);
 
                 const response = await fetch('/crear-pedido/submit', {
                     method: 'POST',
@@ -486,32 +485,21 @@
                     body: JSON.stringify({
                         jsonrpc: '2.0',
                         method: 'call',
-                        params: {
-                            lines: orderLines,
-                            notes: notes,
-                            delivery_address_id: deliveryAddressId,
-                            distributor_label_id: distributorLabelId,
-                            customer_delivery_reference: customerDeliveryReference,
-                            delivery_schedule: deliverySchedule,
-                            client_order_ref: clientOrderRef,
-                            transport_labels: transportLabelsFiles,
-                            customer_delivery_notes: customerNotesFiles,
-                            other_documents: otherDocsFiles,
-                        },
+                        params: formData,
                         id: Math.floor(Math.random() * 1000000),
                     }),
                 });
 
                 if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
+                console.log('Portal B2B: Respuesta del servidor:', data);
 
-                // Manejar respuesta JSON-RPC
                 if (data.error) {
                     const errorMsg = data.error.data?.message || data.error.message || 'Error desconocido';
-                    alert(errorMsg);
+                    alert('Error: ' + errorMsg);
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = '<i class="fa fa-check me-2"></i>Crear Pedido';
                     return;
@@ -520,17 +508,18 @@
                 const result = data.result;
 
                 if (result.error) {
-                    alert(result.error);
+                    alert('Error: ' + result.error);
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = '<i class="fa fa-check me-2"></i>Crear Pedido';
                     return;
                 }
 
                 if (result.success && result.redirect_url) {
-                    // Redirigir al pedido creado
+                    alert('¡Pedido creado exitosamente!');
                     window.location.href = result.redirect_url;
                 } else {
                     alert('Error: respuesta inesperada del servidor');
+                    console.error('Respuesta inesperada:', result);
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = '<i class="fa fa-check me-2"></i>Crear Pedido';
                 }

@@ -5,7 +5,7 @@
         
         
         <!-- Información de pago después de los totales -->
-        <xpath expr="//div[contains(@class,'clearfix')]" position="after">
+        <xpath expr="//div[@id='total']" position="after">
             <div t-if="doc.show_bank_info or doc.show_early_discount or doc.show_payment_qr" 
                  style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 20px;">
                 
@@ -84,7 +84,15 @@
         </xpath>
         
         <!-- Términos legales compactos -->
-        <xpath expr="//div[@name='informations'] | //div[@id='informations']" position="after">
+        <xpath expr="//div[@id='informations']" position="after">
+            <div t-if="doc.company_id.payment_terms_note" style="margin-top: 15px; font-size: 10px; color: #666;">
+                <strong>📜 Términos de Pago:</strong>
+                <div t-raw="doc.company_id.payment_terms_note"/>
+            </div>
+        </xpath>
+        
+        <!-- Fallback si no existe div#informations -->
+        <xpath expr="//div[@name='informations']" position="after">
             <div t-if="doc.company_id.payment_terms_note" style="margin-top: 15px; font-size: 10px; color: #666;">
                 <strong>📜 Términos de Pago:</strong>
                 <div t-raw="doc.company_id.payment_terms_note"/>
