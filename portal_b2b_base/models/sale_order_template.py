@@ -95,6 +95,15 @@ class SaleOrderTemplate(models.Model):
         help='Moneda de la plantilla'
     )
 
+    company_id = fields.Many2one(
+        'res.company',
+        string='Compañía',
+        related='partner_id.company_id',
+        store=True,
+        readonly=True,
+        help='Compañía del distribuidor'
+    )
+
     is_favorite = fields.Boolean(
         string='Favorita',
         default=False,

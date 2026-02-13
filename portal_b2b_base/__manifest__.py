@@ -86,6 +86,7 @@ Licencia: LGPL-3
 
         # Wizards (ANTES de las vistas que los usan)
         'wizard/sale_order_template_wizard_views.xml',
+        'wizard/sale_return_reject_wizard_views.xml',
 
         # Vistas backend
         'views/res_partner_views.xml',

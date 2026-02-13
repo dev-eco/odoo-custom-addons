@@ -26,3 +26,4 @@ access_sale_return_portal_b2b,sale.return portal b2b,model_sale_return,portal_b2
 access_sale_return_line_portal_b2b,sale.return.line portal b2b,model_sale_return_line,portal_b2b_base.group_portal_b2b,1,1,1,1
 access_sale_return_internal,sale.return internal,model_sale_return,base.group_user,1,1,1,1
 access_sale_return_line_internal,sale.return.line internal,model_sale_return_line,base.group_user,1,1,1,1
+access_sale_return_reject_wizard_internal,sale.return.reject.wizard internal,model_sale_return_reject_wizard,base.group_user,1,1,1,1
