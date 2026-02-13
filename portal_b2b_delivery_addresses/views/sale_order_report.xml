@@ -57,7 +57,9 @@
                             </div>
                             
                             <!-- Requisitos especiales -->
-                            <div t-if="doc.delivery_address_id.require_appointment or doc.delivery_address_id.tail_lift_required" class="mt-2 alert alert-warning alert">
+                            <div t-if="doc.delivery_address_id.require_appointment or doc.delivery_address_id.tail_lift_required" 
+                                 class="mt-2 alert alert-warning" 
+                                 role="status">
                                 <t t-if="doc.delivery_address_id.require_appointment">
                                     <div>⚠️ <strong>Requiere cita previa</strong></div>
                                 </t>
