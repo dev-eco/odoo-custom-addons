@@ -34,6 +34,14 @@
                             <field name="distributor_pricelist_id" 
                                    options="{'no_create': True}"/>
                         </group>
+                        
+                        <group string="Restricción de Productos" invisible="not is_distributor">
+                            <field name="allow_all_categories" widget="boolean"/>
+                            <field name="allowed_product_categories" 
+                                   widget="many2many_tags"
+                                   invisible="allow_all_categories"
+                                   options="{'no_create': True}"/>
+                        </group>
                     </group>
                 </page>
             </xpath>
@@ -118,6 +126,17 @@
                     <group string="Configuración de Precios">
                         <field name="distributor_pricelist_id" options="{'no_create': True}"/>
                     </group>
+
+                    <group string="Restricción de Productos">
+                        <group>
+                            <field name="allow_all_categories" widget="boolean"/>
+                        </group>
+                        <group invisible="allow_all_categories">
+                            <field name="allowed_product_categories" 
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
                 </sheet>
             </form>
         </field>
@@ -148,6 +167,6 @@
               name="Distribuidores B2B"
               parent="sale.sale_menu_root"
               action="action_partner_distributor"
-              sequence="5"/>
+              sequence="100"/>
 
 </odoo>

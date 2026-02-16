@@ -95,6 +95,15 @@ class SaleOrderTemplate(models.Model):
         help='Moneda de la plantilla'
     )
 
+    company_id = fields.Many2one(
+        'res.company',
+        string='Compañía',
+        related='partner_id.company_id',
+        store=True,
+        readonly=True,
+        help='Compañía del distribuidor'
+    )
+
     is_favorite = fields.Boolean(
         string='Favorita',
         default=False,
@@ -381,11 +390,80 @@ class SaleOrderTemplateLine(models.Model):
         help='Orden de visualización'
     )
 
+    company_id = fields.Many2one(
+        'res.company',
+        string='Compañía',
+        related='template_id.partner_id.company_id',
+        store=True,
+        readonly=True
+    )
+
     @api.constrains('quantity')
     def _check_quantity(self) -> None:
         """Valida que la cantidad sea positiva."""
         for line in self:
             if line.quantity <= 0:
+                raise ValidationError(
+                    _('La cantidad debe ser mayor a 0.')
+                )
+
+
+class SaleOrderTemplateOption(models.Model):
+    """Opciones adicionales de plantillas de pedidos."""
+
+    _name = 'sale.order.template.option'
+    _description = 'Opción de Plantilla de Pedido'
+    _order = 'sequence, id'
+
+    name = fields.Char(
+        string='Nombre',
+        required=True,
+        help='Nombre de la opción'
+    )
+
+    template_id = fields.Many2one(
+        'sale.order.template',
+        string='Plantilla',
+        required=True,
+        ondelete='cascade',
+        help='Plantilla a la que pertenece esta opción'
+    )
+
+    product_id = fields.Many2one(
+        'product.product',
+        string='Producto',
+        required=True,
+        ondelete='restrict',
+        domain=[('sale_ok', '=', True)],
+        help='Producto opcional'
+    )
+
+    quantity = fields.Float(
+        string='Cantidad',
+        default=1.0,
+        required=True,
+        help='Cantidad del producto'
+    )
+
+    sequence = fields.Integer(
+        string='Secuencia',
+        default=10,
+        help='Orden de visualización'
+    )
+
+    company_id = fields.Many2one(
+        'res.company',
+        string='Compañía',
+        related='template_id.partner_id.company_id',
+        store=True,
+        readonly=True
+    )
+
+    @api.constrains('quantity')
+    def _check_quantity(self) -> None:
+        """Valida que la cantidad sea positiva."""
+        for option in self:
+            if option.quantity <= 0:
                 raise ValidationError(
                     _('La cantidad debe ser mayor a 0.')
                 )

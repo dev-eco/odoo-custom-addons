@@ -192,7 +192,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-direcciones">Mis Direcciones</a></li>
                                 <li class="breadcrumb-item active">Nueva Dirección</li>
                             </ol>
@@ -388,7 +388,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-direcciones">Mis Direcciones</a></li>
                                 <li class="breadcrumb-item active"><t t-esc="address.name"/></li>
                             </ol>
@@ -754,7 +754,7 @@
                         
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
                                 <li class="breadcrumb-item"><a href="/mis-etiquetas">Mis Etiquetas</a></li>
                                 <li class="breadcrumb-item active">
                                     <t t-if="label">Editar Etiqueta</t>

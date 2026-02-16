@@ -83,12 +83,18 @@ class AccountMove(models.Model):
         ('immediate', 'Inmediato')
     ], string='Urgencia de Pago', default='normal')
     
-    @api.depends('name', 'company_id', 'move_type')
+    @api.depends('name', 'ref', 'move_type')
     def _compute_payment_reference(self):
         for move in self:
-            if move.name and move.name != '/' and move.company_id.bank_payment_reference_format:
-                format_str = move.company_id.bank_payment_reference_format
-                move.payment_reference = format_str.format(name=move.name)
+            if move.move_type in ('out_invoice', 'out_refund'):
+                # Para facturas, usar el número de factura directamente sin formato personalizado
+                # Si existe 'ref' (referencia del cliente), usarla; sino usar 'name' (número de factura)
+                if move.name and move.name != '/':
+                    move.payment_reference = move.name
+                elif move.ref:
+                    move.payment_reference = move.ref
+                else:
+                    move.payment_reference = ''
             else:
                 move.payment_reference = move.name if move.name != '/' else ''
     

@@ -77,6 +77,9 @@ Snippets disponibles:
     # Assets - ORDEN CRÍTICO
     'assets': {
         'web.assets_frontend': [
+            # ========== REDIRECCIONES ==========
+            'portal_theme/static/src/js/portal_redirect.js',
+            
             # ========== FIX MÍNIMO ==========
             'portal_theme/static/src/js/portal_fix.js',
             

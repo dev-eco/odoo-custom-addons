@@ -49,6 +49,11 @@
         let sortBy = 'name';
         let selectedProducts = {};
 
+        console.log('Portal B2B: Inicializando grid de productos');
+
+        // ✅ EXPONER orderLines globalmente para portal.js
+        window.orderLines = [];
+
         // Elementos del DOM
         const productFilter = document.getElementById('product-filter');
         const categoryFilter = document.getElementById('category-filter');
@@ -328,92 +333,109 @@
             const emptyMsg = document.getElementById('empty-lines-message');
             if (emptyMsg) emptyMsg.style.display = 'none';
 
-            let existingRow = orderLinesBody.querySelector('tr[data-product-id="' + productId + '"]');
+            // ✅ Actualizar window.orderLines (variable global)
+            const existingLine = window.orderLines.find(line => line.product_id === productId);
 
-            if (existingRow) {
-                const qtyInput = existingRow.querySelector('.line-qty');
-                const currentQty = parseFloat(qtyInput.value) || 0;
-                qtyInput.value = currentQty + qty;
-                updateLineSubtotal(existingRow);
+            if (existingLine) {
+                existingLine.qty += qty;
             } else {
-                const subtotal = qty * price;
-                const newRow = document.createElement('tr');
-                newRow.setAttribute('data-product-id', productId);
-                newRow.innerHTML = `
+                window.orderLines.push({
+                    product_id: productId,
+                    product_name: productName,
+                    product_code: '',
+                    qty: qty,
+                    price: price,
+                });
+            }
+
+            // Renderizar tabla visual
+            renderizarLineasPedido();
+        }
+
+        /**
+         * Renderiza las líneas del pedido en la tabla
+         */
+        function renderizarLineasPedido() {
+            if (!orderLinesBody) return;
+
+            if (window.orderLines.length === 0) {
+                orderLinesBody.innerHTML = `
+                    <tr id="empty-lines-message">
+                        <td colspan="5" class="text-center text-muted">
+                            No hay productos agregados. Use el buscador arriba.
+                        </td>
+                    </tr>
+                `;
+                actualizarTotal();
+                return;
+            }
+
+            orderLinesBody.innerHTML = '';
+
+            window.orderLines.forEach((line, index) => {
+                const subtotal = line.qty * line.price;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
                     <td>
-                        ${escapeHtml(productName)}
-                        <input type="hidden" class="line-product-id" value="${productId}">
+                        <strong>${escapeHtml(line.product_name)}</strong>
+                        ${line.product_code ? `<br><small class="text-muted">Ref: ${escapeHtml(line.product_code)}</small>` : ''}
                     </td>
                     <td class="text-center">
                         <input type="number" 
-                               class="form-control form-control-sm line-qty" 
-                               min="0" 
-                               step="1" 
-                               value="${qty}"
-                               style="width: 80px; display: inline-block;">
+                               class="form-control form-control-sm text-center qty-input" 
+                               data-index="${index}"
+                               value="${line.qty}" 
+                               min="1" 
+                               step="1"
+                               style="width: 80px; display: inline-block;"/>
                     </td>
-                    <td class="text-end">
-                        <span class="line-price">${price.toFixed(2)}</span> €
-                    </td>
-                    <td class="text-end">
-                        <strong class="line-subtotal">${subtotal.toFixed(2)}</strong> €
-                    </td>
+                    <td class="text-end">${line.price.toFixed(2)} €</td>
+                    <td class="text-end"><strong>${subtotal.toFixed(2)} €</strong></td>
                     <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-danger btn-remove-line">
+                        <button type="button" 
+                                class="btn btn-sm btn-danger btn-remove-line" 
+                                data-index="${index}">
                             <i class="fa fa-trash"></i>
                         </button>
                     </td>
                 `;
 
-                // Event listeners para la nueva línea
-                const qtyInput = newRow.querySelector('.line-qty');
-                const removeBtn = newRow.querySelector('.btn-remove-line');
+                orderLinesBody.appendChild(row);
+            });
 
-                qtyInput.addEventListener('change', function() {
-                    updateLineSubtotal(newRow);
-                    updateOrderTotal();
-                });
+            // Event listeners para cantidad
+            document.querySelectorAll('.qty-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const index = parseInt(this.dataset.index);
+                    const newQty = parseFloat(this.value);
 
-                removeBtn.addEventListener('click', function() {
-                    newRow.remove();
-                    if (orderLinesBody.children.length === 0 && emptyMsg) {
-                        emptyMsg.style.display = 'block';
+                    if (newQty > 0) {
+                        window.orderLines[index].qty = newQty;
+                        renderizarLineasPedido();
                     }
-                    updateOrderTotal();
                 });
+            });
 
-                orderLinesBody.appendChild(newRow);
-            }
+            // Event listeners para eliminar
+            document.querySelectorAll('.btn-remove-line').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    window.orderLines.splice(index, 1);
+                    renderizarLineasPedido();
+                });
+            });
 
-            updateOrderTotal();
-        }
-
-        /**
-         * Actualiza subtotal de línea
-         */
-        function updateLineSubtotal(row) {
-            const qty = parseFloat(row.querySelector('.line-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.line-price').textContent) || 0;
-            const subtotal = qty * price;
-            row.querySelector('.line-subtotal').textContent = subtotal.toFixed(2);
+            actualizarTotal();
         }
 
         /**
          * Actualiza total del pedido
          */
-        function updateOrderTotal() {
-            if (!orderTotal || !orderLinesBody) return;
+        function actualizarTotal() {
+            if (!orderTotal) return;
 
-            let total = 0;
-            const rows = orderLinesBody.querySelectorAll('tr');
-            rows.forEach(function(row) {
-                const subtotalText = row.querySelector('.line-subtotal');
-                if (subtotalText) {
-                    const subtotal = parseFloat(subtotalText.textContent) || 0;
-                    total += subtotal;
-                }
-            });
-
+            const total = window.orderLines.reduce((sum, line) => sum + (line.qty * line.price), 0);
             orderTotal.textContent = total.toFixed(2) + ' €';
         }
     }

@@ -343,6 +343,32 @@ class SaleOrder(models.Model):
 
         return super(SaleOrder, self).action_confirm()
 
+    def _action_confirm(self):
+        """
+        Override para transferir notas al picking después de confirmar.
+        
+        Copia el contenido del campo 'note' del pedido al campo 'external_note'
+        del albarán (stock.picking) generado automáticamente.
+        """
+        result = super()._action_confirm()
+        
+        # Transferir notas del pedido al campo external_note del picking
+        for order in self:
+            if order.note and order.picking_ids:
+                for picking in order.picking_ids:
+                    if not picking.external_note:
+                        picking.external_note = order.note
+                    else:
+                        # Si ya existe contenido, añadir las notas del pedido
+                        picking.external_note = f"{picking.external_note}\n\n{order.note}"
+                    
+                    _logger.info(
+                        f"Notas transferidas del pedido {order.name} "
+                        f"al albarán {picking.name}"
+                    )
+        
+        return result
+
     def action_cancel_from_portal(self) -> dict:
         """
         Cancela el pedido desde el portal.

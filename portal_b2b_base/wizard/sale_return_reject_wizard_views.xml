@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_return_reject_wizard_form" model="ir.ui.view">
+        <field name="name">sale.return.reject.wizard.form</field>
+        <field name="model">sale.return.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rechazar Devolución">
+                <group>
+                    <field name="return_id" invisible="1"/>
+                    <field name="rejection_reason" 
+                           placeholder="Explique el motivo del rechazo..."
+                           widget="text"/>
+                </group>
+                <footer>
+                    <button string="Rechazar" 
+                            name="action_confirm_reject" 
+                            type="object" 
+                            class="btn-danger"/>
+                    <button string="Cancelar" 
+                            class="btn-secondary" 
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <record id="action_sale_return_reject_wizard" model="ir.actions.act_window">
+        <field name="name">Rechazar Devolución</field>
+        <field name="res_model">sale.return.reject.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_sale_return"/>
+        <field name="binding_view_types">form</field>
+    </record>
+</odoo>
