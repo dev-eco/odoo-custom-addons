@@ -83,9 +83,9 @@ class DeliveryAddress(models.Model):
     )
     
     tail_lift_required = fields.Boolean(
-        string='Requiere Camión con Pluma',
+        string='Requiere Camión con Plataforma',
         default=False,
-        help='Marcar si se necesita camión con pluma/elevador'
+        help='Marcar si se necesita camión con plataforma elevadora para descarga'
     )
     
     delivery_notes = fields.Text(
