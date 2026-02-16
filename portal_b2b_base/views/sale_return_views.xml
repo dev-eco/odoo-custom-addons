@@ -37,7 +37,9 @@
                                 class="btn-success" 
                                 invisible="state != 'received'"
                                 groups="base.group_user"/>
-                        <button name="action_reject" type="object" string="Rechazar" 
+                        <button name="%(portal_b2b_base.action_sale_return_reject_wizard)d" 
+                                type="action" 
+                                string="Rechazar" 
                                 class="btn-danger" 
                                 invisible="state not in ('submitted', 'received')"
                                 groups="base.group_user"/>

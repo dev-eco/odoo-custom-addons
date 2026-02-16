@@ -2,7 +2,7 @@
 <odoo>
 
     <!-- Heredar dashboard del portal B2B para aplicar estilos del tema -->
-    <template id="portal_theme_my_home" name="Portal Theme - Dashboard"
+    <template id="portal_theme_my_home" name="Tema Portal - Panel de Control"
               inherit_id="portal_b2b_base.portal_b2b_dashboard_home" priority="25">
 
         <!-- Los estilos se aplican automáticamente por las clases CSS -->

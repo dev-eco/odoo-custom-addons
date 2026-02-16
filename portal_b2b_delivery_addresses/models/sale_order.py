@@ -301,6 +301,27 @@ class SaleOrder(models.Model):
                 f"Ocultar info empresa: {self.hide_company_info_on_report}"
             )
 
+    @api.model
+    def _cron_sync_delivery_addresses(self):
+        """
+        Cron job para sincronizar direcciones de entrega en pedidos existentes.
+        
+        Ejecutar manualmente si hay pedidos antiguos sin sincronizar:
+        self.env['sale.order']._cron_sync_delivery_addresses()
+        """
+        orders_to_sync = self.search([
+            ('delivery_address_id', '!=', False),
+            ('partner_shipping_id', '=', False),
+        ])
+        
+        for order in orders_to_sync:
+            try:
+                order._sync_shipping_address_from_delivery_address()
+                _logger.info(f"Sincronizada dirección para pedido {order.name}")
+            except Exception as e:
+                _logger.error(f"Error sincronizando pedido {order.name}: {str(e)}")
+        
+        _logger.info(f"Sincronizadas {len(orders_to_sync)} direcciones de entrega")
 
     @api.constrains('customer_delivery_note')
     def _check_delivery_note_size(self) -> None:

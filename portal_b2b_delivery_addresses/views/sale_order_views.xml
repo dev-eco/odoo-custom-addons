@@ -36,7 +36,8 @@
             <xpath expr="//form/sheet" position="before">
                 <!-- Alerta de documentos NUEVOS sin revisar -->
                 <div class="alert alert-warning mb-0"
-                     role="alert"
+                     role="status"
+                     aria-live="polite"
                      invisible="has_new_distributor_documents == False"
                      style="border-left: 4px solid #ff9800;">
                     <div class="d-flex align-items-center">
@@ -72,7 +73,8 @@
                 
                 <!-- Indicador de documentos YA revisados -->
                 <div class="alert alert-success mb-0" 
-                     role="alert"
+                     role="status"
+                     aria-live="polite"
                      invisible="has_new_distributor_documents == True or distributor_document_count == 0"
                      style="border-left: 4px solid #4caf50;">
                     <div class="d-flex align-items-center">

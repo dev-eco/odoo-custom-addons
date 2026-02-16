@@ -4,25 +4,30 @@
     <!-- Reporte de Pedido de Venta - Extensión B2B con Dirección de Entrega Personalizada -->
     <template id="report_saleorder_document_delivery_b2b" inherit_id="sale.report_saleorder_document">
         
-        <!-- Reemplazar bloque de dirección de envío para usar delivery_address_id -->
+        <!-- OCULTAR el bloque estándar de dirección de envío de Odoo -->
         <xpath expr="//div[contains(@class, 'o_address_shipping')]" position="replace">
-            <div name="shipping_address_block">
+            <!-- Reemplazado por nuestro bloque personalizado abajo -->
+        </xpath>
+        
+        <!-- AÑADIR nuestro bloque personalizado de dirección después de facturación -->
+        <xpath expr="//div[contains(@class, 'o_address_invoice')]" position="after">
+            <div name="shipping_address_block" class="col-auto mw-100 mb-2">
                 <t t-if="doc.delivery_address_id">
-                    <!-- USAR DIRECCIÓN B2B PERSONALIZADA - Sin mostrar nombre del distribuidor -->
+                    <!-- USAR DIRECCIÓN B2B PERSONALIZADA -->
                     <div class="row mt-2 mb-2">
-                        <div class="col-md-5 bm-2">
+                        <div class="col-md-12">
                             <strong>Dirección de Entrega:</strong>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-5">
+                        <div class="col-md-12">
                             <!-- Nombre de la dirección (alias) -->
                             <div>
                                 <strong t-field="doc.delivery_address_id.name"/>
                             </div>
                             
-                            <!-- Dirección completa desde delivery_address_id -->
+                            <!-- Dirección completa -->
                             <div t-field="doc.delivery_address_id.street"/>
                             <div t-if="doc.delivery_address_id.street2">
                                 <span t-field="doc.delivery_address_id.street2"/>
@@ -57,12 +62,14 @@
                             </div>
                             
                             <!-- Requisitos especiales -->
-                            <div t-if="doc.delivery_address_id.require_appointment or doc.delivery_address_id.tail_lift_required" class="mt-2 alert alert-warning alert">
+                            <div t-if="doc.delivery_address_id.require_appointment or doc.delivery_address_id.tail_lift_required" 
+                                 class="mt-2 alert alert-warning" 
+                                 role="status">
                                 <t t-if="doc.delivery_address_id.require_appointment">
                                     <div>⚠️ <strong>Requiere cita previa</strong></div>
                                 </t>
                                 <t t-if="doc.delivery_address_id.tail_lift_required">
-                                    <div>⚠️ <strong>Requiere camión con pluma</strong></div>
+                                    <div>⚠️ <strong>Requiere camión con plataforma</strong></div>
                                 </t>
                             </div>
                             
@@ -74,8 +81,10 @@
                         </div>
                     </div>
                 </t>
+                
+                <!-- Si NO hay delivery_address_id, mostrar partner_shipping_id estándar -->
                 <t t-else="">
-                    <!-- DIRECCIÓN ESTÁNDAR si no hay delivery_address_id -->
+                    <strong>Dirección de Entrega:</strong>
                     <div t-field="doc.partner_shipping_id" 
                          t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True}'/>
                 </t>
@@ -83,10 +92,10 @@
         </xpath>
         
         <!-- Información del Cliente Final (si existe etiqueta) -->
-        <xpath expr="//div[contains(@class, 'o_address_shipping')]" position="after">
+        <xpath expr="//div[@name='shipping_address_block']" position="after">
             <t t-if="doc.distributor_label_id">
                 <div class="row mt-3 mb-2">
-                    <div class="col-md-5">
+                    <div class="col-md-12">
                         <strong>Cliente Final:</strong>
                         <div t-field="doc.distributor_label_id.customer_name"/>
                         <t t-if="doc.distributor_label_id.customer_reference">

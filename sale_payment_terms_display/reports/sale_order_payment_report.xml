@@ -80,22 +80,12 @@
                     <div t-if="doc.custom_payment_instructions" t-raw="doc.custom_payment_instructions"/>
                     <div t-elif="doc.company_id.bank_payment_instructions" t-raw="doc.company_id.bank_payment_instructions"/>
                 </div>
-            </div>
-        </xpath>
-        
-        <!-- Términos legales compactos -->
-        <xpath expr="//div[@id='informations']" position="after">
-            <div t-if="doc.company_id.payment_terms_note" style="margin-top: 15px; font-size: 10px; color: #666;">
-                <strong>📜 Términos de Pago:</strong>
-                <div t-raw="doc.company_id.payment_terms_note"/>
-            </div>
-        </xpath>
-        
-        <!-- Fallback si no existe div#informations -->
-        <xpath expr="//div[@name='informations']" position="after">
-            <div t-if="doc.company_id.payment_terms_note" style="margin-top: 15px; font-size: 10px; color: #666;">
-                <strong>📜 Términos de Pago:</strong>
-                <div t-raw="doc.company_id.payment_terms_note"/>
+                
+                <!-- Términos legales compactos -->
+                <div t-if="doc.company_id.payment_terms_note" style="margin-top: 15px; font-size: 10px; color: #666;">
+                    <strong>📜 Términos de Pago:</strong>
+                    <div t-raw="doc.company_id.payment_terms_note"/>
+                </div>
             </div>
         </xpath>
     </template>

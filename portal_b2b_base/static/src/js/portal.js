@@ -23,393 +23,102 @@
         // Ocultar breadcrumb de pedidos de compra
         ocultarBreadcrumbCompras();
 
-        // ❌ Widget de crédito DESACTIVADO
-        // inicializarWidgetCredito();
-
-        try {
-            // Solo inicializar si estamos en la página correcta
-            const currentPath = window.location.pathname;
-            
-            if (currentPath.includes('/crear-pedido')) {
-                console.log('Portal B2B: Inicializando página crear pedido');
-                inicializarCrearPedido();
-            }
-            
-            if (currentPath.includes('/mi-cuenta')) {
-                console.log('Portal B2B: Inicializando página mi cuenta');
-                inicializarMiCuenta();
-            }
+        const currentPath = window.location.pathname;
         
-            if (currentPath.includes('/crear-plantilla')) {
-                console.log('Portal B2B: Inicializando página crear plantilla');
-                inicializarCrearPlantillaDesdePedido();
-            }
+        if (currentPath.includes('/crear-pedido')) {
+            console.log('Portal B2B: Inicializando página crear pedido');
+            inicializarCrearPedido();
+        }
         
-            // ❌ COMENTADO: Gestión de direcciones movida a product_grid.js
-            // if (document.getElementById('delivery-address-select')) {
-            //     console.log('Portal B2B: Inicializando selector de direcciones');
-            //     inicializarSelectorDirecciones();
-            // }
-            
-            // if (document.getElementById('distributor-label-select')) {
-            //     console.log('Portal B2B: Inicializando selector de etiquetas');
-            //     inicializarSelectorEtiquetas();
-            // }
+        if (currentPath.includes('/mi-cuenta')) {
+            console.log('Portal B2B: Inicializando página mi cuenta');
+            inicializarMiCuenta();
+        }
 
-        } catch (error) {
-            console.error('Portal B2B: Error durante inicialización:', error);
+        if (currentPath.includes('/crear-plantilla')) {
+            console.log('Portal B2B: Inicializando página crear plantilla');
+            inicializarCrearPlantillaDesdePedido();
         }
     }
 
     /**
      * Inicializa funcionalidad de crear pedido
+     * NOTA: El grid de productos está gestionado por product_grid.js
      */
     function inicializarCrearPedido() {
-        const productSearch = document.getElementById('product-search');
-        const productResults = document.getElementById('product-results');
-        const orderLinesBody = document.getElementById('order-lines-body');
         const formCrearPedido = document.getElementById('form-crear-pedido');
 
-        // Verificar que TODOS los elementos existen
-        if (!productSearch || !productResults || !orderLinesBody || !formCrearPedido) {
-            console.log('Portal B2B: Página crear pedido - elementos no encontrados');
+        if (!formCrearPedido) {
+            console.log('Portal B2B: Formulario crear pedido no encontrado');
             return;
         }
 
-        console.log('Portal B2B: Inicializando formulario crear pedido');
-
-        let orderLines = [];
-        let searchTimeout = null;
-
-        // Búsqueda de productos al escribir
-        productSearch.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            const query = this.value.trim();
-
-            if (query.length < 2) {
-                productResults.style.display = 'none';
-                return;
-            }
-
-            searchTimeout = setTimeout(() => {
-                buscarProductos(query);
-            }, 300);
-        });
-
-        // Búsqueda al hacer clic en el botón
-        const btnSearchProduct = document.getElementById('btn-search-product');
-        if (btnSearchProduct) {
-            btnSearchProduct.addEventListener('click', function() {
-                const query = productSearch.value.trim();
-                if (query.length >= 2) {
-                    buscarProductos(query);
-                }
-            });
-        }
+        console.log('Portal B2B: Inicializando handlers de crear pedido');
 
         /**
-         * Busca productos vía API
-         */
-        async function buscarProductos(query) {
-            try {
-                productResults.innerHTML = '<div class="list-group-item"><span class="spinner-border spinner-border-sm me-2"></span>Buscando...</div>';
-                productResults.style.display = 'block';
-
-                const response = await fetch('/api/productos/buscar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        method: 'call',
-                        params: {
-                            query: query,
-                            limit: 10,
-                        },
-                        id: Math.floor(Math.random() * 1000000),
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                // Manejar error JSON-RPC
-                if (data.error) {
-                    console.error('Portal B2B: Error JSON-RPC:', data.error);
-                    const errorMsg = data.error.data?.message || data.error.message || 'Error desconocido';
-                    productResults.innerHTML = `<div class="list-group-item text-danger">Error: ${escapeHtml(errorMsg)}</div>`;
-                    return;
-                }
-
-                // Los datos están en data.result
-                const result = data.result;
-                
-                if (!result) {
-                    console.error('Portal B2B: Respuesta sin resultado');
-                    productResults.innerHTML = '<div class="list-group-item text-danger">Error: Respuesta inválida del servidor</div>';
-                    return;
-                }
-                
-                if (result.error) {
-                    console.error('Portal B2B: Error del servidor:', result.error);
-                    productResults.innerHTML = `<div class="list-group-item text-danger">Error: ${escapeHtml(result.error)}</div>`;
-                    return;
-                }
-
-                const products = result.products || [];
-                
-                if (products.length === 0) {
-                    productResults.innerHTML = '<div class="list-group-item">No se encontraron productos</div>';
-                    return;
-                }
-
-                mostrarResultadosProductos(products);
-
-            } catch (error) {
-                console.error('Portal B2B: Error al buscar productos:', error);
-                productResults.innerHTML = '<div class="list-group-item text-danger">Error de conexión: ' + escapeHtml(error.message) + '</div>';
-            }
-        }
-
-        /**
-         * Muestra resultados de búsqueda de productos CON INDICADORES DE STOCK
-         */
-        function mostrarResultadosProductos(products) {
-            productResults.innerHTML = '';
-
-            if (products.length === 0) {
-                productResults.innerHTML = '<div class="list-group-item">No se encontraron productos</div>';
-                productResults.style.display = 'block';
-                return;
-            }
-
-            products.forEach(product => {
-                const item = document.createElement('a');
-                item.href = '#';
-                item.className = 'list-group-item list-group-item-action';
-                
-                // Determinar clase de stock
-                let stockClass = 'text-success';
-                let stockIcon = 'fa-check-circle';
-                let stockText = `Stock: ${product.qty_available}`;
-                
-                if (product.stock_status === 'out_of_stock') {
-                    stockClass = 'text-danger';
-                    stockIcon = 'fa-times-circle';
-                    stockText = 'Sin stock';
-                    if (product.estimated_restock_date) {
-                        stockText += ` - Disponible: ${product.estimated_restock_date}`;
-                    }
-                } else if (product.stock_status === 'low_stock') {
-                    stockClass = 'text-warning';
-                    stockIcon = 'fa-exclamation-triangle';
-                    stockText = `Stock bajo: ${product.qty_available}`;
-                } else if (product.stock_status === 'on_order') {
-                    stockClass = 'text-info';
-                    stockIcon = 'fa-clock-o';
-                    stockText = 'Bajo pedido (7 días)';
-                }
-                
-                item.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="flex-grow-1">
-                            <strong>${escapeHtml(product.name)}</strong>
-                            ${product.default_code ? `<br><small class="text-muted">Ref: ${escapeHtml(product.default_code)}</small>` : ''}
-                            <br>
-                            <small class="${stockClass}">
-                                <i class="fa ${stockIcon} me-1" aria-hidden="true"></i>
-                                ${stockText}
-                            </small>
-                        </div>
-                        <div class="text-end">
-                            <div><strong>${product.list_price.toFixed(2)} €</strong></div>
-                        </div>
-                    </div>
-                `;
-
-                // Deshabilitar si no hay stock (opcional)
-                if (product.stock_status === 'out_of_stock') {
-                    item.classList.add('disabled');
-                    item.style.opacity = '0.6';
-                    item.title = 'Producto sin stock';
-                }
-
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (product.stock_status !== 'out_of_stock') {
-                        agregarProductoAPedido(product);
-                        productSearch.value = '';
-                        productResults.style.display = 'none';
-                    } else {
-                        alert(`Producto sin stock. ${product.estimated_restock_date ? 'Disponible el ' + product.estimated_restock_date : 'Fecha de reposición no disponible'}`);
-                    }
-                });
-
-                productResults.appendChild(item);
-            });
-
-            productResults.style.display = 'block';
-        }
-
-        /**
-         * Agrega producto a las líneas del pedido
-         */
-        function agregarProductoAPedido(product) {
-            const existingLine = orderLines.find(line => line.product_id === product.id);
-
-            if (existingLine) {
-                existingLine.qty += 1;
-            } else {
-                orderLines.push({
-                    product_id: product.id,
-                    product_name: product.name,
-                    product_code: product.default_code,
-                    qty: 1,
-                    price: product.list_price,
-                });
-            }
-
-            renderizarLineasPedido();
-        }
-
-        /**
-         * Renderiza las líneas del pedido en la tabla
-         */
-        function renderizarLineasPedido() {
-            // VERIFICAR que orderLinesBody existe antes de continuar
-            if (!orderLinesBody) {
-                console.error('Portal B2B: orderLinesBody no encontrado');
-                return;
-            }
-
-            if (orderLines.length === 0) {
-                orderLinesBody.innerHTML = `
-                    <tr id="empty-lines-message">
-                        <td colspan="5" class="text-center text-muted">
-                            No hay productos agregados. Use el buscador arriba.
-                        </td>
-                    </tr>
-                `;
-                actualizarTotal();
-                return;
-            }
-
-            orderLinesBody.innerHTML = '';
-
-            orderLines.forEach((line, index) => {
-                const subtotal = line.qty * line.price;
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>
-                        <strong>${escapeHtml(line.product_name)}</strong>
-                        ${line.product_code ? `<br><small class="text-muted">Ref: ${escapeHtml(line.product_code)}</small>` : ''}
-                    </td>
-                    <td class="text-center">
-                        <input type="number" 
-                               class="form-control form-control-sm text-center qty-input" 
-                               data-index="${index}"
-                               value="${line.qty}" 
-                               min="1" 
-                               step="1"
-                               style="width: 80px; display: inline-block;"/>
-                    </td>
-                    <td class="text-end">${line.price.toFixed(2)} €</td>
-                    <td class="text-end"><strong>${subtotal.toFixed(2)} €</strong></td>
-                    <td class="text-center">
-                        <button type="button" 
-                                class="btn btn-sm btn-danger btn-remove-line" 
-                                data-index="${index}">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-
-                orderLinesBody.appendChild(row);
-            });
-
-            // Event listeners para cantidad
-            document.querySelectorAll('.qty-input').forEach(input => {
-                input.addEventListener('change', function() {
-                    const index = parseInt(this.dataset.index);
-                    const newQty = parseFloat(this.value);
-
-                    if (newQty > 0) {
-                        orderLines[index].qty = newQty;
-                        renderizarLineasPedido();
-                    }
-                });
-            });
-
-            // Event listeners para eliminar
-            document.querySelectorAll('.btn-remove-line').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const index = parseInt(this.dataset.index);
-                    orderLines.splice(index, 1);
-                    renderizarLineasPedido();
-                });
-            });
-
-            actualizarTotal();
-        }
-
-        /**
-         * Actualiza el total del pedido
-         */
-        function actualizarTotal() {
-            const total = orderLines.reduce((sum, line) => sum + (line.qty * line.price), 0);
-            const totalElement = document.getElementById('order-total');
-            
-            // VERIFICAR que el elemento existe antes de actualizar
-            if (!totalElement) {
-                console.warn('Portal B2B: Elemento order-total no encontrado');
-                return;
-            }
-
-            totalElement.textContent = total.toFixed(2) + ' €';
-        }
-
-        /**
-         * Mostrar resumen del pedido
+         * Botón "Revisar Pedido"
          */
         const btnShowSummary = document.getElementById('btn-show-summary');
         if (btnShowSummary) {
-            btnShowSummary.addEventListener('click', function() {
-                if (orderLines.length === 0) {
-                    alert('Debe agregar al menos un producto');
+            btnShowSummary.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Obtener orderLines desde product_grid.js
+                const orderLines = window.orderLines || [];
+                
+                // Validar que hay productos
+                if (!orderLines || orderLines.length === 0) {
+                    alert('Debe agregar al menos un producto antes de revisar el pedido');
                     return;
                 }
                 
-                mostrarResumenPedido();
+                // Generar resumen
+                mostrarResumenPedido(orderLines);
                 
                 // Mostrar sección de resumen
-                document.getElementById('order-summary-section').style.display = 'block';
+                const summarySection = document.getElementById('order-summary-section');
+                if (summarySection) {
+                    summarySection.style.display = 'block';
+                }
                 
                 // Ocultar botón "Revisar" y mostrar botón "Crear"
                 btnShowSummary.style.display = 'none';
-                document.getElementById('btn-submit-order').style.display = 'inline-block';
+                const btnSubmit = document.getElementById('btn-submit-order');
+                if (btnSubmit) {
+                    btnSubmit.style.display = 'inline-block';
+                }
                 
-                // Scroll al resumen
-                document.getElementById('order-summary-section').scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
+                // Scroll suave al resumen
+                if (summarySection) {
+                    summarySection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }
             });
         }
 
         /**
          * Función para mostrar resumen
          */
-        function mostrarResumenPedido() {
+        function mostrarResumenPedido(orderLines) {
             const summaryLines = document.getElementById('summary-lines');
             const summaryTotal = document.getElementById('summary-total');
             
+            if (!summaryLines || !summaryTotal) {
+                console.error('Portal B2B: Elementos de resumen no encontrados');
+                alert('Error al mostrar el resumen. Por favor, recargue la página.');
+                return;
+            }
+            
             summaryLines.innerHTML = '';
+            
+            if (!orderLines || orderLines.length === 0) {
+                summaryLines.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay productos</td></tr>';
+                summaryTotal.textContent = '0.00 €';
+                return;
+            }
+            
             let total = 0;
             
             orderLines.forEach(line => {
@@ -418,7 +127,10 @@
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td><strong>${escapeHtml(line.product_name)}</strong></td>
+                    <td>
+                        <strong>${escapeHtml(line.product_name)}</strong>
+                        ${line.product_code ? `<br><small class="text-muted">Ref: ${escapeHtml(line.product_code)}</small>` : ''}
+                    </td>
                     <td class="text-center">${line.qty}</td>
                     <td class="text-end">${line.price.toFixed(2)} €</td>
                     <td class="text-end"><strong>${subtotal.toFixed(2)} €</strong></td>
@@ -427,6 +139,8 @@
             });
             
             summaryTotal.textContent = total.toFixed(2) + ' €';
+            
+            console.log('Portal B2B: Resumen generado -', orderLines.length, 'productos, Total:', total.toFixed(2), '€');
         }
 
         /**
@@ -435,7 +149,10 @@
         formCrearPedido.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // ✅ VALIDAR CHECKBOX DE CONFIRMACIÓN
+            // Obtener orderLines desde product_grid.js
+            const orderLines = window.orderLines || [];
+
+            // Validar checkbox de confirmación
             const confirmCheckbox = document.getElementById('confirm-order-checkbox');
             if (!confirmCheckbox || !confirmCheckbox.checked) {
                 alert('Debe confirmar que ha revisado el pedido');
@@ -531,9 +248,6 @@
                 btnSubmit.innerHTML = '<i class="fa fa-check me-2"></i>Crear Pedido';
             }
         });
-
-        // Inicializar gestión de archivos
-        inicializarGestionArchivos();
     }
 
     /**
@@ -624,49 +338,6 @@
         }
     }
 
-    /**
-     * Convierte archivos a base64 para envío
-     */
-    async function procesarArchivos(input) {
-        if (!input || !input.files || input.files.length === 0) {
-            return [];
-        }
-        
-        const archivos = [];
-        const maxSize = 10 * 1024 * 1024; // 10MB
-        
-        for (let file of input.files) {
-            if (file.size > maxSize) {
-                console.warn(`Archivo ${file.name} excede 10MB, omitiendo`);
-                continue;
-            }
-            
-            try {
-                const base64 = await convertirArchivoABase64(file);
-                archivos.push({
-                    filename: file.name,
-                    content: base64.split(',')[1], // Remover el prefijo data:...
-                    mimetype: file.type
-                });
-            } catch (error) {
-                console.error(`Error procesando archivo ${file.name}:`, error);
-            }
-        }
-        
-        return archivos;
-    }
-
-    /**
-     * Convierte un archivo a base64
-     */
-    function convertirArchivoABase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
 
     /**
      * Inicializa funcionalidad de mi cuenta

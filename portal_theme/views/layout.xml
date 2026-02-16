@@ -2,7 +2,7 @@
 <odoo>
     
     <!-- Layout personalizado para portal B2B -->
-    <template id="portal_theme_layout" name="Portal B2B Theme Layout" inherit_id="web.layout" priority="20">
+    <template id="portal_theme_layout" name="Diseño Portal Distribuidores" inherit_id="web.layout" priority="20">
         
         <!-- Agregar clase al body para estilos del tema -->
         <xpath expr="//body" position="attributes">
@@ -12,7 +12,7 @@
     </template>
     
     <!-- Personalización del portal layout -->
-    <template id="portal_theme_portal_layout" name="Portal Theme - Portal Layout" inherit_id="portal.portal_layout" priority="20">
+    <template id="portal_theme_portal_layout" name="Tema Portal - Distribuidores" inherit_id="portal.portal_layout" priority="20">
         
         <!-- Agregar clases personalizadas al contenedor principal -->
         <xpath expr="//div[contains(@class, 'o_portal')]" position="attributes">

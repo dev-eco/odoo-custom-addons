@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Portal B2B Base',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.0.1',
     'category': 'Sales/Sales',
     'summary': 'Portal B2B para distribuidores - Módulo base con gestión de pedidos y control de crédito',
     'description': """
@@ -76,6 +76,9 @@ Licencia: LGPL-3
         # Seguridad (PRIMERO)
         'security/security.xml',
         'security/ir.model.access.csv',
+        
+        # Reglas de productos (SIN referencias a campos nuevos)
+        'security/product_security.xml',
 
         # Configuración del sitio web
         'data/website_config.xml',
@@ -86,6 +89,7 @@ Licencia: LGPL-3
 
         # Wizards (ANTES de las vistas que los usan)
         'wizard/sale_order_template_wizard_views.xml',
+        'wizard/sale_return_reject_wizard_views.xml',
 
         # Vistas backend
         'views/res_partner_views.xml',
@@ -101,12 +105,6 @@ Licencia: LGPL-3
     ],
     'assets': {
         'web.assets_frontend': [
-            # Correcciones de compatibilidad (DEBE ser primero)
-            'portal_b2b_base/static/src/js/portal_fix.js',
-            
-            # Manejador de errores OWL
-            'portal_b2b_base/static/src/js/owl_error_handler.js',
-            
             # Estilos
             'portal_b2b_base/static/src/scss/portal.scss',
 
