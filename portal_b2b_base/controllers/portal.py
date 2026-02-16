@@ -679,7 +679,6 @@ class PortalB2B(CustomerPortal):
             order_vals = {
                 'partner_id': partner.id,
                 'pricelist_id': partner.obtener_tarifa_aplicable().id,
-                'note': notes,
                 'delivery_schedule': delivery_schedule,
                 'client_order_ref': client_order_ref,
             }
@@ -751,6 +750,27 @@ class PortalB2B(CustomerPortal):
             if order.delivery_address_id:
                 order._sync_shipping_address_from_delivery_address()
 
+            # Formatear notas con HTML para backend (negrita y rojo)
+            formatted_notes = []
+
+            # Añadir notas del pedido si existen
+            if notes:
+                formatted_notes.append(
+                    f'<p><strong style="color: red;">📝 NOTAS DEL PEDIDO:</strong></p>'
+                    f'<p style="color: red;"><strong>{notes}</strong></p>'
+                )
+
+            # Añadir horario/restricciones si existe
+            if delivery_schedule:
+                formatted_notes.append(
+                    f'<p><strong style="color: red;">📅 HORARIO/RESTRICCIONES DE ENTREGA:</strong></p>'
+                    f'<p style="color: red;"><strong>{delivery_schedule}</strong></p>'
+                )
+
+            # Combinar todas las notas formateadas
+            if formatted_notes:
+                order.note = '<br/>'.join(formatted_notes)
+
             # Crear líneas de pedido
             for line_data in valid_lines:
                 try:
@@ -768,11 +788,6 @@ class PortalB2B(CustomerPortal):
                 except Exception as e:
                     _logger.error(f"Error creando línea de pedido: {str(e)}")
                     continue
-
-            # Añadir horario/restricciones a las notas si existe
-            if delivery_schedule:
-                current_note = order.note or ''
-                order.note = f"{current_note}\n\n📅 HORARIO/RESTRICCIONES:\n{delivery_schedule}".strip()
 
             # NOTA: Los documentos se gestionan en la fase post-creación
             # en la ruta /mis-pedidos/{id}/documentos
