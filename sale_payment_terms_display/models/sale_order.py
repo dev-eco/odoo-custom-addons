@@ -186,6 +186,7 @@ class SaleOrder(models.Model):
         invoice_vals = super()._prepare_invoice()
         
         # Transferir información de pago del pedido a la factura
+        # NOTA: NO transferimos payment_reference porque la factura debe usar su propio número
         invoice_vals.update({
             'show_bank_info': self.show_bank_info,
             'show_payment_qr': self.show_payment_qr,
