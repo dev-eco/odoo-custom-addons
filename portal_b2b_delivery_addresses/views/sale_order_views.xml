@@ -49,8 +49,8 @@
                                 ⚠️ Documentos Nuevos del Distribuidor
                             </h5>
                             <p class="mb-2">
-                                El distribuidor <strong><field name="partner_id" readonly="1"/></strong> 
-                                ha subido <strong><field name="distributor_document_count" readonly="1"/> documento(s)</strong> 
+                                El distribuidor <strong><field name="partner_id" readonly="1" nolabel="1" class="d-inline"/></strong> 
+                                ha subido <strong><span class="badge bg-warning"><field name="distributor_document_count" readonly="1" nolabel="1"/></span></strong> documento(s)
                                 que requieren revisión.
                             </p>
                             <div class="btn-group">
@@ -84,7 +84,7 @@
                         <div class="flex-grow-1">
                             <strong>✓ Documentos Revisados</strong>
                             <p class="mb-0 small text-muted">
-                                Hay <field name="distributor_document_count" readonly="1"/> documento(s) del distribuidor ya revisados.
+                                Hay <span class="badge bg-success"><field name="distributor_document_count" readonly="1" nolabel="1"/></span> documento(s) del distribuidor ya revisados.
                             </p>
                         </div>
                         <button name="action_view_distributor_documents" 

@@ -1066,6 +1066,303 @@
         </t>
     </template>
 
+    <!-- Template: Detalle de Factura -->
+    <template id="portal_factura_detalle" name="Detalle de Factura">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-10 offset-lg-1">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-facturas">Mis Facturas</a></li>
+                                <li class="breadcrumb-item active"><t t-esc="invoice.name"/></li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-file-text me-2" aria-hidden="true"/>
+                                            Factura <t t-esc="invoice.name"/>
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <span t-attf-class="badge bg-#{
+                                            'success' if invoice.payment_state == 'paid' else
+                                            'warning' if invoice.payment_state == 'partial' else
+                                            'danger'
+                                        } fs-6">
+                                            <t t-if="invoice.payment_state == 'paid'">Pagada</t>
+                                            <t t-elif="invoice.payment_state == 'partial'">Parcialmente Pagada</t>
+                                            <t t-elif="invoice.payment_state == 'not_paid'">Pendiente de Pago</t>
+                                            <t t-else=""><t t-esc="invoice.payment_state"/></t>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Información general -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h5 class="text-muted mb-3">Información de la Factura</h5>
+                                        <p class="mb-2">
+                                            <strong>Número:</strong> <t t-esc="invoice.name"/>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Fecha Factura:</strong> 
+                                            <t t-esc="invoice.invoice_date" t-options="{'widget': 'date'}"/>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Fecha Vencimiento:</strong> 
+                                            <t t-esc="invoice.invoice_date_due" t-options="{'widget': 'date'}"/>
+                                        </p>
+                                        <t t-if="invoice.invoice_origin">
+                                            <p class="mb-2">
+                                                <strong>Pedido Origen:</strong> 
+                                                <t t-esc="invoice.invoice_origin"/>
+                                            </p>
+                                        </t>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="text-muted mb-3">Datos del Cliente</h5>
+                                        <p class="mb-2">
+                                            <strong>Cliente:</strong> <t t-esc="invoice.partner_id.name"/>
+                                        </p>
+                                        <t t-if="invoice.partner_id.vat">
+                                            <p class="mb-2">
+                                                <strong>NIF/CIF:</strong> <t t-esc="invoice.partner_id.vat"/>
+                                            </p>
+                                        </t>
+                                        <t t-if="invoice.partner_id.street">
+                                            <p class="mb-2">
+                                                <strong>Dirección:</strong><br/>
+                                                <t t-esc="invoice.partner_id.street"/>
+                                                <t t-if="invoice.partner_id.street2">
+                                                    <br/><t t-esc="invoice.partner_id.street2"/>
+                                                </t>
+                                                <br/>
+                                                <t t-if="invoice.partner_id.zip">
+                                                    <t t-esc="invoice.partner_id.zip"/>
+                                                </t>
+                                                <t t-if="invoice.partner_id.city">
+                                                    <t t-esc="invoice.partner_id.city"/>
+                                                </t>
+                                                <t t-if="invoice.partner_id.country_id">
+                                                    <br/><t t-esc="invoice.partner_id.country_id.name"/>
+                                                </t>
+                                            </p>
+                                        </t>
+                                    </div>
+                                </div>
+                                
+                                <!-- Líneas de factura -->
+                                <h5 class="mt-4 mb-3">Detalle de la Factura</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Descripción</th>
+                                                <th class="text-center">Cantidad</th>
+                                                <th class="text-end">Precio Unit.</th>
+                                                <th class="text-end">Impuestos</th>
+                                                <th class="text-end">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="invoice.invoice_line_ids" t-as="line">
+                                                <t t-if="not line.display_type">
+                                                    <tr>
+                                                        <td>
+                                                            <strong><t t-esc="line.name"/></strong>
+                                                            <t t-if="line.product_id and line.product_id.default_code">
+                                                                <br/><small class="text-muted">Ref: <t t-esc="line.product_id.default_code"/></small>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <t t-esc="line.quantity"/>
+                                                            <t t-if="line.product_uom_id">
+                                                                <t t-esc="line.product_uom_id.name"/>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <t t-esc="'%.2f' % line.price_unit"/> €
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <t t-if="line.tax_ids">
+                                                                <t t-foreach="line.tax_ids" t-as="tax">
+                                                                    <span class="badge bg-secondary">
+                                                                        <t t-esc="tax.name"/>
+                                                                    </span>
+                                                                </t>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">-</span>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong><t t-esc="'%.2f' % line.price_subtotal"/> €</strong>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                                <t t-else="">
+                                                    <!-- Líneas de tipo display (secciones, notas) -->
+                                                    <tr t-attf-class="#{
+                                                        'table-active' if line.display_type == 'line_section' else
+                                                        'table-light' if line.display_type == 'line_note' else ''
+                                                    }">
+                                                        <td colspan="5">
+                                                            <t t-if="line.display_type == 'line_section'">
+                                                                <strong><t t-esc="line.name"/></strong>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <em><t t-esc="line.name"/></em>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </t>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-light">
+                                                <td colspan="4" class="text-end"><strong>Base Imponible:</strong></td>
+                                                <td class="text-end">
+                                                    <strong><t t-esc="'%.2f' % invoice.amount_untaxed"/> €</strong>
+                                                </td>
+                                            </tr>
+                                            <tr class="table-light">
+                                                <td colspan="4" class="text-end"><strong>Impuestos:</strong></td>
+                                                <td class="text-end">
+                                                    <strong><t t-esc="'%.2f' % invoice.amount_tax"/> €</strong>
+                                                </td>
+                                            </tr>
+                                            <tr class="table-active">
+                                                <td colspan="4" class="text-end">
+                                                    <h5 class="mb-0"><strong>TOTAL:</strong></h5>
+                                                </td>
+                                                <td class="text-end">
+                                                    <h5 class="mb-0 text-success">
+                                                        <strong><t t-esc="'%.2f' % invoice.amount_total"/> €</strong>
+                                                    </h5>
+                                                </td>
+                                            </tr>
+                                            <t t-if="invoice.amount_residual > 0">
+                                                <tr class="table-warning">
+                                                    <td colspan="4" class="text-end">
+                                                        <strong>Pendiente de Pago:</strong>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <strong class="text-danger">
+                                                            <t t-esc="'%.2f' % invoice.amount_residual"/> €
+                                                        </strong>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                
+                                <!-- Información de pago -->
+                                <t t-if="invoice.payment_state == 'paid'">
+                                    <div class="alert alert-success mt-4">
+                                        <h5 class="alert-heading">
+                                            <i class="fa fa-check-circle me-2" aria-hidden="true"/>
+                                            Factura Pagada
+                                        </h5>
+                                        <p class="mb-0">Esta factura ha sido pagada completamente.</p>
+                                    </div>
+                                </t>
+                                <t t-elif="invoice.payment_state == 'partial'">
+                                    <div class="alert alert-warning mt-4">
+                                        <h5 class="alert-heading">
+                                            <i class="fa fa-exclamation-triangle me-2" aria-hidden="true"/>
+                                            Pago Parcial
+                                        </h5>
+                                        <p class="mb-0">
+                                            Esta factura ha sido pagada parcialmente. 
+                                            Pendiente: <strong><t t-esc="'%.2f' % invoice.amount_residual"/> €</strong>
+                                        </p>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-danger mt-4">
+                                        <h5 class="alert-heading">
+                                            <i class="fa fa-clock-o me-2" aria-hidden="true"/>
+                                            Pendiente de Pago
+                                        </h5>
+                                        <p class="mb-0">
+                                            Esta factura está pendiente de pago. 
+                                            Importe: <strong><t t-esc="'%.2f' % invoice.amount_residual"/> €</strong>
+                                        </p>
+                                        <t t-if="invoice.invoice_date_due">
+                                            <p class="mb-0 mt-2">
+                                                <strong>Fecha de vencimiento:</strong> 
+                                                <t t-esc="invoice.invoice_date_due" t-options="{'widget': 'date'}"/>
+                                            </p>
+                                        </t>
+                                    </div>
+                                </t>
+                                
+                                <!-- Notas -->
+                                <t t-if="invoice.narration">
+                                    <div class="alert alert-info mt-4">
+                                        <h5 class="alert-heading">Notas</h5>
+                                        <p class="mb-0" t-esc="invoice.narration" style="white-space: pre-wrap;"/>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="row">
+                            <div class="col-12">
+                                <a href="/mis-facturas" class="btn btn-secondary me-2">
+                                    <i class="fa fa-arrow-left me-2" aria-hidden="true"/>
+                                    Volver a Mis Facturas
+                                </a>
+                                
+                                <!-- BOTÓN DE DESCARGA ELIMINADO PARA DISTRIBUIDORES -->
+                                <!-- Las facturas se envían por correo desde el backend -->
+                                <t t-if="not is_distributor">
+                                    <a t-attf-href="/mis-facturas/#{invoice.id}?report_type=pdf" 
+                                       class="btn btn-primary me-2"
+                                       title="Descargar PDF">
+                                        <i class="fa fa-download me-2" aria-hidden="true"/>
+                                        Descargar PDF
+                                    </a>
+                                </t>
+                                
+                                <!-- Mensaje informativo para distribuidores -->
+                                <t t-if="is_distributor">
+                                    <div class="alert alert-info d-inline-block mb-0 me-2">
+                                        <i class="fa fa-envelope me-2" aria-hidden="true"/>
+                                        Las facturas se envían por correo electrónico
+                                    </div>
+                                </t>
+                                
+                                <t t-if="invoice.invoice_origin">
+                                    <a t-attf-href="/mis-pedidos?search=#{invoice.invoice_origin}" 
+                                       class="btn btn-info">
+                                        <i class="fa fa-shopping-cart me-2" aria-hidden="true"/>
+                                        Ver Pedido Origen
+                                    </a>
+                                </t>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
     <!-- Template: Mis Facturas -->
     <template id="portal_mis_facturas" name="Mis Facturas">
         <t t-call="portal.portal_layout">
@@ -1149,12 +1446,13 @@
                                                                     t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                                         </td>
                                                         <td class="text-center">
-                                                            <a t-attf-href="/mis-facturas/#{invoice.id}?report_type=pdf" 
-                                                               class="btn btn-sm btn-primary"
-                                                               title="Descargar PDF"
-                                                               download="true">
-                                                                <i class="fa fa-download" aria-hidden="true"/>
+                                                            <a t-attf-href="/mis-facturas/#{invoice.id}" 
+                                                               class="btn btn-sm btn-info"
+                                                               title="Ver factura">
+                                                                <i class="fa fa-eye" aria-hidden="true"/>
                                                             </a>
+                                                            <!-- BOTÓN DE DESCARGA ELIMINADO PARA DISTRIBUIDORES -->
+                                                            <!-- Las facturas se envían por correo desde el backend -->
                                                         </td>
                                                     </tr>
                                                 </t>

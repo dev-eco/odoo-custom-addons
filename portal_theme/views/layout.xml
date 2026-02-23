@@ -19,6 +19,33 @@
             <attribute name="class" add="portal-b2b-custom" separator=" "/>
         </xpath>
         
+        <!-- Inyectar CSS para ocultar breadcrumb -->
+        <!-- <xpath expr="//head" position="inside">
+            <style type="text/css">
+                /* Ocultar breadcrumb del portal */
+                .o_portal_submenu.breadcrumb {
+                    display: none !important;
+                }
+                ol.breadcrumb.o_portal_submenu {
+                    display: none !important;
+                }
+                /* Ocultar todos los breadcrumbs dentro del contenedor del portal */
+                .o_portal nav[aria-label="breadcrumb"] {
+                    display: none !important;
+                }
+                .o_portal .breadcrumb {
+                    display: none !important;
+                }
+                /* Ocultar breadcrumb en el contenedor principal */
+                .portal-b2b-custom nav[aria-label="breadcrumb"] {
+                    display: none !important;
+                }
+                .portal-b2b-custom .breadcrumb {
+                    display: none !important;
+                }
+            </style>
+        </xpath> -->
+        
         <!-- Añadir panel de configuración al final del contenedor del portal -->
         <xpath expr="//div[contains(@class, 'o_portal')]" position="inside">
             <t t-if="request.env.user.partner_id.is_distributor">
