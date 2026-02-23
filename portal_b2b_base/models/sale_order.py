@@ -8,6 +8,45 @@ from odoo.exceptions import ValidationError, UserError
 _logger = logging.getLogger(__name__)
 
 
+class AccountMove(models.Model):
+    """Extensión de factura para funcionalidades B2B."""
+
+    _inherit = 'account.move'
+
+    # Token de acceso para descargas seguras desde portal
+    access_token = fields.Char(
+        string='Token de Acceso Portal',
+        copy=False,
+        readonly=True,
+        help='Token para acceso seguro desde el portal'
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Override para generar access_token automáticamente."""
+        for vals in vals_list:
+            if 'access_token' not in vals or not vals.get('access_token'):
+                vals['access_token'] = self._generate_access_token()
+        return super().create(vals_list)
+
+    @staticmethod
+    def _generate_access_token():
+        """Genera un token de acceso único y seguro."""
+        return secrets.token_urlsafe(32)
+
+    @api.model
+    def _ensure_access_tokens(self):
+        """Asegura que todas las facturas tengan access_token."""
+        invoices_without_token = self.search([
+            ('access_token', '=', False),
+            ('move_type', 'in', ['out_invoice', 'out_refund'])
+        ])
+        if invoices_without_token:
+            for invoice in invoices_without_token:
+                invoice.access_token = self._generate_access_token()
+            _logger.info(f"Tokens generados para {len(invoices_without_token)} facturas")
+
+
 class SaleOrder(models.Model):
     """Extensión de pedido de venta para funcionalidades B2B."""
 
@@ -342,14 +381,14 @@ class SaleOrder(models.Model):
             order.validar_credito_antes_confirmar()
 
         return super(SaleOrder, self).action_confirm()
-
+    """
     def _action_confirm(self):
-        """
+        
         Override para transferir notas al picking después de confirmar.
         
         Copia el contenido del campo 'note' del pedido al campo 'external_note'
         del albarán (stock.picking) generado automáticamente.
-        """
+       
         result = super()._action_confirm()
         
         # Transferir notas del pedido al campo external_note del picking
@@ -368,7 +407,7 @@ class SaleOrder(models.Model):
                     )
         
         return result
-
+        """
     def action_cancel_from_portal(self) -> dict:
         """
         Cancela el pedido desde el portal.

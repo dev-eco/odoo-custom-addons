@@ -216,13 +216,20 @@
 
             // Abrir panel
             settingsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 this.openPanel();
+                
+                // ✅ CARGAR CONTROLES DESPUÉS DE ABRIR
+                setTimeout(() => {
+                    this.setupSettingControls();
+                }, 50);
             });
 
             // Cerrar panel con botón X
             if (closeBtn) {
                 closeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     this.closePanel();
                 });
@@ -231,8 +238,9 @@
             // Guardar preferencias
             if (saveBtn) {
                 saveBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
-                    this.savePreferences();
+                    this.savePreferencesFromPanel();
                     this.showNotification('Preferencias guardadas correctamente', 'success');
                     this.closePanel();
                 });
@@ -241,6 +249,7 @@
             // Resetear preferencias
             if (resetBtn) {
                 resetBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     this.resetPreferences();
                 });
@@ -266,9 +275,6 @@
                     this.closePanel();
                 }
             });
-
-            // Configurar controles del panel
-            this.setupSettingControls();
             
             console.log('[Preferences] Panel de configuración completamente configurado');
         }
@@ -339,84 +345,184 @@
         }
 
         /**
+         * Abre el panel de configuración
+         */
+        openPanel() {
+            const panel = document.getElementById('settings-panel');
+            if (panel) {
+                panel.classList.remove('hiding');
+                panel.classList.add('show');
+                panel.style.display = 'block';
+                console.log('[Preferences] Panel abierto');
+            }
+        }
+
+        /**
+         * Cierra el panel de configuración
+         */
+        closePanel() {
+            const panel = document.getElementById('settings-panel');
+            if (panel) {
+                panel.classList.add('hiding');
+                panel.classList.remove('show');
+                
+                // Esperar a que termine la animación antes de ocultar
+                setTimeout(() => {
+                    if (panel.classList.contains('hiding')) {
+                        panel.style.display = 'none';
+                        panel.classList.remove('hiding');
+                    }
+                }, 300);
+                
+                console.log('[Preferences] Panel cerrado');
+            }
+        }
+
+        /**
+         * Muestra notificación temporal
+         */
+        showNotification(message, type = 'info') {
+            // Crear notificación
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} position-fixed shadow-lg`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fa fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animar entrada
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Eliminar después de 3 segundos
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        /**
          * Configura controles del panel de configuración
+         * Solo carga los valores actuales (sin event listeners)
          */
         setupSettingControls() {
+            console.log('[Preferences] Cargando valores actuales en controles...');
+            
             // Tema
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) {
                 themeSelect.value = this.preferences.theme_mode;
-                themeSelect.addEventListener('change', (e) => {
-                    this.setTheme(e.target.value);
-                });
+                console.log('[Preferences] Tema cargado:', this.preferences.theme_mode);
             }
 
             // Alto contraste
             const contrastCheck = document.getElementById('contrast-check');
             if (contrastCheck) {
                 contrastCheck.checked = this.preferences.high_contrast;
-                contrastCheck.addEventListener('change', (e) => {
-                    this.preferences.high_contrast = e.target.checked;
-                    this.applyPreferences();
-                    this.savePreferences();
-                });
+                console.log('[Preferences] Alto contraste cargado:', this.preferences.high_contrast);
             }
 
             // Texto grande
             const textCheck = document.getElementById('text-check');
             if (textCheck) {
                 textCheck.checked = this.preferences.large_text;
-                textCheck.addEventListener('change', (e) => {
-                    this.preferences.large_text = e.target.checked;
-                    this.applyPreferences();
-                    this.savePreferences();
-                });
+                console.log('[Preferences] Texto grande cargado:', this.preferences.large_text);
             }
 
             // Reducir animaciones
             const motionCheck = document.getElementById('motion-check');
             if (motionCheck) {
                 motionCheck.checked = this.preferences.reduce_motion;
-                motionCheck.addEventListener('change', (e) => {
-                    this.preferences.reduce_motion = e.target.checked;
-                    this.applyPreferences();
-                    this.savePreferences();
-                });
+                console.log('[Preferences] Reducir movimiento cargado:', this.preferences.reduce_motion);
             }
 
             // Modo lector de pantalla
             const screenReaderCheck = document.getElementById('screen-reader-check');
             if (screenReaderCheck) {
                 screenReaderCheck.checked = this.preferences.screen_reader_mode;
-                screenReaderCheck.addEventListener('change', (e) => {
-                    this.preferences.screen_reader_mode = e.target.checked;
-                    this.applyPreferences();
-                    this.savePreferences();
-                });
+                console.log('[Preferences] Modo lector cargado:', this.preferences.screen_reader_mode);
             }
 
             // Layout dashboard
             const layoutSelect = document.getElementById('layout-select');
             if (layoutSelect) {
                 layoutSelect.value = this.preferences.dashboard_layout;
-                layoutSelect.addEventListener('change', (e) => {
-                    this.preferences.dashboard_layout = e.target.value;
-                    this.applyPreferences();
-                    this.savePreferences();
-                });
+                console.log('[Preferences] Layout cargado:', this.preferences.dashboard_layout);
             }
 
             // Pedidos por página
             const perPageSelect = document.getElementById('per-page-select');
             if (perPageSelect) {
                 perPageSelect.value = this.preferences.orders_per_page;
-                perPageSelect.addEventListener('change', (e) => {
-                    this.preferences.orders_per_page = parseInt(e.target.value);
-                    this.savePreferences();
-                    // Recargar página para aplicar
-                    location.reload();
-                });
+                console.log('[Preferences] Por página cargado:', this.preferences.orders_per_page);
             }
+            
+            console.log('[Preferences] Todos los controles cargados correctamente');
+        }
+
+        /**
+         * Guarda preferencias desde el panel
+         */
+        savePreferencesFromPanel() {
+            console.log('[Preferences] Guardando preferencias desde panel...');
+            
+            // Leer valores del panel
+            const themeSelect = document.getElementById('theme-select');
+            const contrastCheck = document.getElementById('contrast-check');
+            const textCheck = document.getElementById('text-check');
+            const motionCheck = document.getElementById('motion-check');
+            const screenReaderCheck = document.getElementById('screen-reader-check');
+            const layoutSelect = document.getElementById('layout-select');
+            const perPageSelect = document.getElementById('per-page-select');
+            
+            if (themeSelect) {
+                this.preferences.theme_mode = themeSelect.value;
+                console.log('[Preferences] Tema:', themeSelect.value);
+            }
+            
+            if (contrastCheck) {
+                this.preferences.high_contrast = contrastCheck.checked;
+                console.log('[Preferences] Alto contraste:', contrastCheck.checked);
+            }
+            
+            if (textCheck) {
+                this.preferences.large_text = textCheck.checked;
+                console.log('[Preferences] Texto grande:', textCheck.checked);
+            }
+            
+            if (motionCheck) {
+                this.preferences.reduce_motion = motionCheck.checked;
+                console.log('[Preferences] Reducir movimiento:', motionCheck.checked);
+            }
+            
+            if (screenReaderCheck) {
+                this.preferences.screen_reader_mode = screenReaderCheck.checked;
+                console.log('[Preferences] Modo lector:', screenReaderCheck.checked);
+            }
+            
+            if (layoutSelect) {
+                this.preferences.dashboard_layout = layoutSelect.value;
+                console.log('[Preferences] Layout:', layoutSelect.value);
+            }
+            
+            if (perPageSelect) {
+                this.preferences.orders_per_page = parseInt(perPageSelect.value);
+                console.log('[Preferences] Por página:', perPageSelect.value);
+            }
+            
+            // Aplicar y guardar
+            this.applyPreferences();
+            this.savePreferences();
+            
+            console.log('[Preferences] Preferencias guardadas:', this.preferences);
         }
 
         /**
@@ -575,6 +681,37 @@
         // DOM completamente cargado
         initializePreferences();
     }
+
+    // Exponer métodos globales
+    window.toggleTheme = () => {
+        if (window.preferencesManager) {
+            window.preferencesManager.toggleTheme();
+        }
+    };
+
+    window.toggleHighContrast = () => {
+        if (window.preferencesManager) {
+            window.preferencesManager.toggleHighContrast();
+        }
+    };
+
+    window.toggleLargeText = () => {
+        if (window.preferencesManager) {
+            window.preferencesManager.toggleLargeText();
+        }
+    };
+
+    window.toggleReduceMotion = () => {
+        if (window.preferencesManager) {
+            window.preferencesManager.toggleReduceMotion();
+        }
+    };
+
+    window.resetPreferences = () => {
+        if (window.preferencesManager) {
+            window.preferencesManager.resetPreferences();
+        }
+    };
 
     // Exponer métodos globales
     window.toggleTheme = () => {
