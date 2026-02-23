@@ -192,11 +192,6 @@ class DistributorAPI(http.Controller):
                     'name': product.name,
                     'default_code': product.default_code or '',
                     'price': float(price),
-                    'availability': {
-                        'status': product.stock_status if hasattr(product, 'stock_status') else 'in_stock',
-                        'qty_available': float(product.qty_available),
-                        'estimated_date': product.estimated_restock_date.strftime('%d/%m/%Y') if hasattr(product, 'estimated_restock_date') and product.estimated_restock_date else None,
-                    },
                 }
             }
             

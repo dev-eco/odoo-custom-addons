@@ -35,78 +35,65 @@
                     </button>
                 </div>
                 
-                <!-- Script de debugging mejorado -->
+                <!-- Script para abrir/cerrar panel de configuración -->
                 <script type="text/javascript">
                 <![CDATA[
                     (function() {
-                        console.log('[DEBUG] ========== SCRIPT INLINE INICIANDO ==========');
-                        console.log('[DEBUG] readyState:', document.readyState);
-                        console.log('[DEBUG] Timestamp:', new Date().toISOString());
+                        console.log('[Settings Panel] Inicializando botón flotante');
                         
-                        function debugInit() {
-                            console.log('[DEBUG] ========== BUSCANDO ELEMENTOS ==========');
-                            
+                        function initPanel() {
                             const btn = document.getElementById('settings-btn');
                             const panel = document.getElementById('settings-panel');
+                            const closeBtn = document.getElementById('settings-close-btn');
                             
-                            console.log('[DEBUG] ✓ Botón encontrado:', !!btn);
-                            if (btn) {
-                                console.log('[DEBUG]   - ID:', btn.id);
-                                console.log('[DEBUG]   - Clase:', btn.className);
-                                console.log('[DEBUG]   - Visible:', btn.offsetParent !== null);
-                                console.log('[DEBUG]   - HTML:', btn.outerHTML.substring(0, 150));
+                            if (!btn || !panel) {
+                                console.warn('[Settings Panel] Elementos no encontrados, reintentando...');
+                                setTimeout(initPanel, 500);
+                                return;
                             }
                             
-                            console.log('[DEBUG] ✓ Panel encontrado:', !!panel);
-                            if (panel) {
-                                console.log('[DEBUG]   - ID:', panel.id);
-                                console.log('[DEBUG]   - Clase:', panel.className);
-                                console.log('[DEBUG]   - Display:', window.getComputedStyle(panel).display);
-                                console.log('[DEBUG]   - HTML:', panel.outerHTML.substring(0, 150));
-                            }
+                            console.log('[Settings Panel] ✓ Elementos encontrados');
                             
-                            if (btn && panel) {
-                                console.log('[DEBUG] ========== REGISTRANDO EVENT LISTENER ==========');
-                                
-                                btn.addEventListener('click', function(e) {
-                                    console.log('[DEBUG] 🎯 CLICK DETECTADO!');
-                                    console.log('[DEBUG]   - Event:', e.type);
-                                    console.log('[DEBUG]   - Target:', e.target.id);
-                                    console.log('[DEBUG]   - Timestamp:', new Date().toISOString());
-                                    
+                            // Abrir panel
+                            btn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                panel.style.display = 'block';
+                                panel.classList.add('show');
+                                console.log('[Settings Panel] Panel abierto');
+                            });
+                            
+                            // Cerrar panel
+                            if (closeBtn) {
+                                closeBtn.addEventListener('click', function(e) {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    
-                                    const currentDisplay = panel.style.display;
-                                    console.log('[DEBUG]   - Display actual:', currentDisplay);
-                                    
-                                    if (currentDisplay === 'none' || !currentDisplay) {
-                                        panel.style.display = 'block';
-                                        panel.classList.add('show');
-                                        console.log('[DEBUG] ✓ Panel MOSTRADO');
-                                    } else {
-                                        panel.style.display = 'none';
-                                        panel.classList.remove('show');
-                                        console.log('[DEBUG] ✓ Panel OCULTADO');
-                                    }
+                                    panel.style.display = 'none';
+                                    panel.classList.remove('show');
+                                    console.log('[Settings Panel] Panel cerrado');
                                 });
-                                
-                                console.log('[DEBUG] ✓ Event listener registrado correctamente');
-                                console.log('[DEBUG] ========== SCRIPT INLINE LISTO ==========');
-                            } else {
-                                console.error('[DEBUG] ✗ ELEMENTOS NO ENCONTRADOS');
-                                console.error('[DEBUG]   - Botón:', btn);
-                                console.error('[DEBUG]   - Panel:', panel);
-                                console.log('[DEBUG] Reintentando en 1 segundo...');
-                                setTimeout(debugInit, 1000);
                             }
+                            
+                            // Cerrar al hacer clic fuera
+                            document.addEventListener('click', function(e) {
+                                if (!btn.contains(e.target) && 
+                                    !panel.contains(e.target) &&
+                                    panel.classList.contains('show')) {
+                                    panel.style.display = 'none';
+                                    panel.classList.remove('show');
+                                }
+                            });
+                            
+                            // Prevenir que clics dentro del panel lo cierren
+                            panel.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                            });
                         }
                         
-                        // Ejecutar cuando DOM esté listo
                         if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', debugInit);
+                            document.addEventListener('DOMContentLoaded', initPanel);
                         } else {
-                            debugInit();
+                            initPanel();
                         }
                     })();
                 ]]>

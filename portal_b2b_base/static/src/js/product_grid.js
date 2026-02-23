@@ -198,11 +198,6 @@
             }
 
             products.forEach(function(product) {
-                const stockClass = product.qty_available > 0 ? 'text-success' : 'text-danger';
-                const stockText = product.qty_available > 0 
-                    ? 'En stock: ' + product.qty_available 
-                    : 'Sin stock';
-
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'col-md-3 col-sm-6 mb-4';
                 cardDiv.innerHTML = `
@@ -215,10 +210,7 @@
                                 <strong class="text-primary">${product.list_price.toFixed(2)} €</strong>
                                 <span class="text-muted">/ ${escapeHtml(product.uom_name)}</span>
                             </p>
-                            <p class="small ${stockClass} mb-2">
-                                <i class="fa fa-cube"></i> ${stockText}
-                            </p>
-                            <div class="input-group input-group-sm">
+                            <div class="input-group input-group-sm mt-3">
                                 <input type="number" 
                                        class="form-control product-qty" 
                                        min="0" 

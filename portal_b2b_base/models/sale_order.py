@@ -342,14 +342,14 @@ class SaleOrder(models.Model):
             order.validar_credito_antes_confirmar()
 
         return super(SaleOrder, self).action_confirm()
-
+    """
     def _action_confirm(self):
-        """
+        
         Override para transferir notas al picking después de confirmar.
         
         Copia el contenido del campo 'note' del pedido al campo 'external_note'
         del albarán (stock.picking) generado automáticamente.
-        """
+       
         result = super()._action_confirm()
         
         # Transferir notas del pedido al campo external_note del picking
@@ -368,7 +368,7 @@ class SaleOrder(models.Model):
                     )
         
         return result
-
+        """
     def action_cancel_from_portal(self) -> dict:
         """
         Cancela el pedido desde el portal.

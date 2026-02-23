@@ -2071,7 +2071,6 @@ class PortalB2B(CustomerPortal):
                     'name': product.name,
                     'default_code': product.default_code or '',
                     'list_price': price,
-                    'qty_available': float(product.qty_available) if product.type == 'product' else 999,
                     'uom_name': product.uom_id.name,
                 })
 
@@ -2097,10 +2096,7 @@ class PortalB2B(CustomerPortal):
                 return {'error': _('Producto no encontrado')}
 
             return {
-                'qty_available': float(product.qty_available),
-                'incoming_qty': float(product.incoming_qty),
-                'outgoing_qty': float(product.outgoing_qty),
-                'virtual_available': float(product.virtual_available),
+                'message': 'Información de stock no disponible para distribuidores'
             }
 
         except Exception as e:
@@ -2226,7 +2222,6 @@ class PortalB2B(CustomerPortal):
                     'default_code': product.default_code or '',
                     'description_sale': product.description_sale or '',
                     'list_price': price,
-                    'qty_available': float(product.qty_available) if product.type == 'product' else 999,
                     'uom_name': product.uom_id.name,
                     'image_url': image_url,
                     'categ_id': product.categ_id.id if product.categ_id else None,
