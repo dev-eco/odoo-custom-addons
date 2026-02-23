@@ -865,43 +865,34 @@ class BulkExportWizard(models.TransientModel):
 
     def _get_invoice_pdf(self, invoice):
         """
-        Obtiene PDF de factura con lógica específica por tipo.
-        CORRECCIÓN CRÍTICA: Diferentes estrategias para clientes vs proveedores.
+        Obtiene PDF de factura con estrategia unificada.
+        CORRECCIÓN: Misma lógica para clientes y proveedores - buscar adjunto primero.
         """
         try:
-            # NUEVO: Logging detallado
+            # Logging detallado
             _logger.info(f"Obteniendo PDF para factura {invoice.name} (tipo: {invoice.move_type})")
-            
-            # Para facturas de clientes: generar PDF directamente
-            if invoice.move_type in ['out_invoice', 'out_refund']:
-                pdf_content = self._generate_pdf_for_customer_invoice(invoice)
-                if pdf_content:
-                    _logger.info(f"PDF generado exitosamente para {invoice.name}: {len(pdf_content)} bytes")
-                else:
-                    _logger.warning(f"No se pudo generar PDF para {invoice.name}")
+
+            # ESTRATEGIA UNIFICADA PARA TODOS LOS TIPOS:
+
+            # 1. PRIMERO: Intentar buscar PDF adjunto (funciona para todos)
+            pdf_content = self._get_pdf_from_attachment(invoice)
+            if pdf_content:
+                _logger.info(f"✅ PDF obtenido de adjunto para {invoice.name}: {len(pdf_content)} bytes")
                 return pdf_content
-            
-            # Para facturas de proveedores: buscar adjunto primero, generar después
-            elif invoice.move_type in ['in_invoice', 'in_refund']:
-                # 1. Intentar encontrar PDF adjunto
-                pdf_content = self._get_pdf_from_attachment(invoice)
-                if pdf_content:
-                    _logger.info(f"PDF obtenido de adjunto para {invoice.name}: {len(pdf_content)} bytes")
-                    return pdf_content
-                
-                # 2. Si no hay adjunto, generar PDF
-                pdf_content = self._generate_pdf_for_vendor_invoice(invoice)
-                if pdf_content:
-                    _logger.info(f"PDF generado para factura de proveedor {invoice.name}: {len(pdf_content)} bytes")
-                else:
-                    _logger.warning(f"No se pudo generar PDF para factura de proveedor {invoice.name}")
-                return pdf_content
-            
-            # Fallback para otros tipos
-            return self._generate_pdf_direct(invoice)
-            
+
+            # 2. SEGUNDO: Generar PDF desde reporte (método corregido)
+            _logger.info(f"No hay adjunto, generando PDF desde reporte para {invoice.name}")
+            pdf_content = self._generate_pdf_direct(invoice)
+
+            if pdf_content:
+                _logger.info(f"✅ PDF generado desde reporte para {invoice.name}: {len(pdf_content)} bytes")
+            else:
+                _logger.warning(f"⚠️ No se pudo generar PDF para {invoice.name}")
+
+            return pdf_content
+
         except Exception as e:
-            _logger.error(f"Error obteniendo PDF para {invoice.name}: {str(e)}")
+            _logger.error(f"❌ Error obteniendo PDF para {invoice.name}: {str(e)}", exc_info=True)
             return None
 
     def _get_pdf_from_attachment(self, invoice):
@@ -921,52 +912,120 @@ class BulkExportWizard(models.TransientModel):
         
         return None
 
-    def _generate_pdf_for_customer_invoice(self, invoice):
-        """Genera PDF para facturas de cliente usando reporte estándar."""
-        return self._generate_pdf_direct(invoice)
-
-    def _generate_pdf_for_vendor_invoice(self, invoice):
-        """Genera PDF para facturas de proveedor usando reporte estándar."""
-        return self._generate_pdf_direct(invoice)
 
     def _generate_pdf_direct(self, invoice):
-        """Genera PDF usando sistema de reportes de Odoo."""
+        """
+        Genera PDF usando sistema de reportes de Odoo.
+        VERSIÓN CORREGIDA: Búsqueda robusta de reportes sin usar env.ref().
+        """
         try:
             # Validar que tenemos un invoice válido
             if not invoice or not invoice.id:
                 _logger.warning("Invoice inválido para generar PDF")
                 return None
-                
-            # 1. Buscar reporte estándar de facturas
-            report = self.env.ref('account.account_invoices', raise_if_not_found=False)
-            
-            if not report:
-                # 2. Buscar cualquier reporte disponible
-                reports = self.env['ir.actions.report'].search([
+
+            report = None
+
+            # ESTRATEGIA 1: Buscar reporte estándar por nombre técnico
+            try:
+                _logger.info("Estrategia 1: Buscando reporte por nombre técnico...")
+                report = self.env['ir.actions.report'].search([
                     ('model', '=', 'account.move'),
-                    ('report_type', '=', 'qweb-pdf')
+                    ('report_type', '=', 'qweb-pdf'),
+                    ('report_name', '=', 'account.report_invoice')
                 ], limit=1)
-                report = reports[0] if reports else None
-                
-            if report:
-                # CORRECCIÓN CRÍTICA: pasar IDs como lista pero asegurar que report es objeto válido
+
+                if report:
+                    _logger.info(f"✅ Reporte encontrado por nombre técnico: {report.name} (ID: {report.id})")
+            except Exception as e:
+                _logger.warning(f"Estrategia 1 falló: {e}")
+
+            # ESTRATEGIA 2: Si falla, buscar por external ID de forma segura
+            if not report:
                 try:
-                    # Verificar que report tiene el método necesario
-                    if hasattr(report, '_render_qweb_pdf'):
-                        pdf_content, _ = report._render_qweb_pdf([invoice.id])
-                        return pdf_content
-                    else:
-                        _logger.error(f"Reporte {report.name} no tiene método _render_qweb_pdf")
-                        return None
-                except Exception as render_error:
-                    _logger.error(f"Error renderizando PDF con reporte {report.name}: {str(render_error)}")
+                    _logger.info("Estrategia 2: Buscando reporte por external ID...")
+                    ext_id = self.env['ir.model.data'].search([
+                        ('module', '=', 'account'),
+                        ('name', '=', 'account_invoices'),
+                        ('model', '=', 'ir.actions.report')
+                    ], limit=1)
+
+                    if ext_id and ext_id.res_id:
+                        report = self.env['ir.actions.report'].browse(ext_id.res_id)
+                        if report.exists():
+                            _logger.info(f"✅ Reporte encontrado vía external ID: {report.name} (ID: {report.id})")
+                        else:
+                            _logger.warning("External ID encontrado pero reporte no existe")
+                            report = None
+                except Exception as e:
+                    _logger.warning(f"Estrategia 2 falló: {e}")
+
+            # ESTRATEGIA 3: Fallback - primer reporte disponible para account.move
+            if not report:
+                try:
+                    _logger.info("Estrategia 3: Buscando cualquier reporte disponible...")
+                    report = self.env['ir.actions.report'].search([
+                        ('model', '=', 'account.move'),
+                        ('report_type', '=', 'qweb-pdf')
+                    ], limit=1, order='id asc')
+
+                    if report:
+                        _logger.warning(f"⚠️ Usando reporte fallback: {report.name} (ID: {report.id})")
+                except Exception as e:
+                    _logger.error(f"Estrategia 3 falló: {e}")
+
+            # Validar que tenemos un reporte válido
+            if not report or not report.id:
+                _logger.error(f"❌ No se encontró ningún reporte PDF válido para {invoice.name}")
+                return None
+
+            # VALIDACIÓN CRÍTICA: Verificar que report es un objeto, NO una lista
+            if isinstance(report, (list, tuple)):
+                _logger.error(f"❌ ERROR: Report es una lista/tupla inválida: {report}")
+                return None
+
+            # Validar que es un recordset con al menos un registro
+            if not hasattr(report, 'id'):
+                _logger.error(f"❌ ERROR: Report no es un recordset válido: {type(report)}")
+                return None
+
+            # Validar que tiene el método necesario
+            if not hasattr(report, '_render_qweb_pdf'):
+                _logger.error(f"❌ Reporte {report.name} no tiene método _render_qweb_pdf")
+                return None
+
+            # Generar PDF con manejo robusto de errores
+            try:
+                # CRÍTICO: Asegurar que invoice.id es entero
+                invoice_id = int(invoice.id)
+                _logger.info(f"Generando PDF para invoice ID: {invoice_id} usando reporte: {report.name}")
+
+                pdf_content, _ = report._render_qweb_pdf([invoice_id])
+
+                if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                    _logger.info(f"✅ PDF generado exitosamente para {invoice.name}: {len(pdf_content)} bytes")
+                    return pdf_content
+                else:
+                    _logger.warning(f"⚠️ PDF generado pero inválido para {invoice.name} (tamaño: {len(pdf_content) if pdf_content else 0} bytes)")
                     return None
-                
-            _logger.warning(f"No se encontró reporte PDF para {invoice.name}")
-            return None
-            
+
+            except Exception as render_error:
+                _logger.error(f"❌ Error renderizando PDF con reporte {report.name}: {render_error}")
+
+                # ÚLTIMO INTENTO: Método alternativo _render()
+                try:
+                    _logger.info("Intentando método alternativo _render()...")
+                    pdf_content = report._render([invoice.id])[0]
+                    if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                        _logger.info(f"✅ PDF generado con método alternativo para {invoice.name}")
+                        return pdf_content
+                except Exception as alt_error:
+                    _logger.error(f"❌ Método alternativo también falló: {alt_error}")
+
+                return None
+
         except Exception as e:
-            _logger.error(f"Error generando PDF para {invoice.name}: {str(e)}")
+            _logger.error(f"❌ Error crítico generando PDF para {invoice.name}: {e}", exc_info=True)
             return None
 
     def _generate_filename(self, invoice):
@@ -1018,45 +1077,77 @@ class BulkExportWizard(models.TransientModel):
             return f'invoice_{timestamp}.pdf'
 
     def _sanitize_filename(self, name):
-        """Sanitiza nombres de archivo eliminando caracteres problemáticos."""
+        """
+        Sanitiza nombres de archivo eliminando caracteres problemáticos.
+        VERSIÓN MEJORADA: Manejo robusto de diferentes tipos de datos.
+        """
         try:
-            # CORRECCIÓN CRÍTICA: validar tipo antes de operaciones string
+            # VALIDACIÓN 1: None
             if name is None:
+                _logger.debug("Nombre de archivo es None, usando 'unknown_file'")
                 return 'unknown_file'
-                
+
+            # VALIDACIÓN 2: Listas y tuplas (extraer primer elemento)
             if isinstance(name, (list, tuple)):
-                name = name[0] if name else 'unknown'
-                _logger.warning(f"Nombre de archivo recibido como secuencia: {name}")
-            
-            # Convertir a string de forma segura
-            if not isinstance(name, str):
-                try:
-                    name = str(name) if name is not None else 'unknown'
-                except Exception:
-                    name = 'unknown'
+                _logger.warning(f"⚠️ Nombre de archivo recibido como secuencia: {name}")
+                if not name:  # Lista/tupla vacía
+                    return 'unknown_file'
+                # Extraer primer elemento y convertir a string
+                name = str(name[0]) if name[0] is not None else 'unknown_file'
 
-            # Validar que tenemos algo con lo que trabajar
+            # VALIDACIÓN 3: Números (convertir a string)
+            elif isinstance(name, (int, float)):
+                _logger.debug(f"Nombre de archivo es número: {name}, convirtiendo a string")
+                name = str(name)
+
+            # VALIDACIÓN 4: Otros tipos (convertir a string de forma segura)
+            elif not isinstance(name, str):
+                _logger.warning(f"⚠️ Nombre de archivo es tipo inesperado: {type(name)}")
+                try:
+                    name = str(name)
+                except Exception as conv_error:
+                    _logger.error(f"❌ No se pudo convertir {type(name)} a string: {conv_error}")
+                    return 'unknown_file'
+
+            # VALIDACIÓN 5: String vacío o solo espacios
             if not name or not name.strip():
+                _logger.debug("Nombre de archivo vacío después de strip()")
                 return 'unknown_file'
 
-            # Normalizar caracteres Unicode de forma segura
+            # LIMPIEZA: Normalizar caracteres Unicode
             try:
                 name = unicodedata.normalize('NFKD', name)
                 name = name.encode('ascii', 'ignore').decode('ascii')
-            except Exception:
-                # Si falla la normalización, usar el nombre tal como está
-                pass
+            except Exception as norm_error:
+                # Si falla la normalización, continuar con el nombre original
+                _logger.debug(f"No se pudo normalizar Unicode: {norm_error}")
 
-            # Eliminar caracteres problemáticos
+            # LIMPIEZA: Eliminar caracteres no permitidos en nombres de archivo
+            # Permitir: letras, números, guiones, guiones bajos, puntos
             name = re.sub(r'[^\w\-_\.]', '_', name)
-            name = re.sub(r'_+', '_', name).strip('_')
-            
-            # Asegurar que no esté vacío después de la limpieza
-            return name if name else 'unknown_file'
-            
+
+            # LIMPIEZA: Colapsar múltiples guiones bajos
+            name = re.sub(r'_+', '_', name)
+
+            # LIMPIEZA: Eliminar guiones bajos al inicio/final
+            name = name.strip('_')
+
+            # VALIDACIÓN FINAL: Asegurar que no quedó vacío
+            if not name:
+                _logger.warning("Nombre quedó vacío después de sanitización")
+                return 'unknown_file'
+
+            # VALIDACIÓN FINAL: Longitud máxima (255 caracteres para la mayoría de sistemas)
+            if len(name) > 200:  # Dejamos margen para path completo
+                _logger.warning(f"Nombre muy largo ({len(name)} chars), truncando...")
+                name = name[:200]
+
+            return name
+
         except Exception as e:
-            _logger.error(f"Error sanitizando nombre de archivo '{name}': {str(e)}")
-            return 'unknown_file'
+            _logger.error(f"❌ Error crítico sanitizando nombre de archivo '{name}': {str(e)}", exc_info=True)
+            # Nombre de emergencia con timestamp
+            return f'unknown_file_{int(time.time())}'
 
     def _check_export_permissions(self):
         """Verifica que el usuario tenga permisos para exportar facturas."""
@@ -1121,6 +1212,163 @@ class BulkExportWizard(models.TransientModel):
             return False
         finally:
             _logger.info("="*50)
+
+    def action_test_report_search(self):
+        """
+        Diagnostica problemas con búsqueda de reportes PDF.
+        NUEVO MÉTODO para identificar configuración de reportes.
+        """
+        self.ensure_one()
+
+        diagnosis = []
+        diagnosis.append("=== DIAGNÓSTICO DE BÚSQUEDA DE REPORTES PDF ===\n")
+
+        # Información básica
+        diagnosis.append(f"Compañía: {self.company_id.name}")
+        diagnosis.append(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+
+        # Prueba 1: env.ref() - Método problemático
+        diagnosis.append("1️⃣ Prueba con env.ref() (método anterior):")
+        try:
+            report = self.env.ref('account.account_invoices', raise_if_not_found=False)
+            diagnosis.append(f"   Tipo devuelto: {type(report)}")
+            diagnosis.append(f"   Valor: {report}")
+
+            if isinstance(report, (list, tuple)):
+                diagnosis.append(f"   ❌ ERROR: Devolvió lista/tupla - ESTE ES EL BUG")
+            elif hasattr(report, 'name'):
+                diagnosis.append(f"   ✅ Nombre: {report.name}")
+                diagnosis.append(f"   ✅ ID: {report.id}")
+            elif not report:
+                diagnosis.append(f"   ⚠️ No encontrado (False)")
+            else:
+                diagnosis.append(f"   ⚠️ Tipo inesperado")
+        except Exception as e:
+            diagnosis.append(f"   ❌ Excepción: {str(e)[:100]}")
+
+        # Prueba 2: Búsqueda por nombre técnico - Método nuevo
+        diagnosis.append("\n2️⃣ Búsqueda por nombre técnico (método corregido):")
+        try:
+            report = self.env['ir.actions.report'].search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf'),
+                ('report_name', '=', 'account.report_invoice')
+            ], limit=1)
+
+            if report:
+                diagnosis.append(f"   ✅ Encontrado: {report.name}")
+                diagnosis.append(f"   ✅ ID: {report.id}")
+                diagnosis.append(f"   ✅ Report Name: {report.report_name}")
+            else:
+                diagnosis.append(f"   ⚠️ No encontrado con este nombre técnico")
+        except Exception as e:
+            diagnosis.append(f"   ❌ Error: {str(e)[:100]}")
+
+        # Prueba 3: Búsqueda por external ID
+        diagnosis.append("\n3️⃣ Búsqueda por external ID:")
+        try:
+            ext_id = self.env['ir.model.data'].search([
+                ('module', '=', 'account'),
+                ('name', '=', 'account_invoices'),
+                ('model', '=', 'ir.actions.report')
+            ], limit=1)
+
+            if ext_id:
+                diagnosis.append(f"   ✅ External ID encontrado")
+                diagnosis.append(f"   ✅ res_id: {ext_id.res_id}")
+                diagnosis.append(f"   ✅ model: {ext_id.model}")
+
+                # Intentar cargar el reporte
+                report = self.env['ir.actions.report'].browse(ext_id.res_id)
+                if report.exists():
+                    diagnosis.append(f"   ✅ Reporte existe: {report.name}")
+                else:
+                    diagnosis.append(f"   ❌ Reporte no existe (ID huérfano)")
+            else:
+                diagnosis.append(f"   ⚠️ External ID no encontrado")
+        except Exception as e:
+            diagnosis.append(f"   ❌ Error: {str(e)[:100]}")
+
+        # Prueba 4: Listar todos los reportes disponibles
+        diagnosis.append("\n4️⃣ Todos los reportes PDF de account.move:")
+        try:
+            reports = self.env['ir.actions.report'].search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ])
+
+            diagnosis.append(f"   Total encontrados: {len(reports)}")
+            if reports:
+                diagnosis.append("")
+                for i, r in enumerate(reports, 1):
+                    diagnosis.append(f"   {i}. ID:{r.id} | {r.name}")
+                    diagnosis.append(f"      report_name: {r.report_name}")
+            else:
+                diagnosis.append("   ❌ CRÍTICO: No hay reportes PDF para account.move")
+        except Exception as e:
+            diagnosis.append(f"   ❌ Error: {str(e)[:100]}")
+
+        # Prueba 5: Probar generación con factura real
+        diagnosis.append("\n5️⃣ Prueba de generación PDF con factura real:")
+        try:
+            test_invoice = self.env['account.move'].search([
+                ('move_type', '=', 'out_invoice'),
+                ('state', '=', 'posted'),
+                ('company_id', '=', self.company_id.id)
+            ], limit=1)
+
+            if test_invoice:
+                diagnosis.append(f"   Factura de prueba: {test_invoice.name}")
+                pdf_content = self._get_invoice_pdf(test_invoice)
+
+                if pdf_content and len(pdf_content) > PDF_MIN_SIZE:
+                    diagnosis.append(f"   ✅ PDF generado exitosamente: {len(pdf_content)} bytes")
+                else:
+                    diagnosis.append(f"   ❌ PDF no generado o inválido")
+            else:
+                diagnosis.append("   ⚠️ No hay facturas de cliente para probar")
+        except Exception as e:
+            diagnosis.append(f"   ❌ Error: {str(e)[:100]}")
+
+        # Resumen y recomendaciones
+        diagnosis.append("\n" + "="*50)
+        diagnosis.append("RESUMEN:")
+
+        # Determinar estado del sistema
+        try:
+            reports_count = len(self.env['ir.actions.report'].search([
+                ('model', '=', 'account.move'),
+                ('report_type', '=', 'qweb-pdf')
+            ]))
+
+            if reports_count == 0:
+                diagnosis.append("🔥 CRÍTICO: No hay reportes PDF disponibles")
+                diagnosis.append("   Acción: Reinstalar módulo 'account' o verificar datos base")
+            elif reports_count > 0:
+                diagnosis.append(f"✅ Sistema funcional: {reports_count} reportes disponibles")
+                diagnosis.append("   Las correcciones aplicadas deberían resolver el problema")
+        except Exception:
+            diagnosis.append("⚠️ No se pudo determinar estado del sistema")
+
+        diagnosis.append("\n✅ CORRECCIONES APLICADAS:")
+        diagnosis.append("   • Búsqueda robusta de reportes (3 estrategias)")
+        diagnosis.append("   • Validación exhaustiva de tipos")
+        diagnosis.append("   • Estrategia unificada cliente/proveedor")
+        diagnosis.append("   • Sanitización mejorada de nombres de archivo")
+
+        message = "\n".join(diagnosis)
+        _logger.info(message)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Diagnóstico de Reportes PDF'),
+                'message': message,
+                'type': 'info',
+                'sticky': True,
+            }
+        }
 
     def action_test_invoice_search(self):
         """

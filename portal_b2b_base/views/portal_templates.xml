@@ -1052,10 +1052,303 @@
                                     <i class="fa fa-copy me-2" aria-hidden="true"/>
                                     Repetir Pedido
                                 </a>
-                                <a t-attf-href="/mis-pedidos/#{order.id}/crear-plantilla" class="btn btn-info">
-                                    <i class="fa fa-bookmark me-2" aria-hidden="true"/>
-                                    Crear Plantilla
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </t>
+    </template>
+
+    <!-- Template: Detalle de Factura -->
+    <template id="portal_factura_detalle" name="Detalle de Factura">
+        <t t-call="portal.portal_layout">
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-lg-10 offset-lg-1">
+                        
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
+                                <li class="breadcrumb-item"><a href="/mis-facturas">Mis Facturas</a></li>
+                                <li class="breadcrumb-item active"><t t-esc="invoice.name"/></li>
+                            </ol>
+                        </nav>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-file-text me-2" aria-hidden="true"/>
+                                            Factura <t t-esc="invoice.name"/>
+                                        </h4>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <span t-attf-class="badge bg-#{
+                                            'success' if invoice.payment_state == 'paid' else
+                                            'warning' if invoice.payment_state == 'partial' else
+                                            'danger'
+                                        } fs-6">
+                                            <t t-if="invoice.payment_state == 'paid'">Pagada</t>
+                                            <t t-elif="invoice.payment_state == 'partial'">Parcialmente Pagada</t>
+                                            <t t-elif="invoice.payment_state == 'not_paid'">Pendiente de Pago</t>
+                                            <t t-else=""><t t-esc="invoice.payment_state"/></t>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Información general -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h5 class="text-muted mb-3">Información de la Factura</h5>
+                                        <p class="mb-2">
+                                            <strong>Número:</strong> <t t-esc="invoice.name"/>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Fecha Factura:</strong> 
+                                            <t t-esc="invoice.invoice_date" t-options="{'widget': 'date'}"/>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Fecha Vencimiento:</strong> 
+                                            <t t-esc="invoice.invoice_date_due" t-options="{'widget': 'date'}"/>
+                                        </p>
+                                        <t t-if="invoice.invoice_origin">
+                                            <p class="mb-2">
+                                                <strong>Pedido Origen:</strong> 
+                                                <t t-esc="invoice.invoice_origin"/>
+                                            </p>
+                                        </t>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="text-muted mb-3">Datos del Cliente</h5>
+                                        <p class="mb-2">
+                                            <strong>Cliente:</strong> <t t-esc="invoice.partner_id.name"/>
+                                        </p>
+                                        <t t-if="invoice.partner_id.vat">
+                                            <p class="mb-2">
+                                                <strong>NIF/CIF:</strong> <t t-esc="invoice.partner_id.vat"/>
+                                            </p>
+                                        </t>
+                                        <t t-if="invoice.partner_id.street">
+                                            <p class="mb-2">
+                                                <strong>Dirección:</strong><br/>
+                                                <t t-esc="invoice.partner_id.street"/>
+                                                <t t-if="invoice.partner_id.street2">
+                                                    <br/><t t-esc="invoice.partner_id.street2"/>
+                                                </t>
+                                                <br/>
+                                                <t t-if="invoice.partner_id.zip">
+                                                    <t t-esc="invoice.partner_id.zip"/>
+                                                </t>
+                                                <t t-if="invoice.partner_id.city">
+                                                    <t t-esc="invoice.partner_id.city"/>
+                                                </t>
+                                                <t t-if="invoice.partner_id.country_id">
+                                                    <br/><t t-esc="invoice.partner_id.country_id.name"/>
+                                                </t>
+                                            </p>
+                                        </t>
+                                    </div>
+                                </div>
+                                
+                                <!-- Líneas de factura -->
+                                <h5 class="mt-4 mb-3">Detalle de la Factura</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Descripción</th>
+                                                <th class="text-center">Cantidad</th>
+                                                <th class="text-end">Precio Unit.</th>
+                                                <th class="text-end">Impuestos</th>
+                                                <th class="text-end">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="invoice.invoice_line_ids" t-as="line">
+                                                <t t-if="not line.display_type">
+                                                    <tr>
+                                                        <td>
+                                                            <strong><t t-esc="line.name"/></strong>
+                                                            <t t-if="line.product_id and line.product_id.default_code">
+                                                                <br/><small class="text-muted">Ref: <t t-esc="line.product_id.default_code"/></small>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <t t-esc="line.quantity"/>
+                                                            <t t-if="line.product_uom_id">
+                                                                <t t-esc="line.product_uom_id.name"/>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <t t-esc="'%.2f' % line.price_unit"/> €
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <t t-if="line.tax_ids">
+                                                                <t t-foreach="line.tax_ids" t-as="tax">
+                                                                    <span class="badge bg-secondary">
+                                                                        <t t-esc="tax.name"/>
+                                                                    </span>
+                                                                </t>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted">-</span>
+                                                            </t>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong><t t-esc="'%.2f' % line.price_subtotal"/> €</strong>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                                <t t-else="">
+                                                    <!-- Líneas de tipo display (secciones, notas) -->
+                                                    <tr t-attf-class="#{
+                                                        'table-active' if line.display_type == 'line_section' else
+                                                        'table-light' if line.display_type == 'line_note' else ''
+                                                    }">
+                                                        <td colspan="5">
+                                                            <t t-if="line.display_type == 'line_section'">
+                                                                <strong><t t-esc="line.name"/></strong>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <em><t t-esc="line.name"/></em>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </t>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-light">
+                                                <td colspan="4" class="text-end"><strong>Base Imponible:</strong></td>
+                                                <td class="text-end">
+                                                    <strong><t t-esc="'%.2f' % invoice.amount_untaxed"/> €</strong>
+                                                </td>
+                                            </tr>
+                                            <tr class="table-light">
+                                                <td colspan="4" class="text-end"><strong>Impuestos:</strong></td>
+                                                <td class="text-end">
+                                                    <strong><t t-esc="'%.2f' % invoice.amount_tax"/> €</strong>
+                                                </td>
+                                            </tr>
+                                            <tr class="table-active">
+                                                <td colspan="4" class="text-end">
+                                                    <h5 class="mb-0"><strong>TOTAL:</strong></h5>
+                                                </td>
+                                                <td class="text-end">
+                                                    <h5 class="mb-0 text-success">
+                                                        <strong><t t-esc="'%.2f' % invoice.amount_total"/> €</strong>
+                                                    </h5>
+                                                </td>
+                                            </tr>
+                                            <t t-if="invoice.amount_residual > 0">
+                                                <tr class="table-warning">
+                                                    <td colspan="4" class="text-end">
+                                                        <strong>Pendiente de Pago:</strong>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <strong class="text-danger">
+                                                            <t t-esc="'%.2f' % invoice.amount_residual"/> €
+                                                        </strong>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                
+                                <!-- Información de pago -->
+                                <t t-if="invoice.payment_state == 'paid'">
+                                    <div class="alert alert-success mt-4">
+                                        <h5 class="alert-heading">
+                                            <i class="fa fa-check-circle me-2" aria-hidden="true"/>
+                                            Factura Pagada
+                                        </h5>
+                                        <p class="mb-0">Esta factura ha sido pagada completamente.</p>
+                                    </div>
+                                </t>
+                                <t t-elif="invoice.payment_state == 'partial'">
+                                    <div class="alert alert-warning mt-4">
+                                        <h5 class="alert-heading">
+                                            <i class="fa fa-exclamation-triangle me-2" aria-hidden="true"/>
+                                            Pago Parcial
+                                        </h5>
+                                        <p class="mb-0">
+                                            Esta factura ha sido pagada parcialmente. 
+                                            Pendiente: <strong><t t-esc="'%.2f' % invoice.amount_residual"/> €</strong>
+                                        </p>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-danger mt-4">
+                                        <h5 class="alert-heading">
+                                            <i class="fa fa-clock-o me-2" aria-hidden="true"/>
+                                            Pendiente de Pago
+                                        </h5>
+                                        <p class="mb-0">
+                                            Esta factura está pendiente de pago. 
+                                            Importe: <strong><t t-esc="'%.2f' % invoice.amount_residual"/> €</strong>
+                                        </p>
+                                        <t t-if="invoice.invoice_date_due">
+                                            <p class="mb-0 mt-2">
+                                                <strong>Fecha de vencimiento:</strong> 
+                                                <t t-esc="invoice.invoice_date_due" t-options="{'widget': 'date'}"/>
+                                            </p>
+                                        </t>
+                                    </div>
+                                </t>
+                                
+                                <!-- Notas -->
+                                <t t-if="invoice.narration">
+                                    <div class="alert alert-info mt-4">
+                                        <h5 class="alert-heading">Notas</h5>
+                                        <p class="mb-0" t-esc="invoice.narration" style="white-space: pre-wrap;"/>
+                                    </div>
+                                </t>
+                                
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="row">
+                            <div class="col-12">
+                                <a href="/mis-facturas" class="btn btn-secondary me-2">
+                                    <i class="fa fa-arrow-left me-2" aria-hidden="true"/>
+                                    Volver a Mis Facturas
                                 </a>
+                                
+                                <!-- BOTÓN DE DESCARGA ELIMINADO PARA DISTRIBUIDORES -->
+                                <!-- Las facturas se envían por correo desde el backend -->
+                                <t t-if="not is_distributor">
+                                    <a t-attf-href="/mis-facturas/#{invoice.id}?report_type=pdf" 
+                                       class="btn btn-primary me-2"
+                                       title="Descargar PDF">
+                                        <i class="fa fa-download me-2" aria-hidden="true"/>
+                                        Descargar PDF
+                                    </a>
+                                </t>
+                                
+                                <!-- Mensaje informativo para distribuidores -->
+                                <t t-if="is_distributor">
+                                    <div class="alert alert-info d-inline-block mb-0 me-2">
+                                        <i class="fa fa-envelope me-2" aria-hidden="true"/>
+                                        Las facturas se envían por correo electrónico
+                                    </div>
+                                </t>
+                                
+                                <t t-if="invoice.invoice_origin">
+                                    <a t-attf-href="/mis-pedidos?search=#{invoice.invoice_origin}" 
+                                       class="btn btn-info">
+                                        <i class="fa fa-shopping-cart me-2" aria-hidden="true"/>
+                                        Ver Pedido Origen
+                                    </a>
+                                </t>
                             </div>
                         </div>
                         
@@ -1149,12 +1442,13 @@
                                                                     t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                                         </td>
                                                         <td class="text-center">
-                                                            <a t-attf-href="/mis-facturas/#{invoice.id}?report_type=pdf" 
-                                                               class="btn btn-sm btn-primary"
-                                                               title="Descargar PDF"
-                                                               download="true">
-                                                                <i class="fa fa-download" aria-hidden="true"/>
+                                                            <a t-attf-href="/mis-facturas/#{invoice.id}" 
+                                                               class="btn btn-sm btn-info"
+                                                               title="Ver factura">
+                                                                <i class="fa fa-eye" aria-hidden="true"/>
                                                             </a>
+                                                            <!-- BOTÓN DE DESCARGA ELIMINADO PARA DISTRIBUIDORES -->
+                                                            <!-- Las facturas se envían por correo desde el backend -->
                                                         </td>
                                                     </tr>
                                                 </t>
@@ -1475,579 +1769,6 @@
         </t>
     </template>
 
-    <!-- ========================================== -->
-    <!-- PLANTILLAS DE PEDIDOS -->
-    <!-- ========================================== -->
-
-    <!-- Template: Lista de Plantillas -->
-    <template id="portal_my_templates" name="Mis Plantillas">
-        <t t-call="portal.portal_layout">
-            <t t-set="breadcrumbs_searchbar" t-value="True"/>
-            
-            <t t-call="portal.portal_searchbar">
-                <t t-set="title">Mis Plantillas</t>
-            </t>
-            
-            <div class="container mt-4">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                <div class="row align-items-center">
-                                    <div class="col-md-6">
-                                        <h4 class="mb-0">
-                                            <i class="fa fa-bookmark me-2" aria-hidden="true"/>
-                                            Mis Plantillas de Pedidos
-                                        </h4>
-                                    </div>
-                                    <div class="col-md-6 text-end">
-                                        <a href="/mis-plantillas/crear" class="btn btn-success btn-sm">
-                                            <i class="fa fa-plus me-2" aria-hidden="true"/>
-                                            Nueva Plantilla
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                
-                                <t t-if="templates">
-                                    <div class="row">
-                                        <t t-foreach="templates" t-as="template">
-                                            <div class="col-md-6 col-lg-4 mb-4">
-                                                <div class="card h-100 template-card">
-                                                    <div class="card-body">
-                                                        <h5 class="card-title">
-                                                            <i class="fa fa-bookmark text-primary me-2" aria-hidden="true"/>
-                                                            <t t-esc="template.name"/>
-                                                        </h5>
-                                                        
-                                                        <div class="template-stats mb-3">
-                                                            <div class="row text-center">
-                                                                <div class="col-6">
-                                                                    <small class="text-muted">Productos</small>
-                                                                    <div class="h5 mb-0">
-                                                                        <t t-esc="template.total_products"/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <small class="text-muted">Veces Usada</small>
-                                                                    <div class="h5 mb-0">
-                                                                        <t t-esc="template.use_count"/>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div class="mb-3">
-                                                            <small class="text-muted">Total Estimado:</small>
-                                                            <div class="h6 text-success mb-0">
-                                                                <t t-esc="'%.2f' % template.estimated_total"/> €
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <t t-if="template.last_used_date">
-                                                            <div class="mb-3">
-                                                                <small class="text-muted">
-                                                                    <i class="fa fa-clock-o me-1" aria-hidden="true"/>
-                                                                    Último uso: <t t-esc="template.last_used_date" t-options="{'widget': 'date'}"/>
-                                                                </small>
-                                                            </div>
-                                                        </t>
-                                                        
-                                                        <div class="d-grid gap-2">
-                                                            <form method="post" t-attf-action="/mis-plantillas/#{template.id}/usar" class="mb-2">
-                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                                                <button type="submit" class="btn btn-primary w-100">
-                                                                    <i class="fa fa-shopping-cart me-2" aria-hidden="true"/>
-                                                                    Usar Plantilla
-                                                                </button>
-                                                            </form>
-                                                            
-                                                            <a t-attf-href="/mis-plantillas/#{template.id}" class="btn btn-outline-secondary btn-sm">
-                                                                <i class="fa fa-eye me-2" aria-hidden="true"/>
-                                                                Ver Detalle
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </t>
-                                    </div>
-                                </t>
-                                
-                                <!-- Sin plantillas -->
-                                <t t-else="">
-                                    <div class="alert alert-info text-center">
-                                        <i class="fa fa-info-circle fa-3x mb-3" aria-hidden="true"/>
-                                        <h5>No tienes plantillas guardadas</h5>
-                                        <p class="mb-3">Las plantillas te permiten crear pedidos recurrentes en segundos.</p>
-                                        <a href="/mis-plantillas/crear" class="btn btn-primary me-2">
-                                            <i class="fa fa-plus me-2" aria-hidden="true"/>
-                                            Crear Nueva Plantilla
-                                        </a>
-                                        <a href="/mis-pedidos" class="btn btn-secondary">
-                                            <i class="fa fa-bookmark me-2" aria-hidden="true"/>
-                                            Crear desde Pedido Existente
-                                        </a>
-                                    </div>
-                                </t>
-                                
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        </t>
-    </template>
-
-    <!-- Template: Detalle de Plantilla -->
-    <template id="portal_template_detail" name="Detalle de Plantilla">
-        <t t-call="portal.portal_layout">
-            
-            <div class="container mt-4">
-                <div class="row">
-                    <div class="col-lg-10 offset-lg-1">
-                        
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
-                                <li class="breadcrumb-item"><a href="/mis-plantillas">Mis Plantillas</a></li>
-                                <li class="breadcrumb-item active"><t t-esc="template.name"/></li>
-                            </ol>
-                        </nav>
-                        
-                        <div class="card mb-4">
-                            <div class="card-header bg-primary text-white">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <h4 class="mb-0">
-                                            <i class="fa fa-bookmark me-2" aria-hidden="true"/>
-                                            <t t-esc="template.name"/>
-                                        </h4>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <form method="post" t-attf-action="/mis-plantillas/#{template.id}/usar" class="d-inline">
-                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                            <button type="submit" class="btn btn-success btn-sm">
-                                                <i class="fa fa-shopping-cart me-2" aria-hidden="true"/>
-                                                Usar Plantilla
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                
-                                <!-- Estadísticas -->
-                                <div class="row mb-4">
-                                    <div class="col-md-3">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <small class="text-muted">Productos</small>
-                                            <h4 class="mb-0"><t t-esc="template.total_products"/></h4>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <small class="text-muted">Veces Usada</small>
-                                            <h4 class="mb-0"><t t-esc="template.use_count"/></h4>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <small class="text-muted">Total Estimado</small>
-                                            <h4 class="mb-0 text-success"><t t-esc="'%.2f' % template.estimated_total"/> €</h4>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <small class="text-muted">Último Uso</small>
-                                            <h6 class="mb-0">
-                                                <t t-if="template.last_used_date">
-                                                    <t t-esc="template.last_used_date" t-options="{'widget': 'date'}"/>
-                                                </t>
-                                                <t t-else="">
-                                                    Nunca
-                                                </t>
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Configuración -->
-                                <t t-if="template.delivery_address_id or template.distributor_label_id">
-                                    <h5 class="mt-4 mb-3">Configuración Predeterminada</h5>
-                                    <div class="row mb-4">
-                                        <t t-if="template.delivery_address_id">
-                                            <div class="col-md-6">
-                                                <div class="alert alert-info">
-                                                    <strong>
-                                                        <i class="fa fa-map-marker me-2" aria-hidden="true"/>
-                                                        Dirección de Entrega:
-                                                    </strong>
-                                                    <p class="mb-0"><t t-esc="template.delivery_address_id.name"/></p>
-                                                </div>
-                                            </div>
-                                        </t>
-                                        <t t-if="template.distributor_label_id">
-                                            <div class="col-md-6">
-                                                <div class="alert alert-secondary">
-                                                    <strong>
-                                                        <i class="fa fa-user me-2" aria-hidden="true"/>
-                                                        Cliente Final:
-                                                    </strong>
-                                                    <p class="mb-0"><t t-esc="template.distributor_label_id.name"/></p>
-                                                </div>
-                                            </div>
-                                        </t>
-                                    </div>
-                                </t>
-                                
-                                <!-- Productos -->
-                                <h5 class="mt-4 mb-3">Productos en la Plantilla</h5>
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Producto</th>
-                                                <th class="text-center">Cantidad</th>
-                                                <th class="text-end">Precio Unit. Estimado</th>
-                                                <th class="text-end">Subtotal Estimado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <t t-foreach="template.line_ids" t-as="line">
-                                                <t t-set="pricelist" t-value="template.partner_id.obtener_tarifa_aplicable()"/>
-                                                <t t-set="price" t-value="pricelist._get_product_price(line.product_id.product_variant_id, line.quantity, partner=template.partner_id) if pricelist else line.product_id.list_price"/>
-                                                <t t-set="subtotal" t-value="price * line.quantity"/>
-                                                
-                                                <tr>
-                                                    <td>
-                                                        <strong><t t-esc="line.product_id.name"/></strong>
-                                                        <t t-if="line.product_id.default_code">
-                                                            <br/><small class="text-muted">Ref: <t t-esc="line.product_id.default_code"/></small>
-                                                        </t>
-                                                        <t t-if="line.notes">
-                                                            <br/><small class="text-info"><i class="fa fa-info-circle me-1" aria-hidden="true"/><t t-esc="line.notes"/></small>
-                                                        </t>
-                                                    </td>
-                                                    <td class="text-center"><t t-esc="line.quantity"/></td>
-                                                    <td class="text-end"><t t-esc="'%.2f' % price"/> €</td>
-                                                    <td class="text-end"><strong><t t-esc="'%.2f' % subtotal"/> €</strong></td>
-                                                </tr>
-                                            </t>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr class="table-active">
-                                                <td colspan="3" class="text-end"><strong>Total Estimado:</strong></td>
-                                                <td class="text-end">
-                                                    <strong class="text-success">
-                                                        <t t-esc="'%.2f' % template.estimated_total"/> €
-                                                    </strong>
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                                
-                                <!-- Notas -->
-                                <t t-if="template.notes">
-                                    <div class="alert alert-info mt-4">
-                                        <h5 class="alert-heading">Notas</h5>
-                                        <p class="mb-0" t-esc="template.notes" style="white-space: pre-wrap;"/>
-                                    </div>
-                                </t>
-                                
-                            </div>
-                        </div>
-                        
-                        <!-- Botones de acción -->
-                        <div class="row">
-                            <div class="col-12">
-                                <a href="/mis-plantillas" class="btn btn-secondary me-2">
-                                    <i class="fa fa-arrow-left me-2" aria-hidden="true"/>
-                                    Volver a Plantillas
-                                </a>
-                                
-                                <form method="post" t-attf-action="/mis-plantillas/#{template.id}/usar" class="d-inline">
-                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                    <button type="submit" class="btn btn-primary me-2">
-                                        <i class="fa fa-shopping-cart me-2" aria-hidden="true"/>
-                                        Crear Pedido con esta Plantilla
-                                    </button>
-                                </form>
-                                
-                                <form method="post" 
-                                      t-attf-action="/mis-plantillas/#{template.id}/eliminar" 
-                                      class="d-inline"
-                                      onsubmit="return confirm('¿Está seguro de eliminar esta plantilla?');">
-                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                    <button type="submit" class="btn btn-danger">
-                                        <i class="fa fa-trash me-2" aria-hidden="true"/>
-                                        Eliminar Plantilla
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        
-                    </div>
-                </div>
-            </div>
-            
-        </t>
-    </template>
-
-    <!-- Template: Crear Nueva Plantilla -->
-    <template id="portal_create_template" name="Crear Nueva Plantilla">
-        <t t-call="portal.portal_layout">
-            <div class="container mt-4">
-                <div class="row">
-                    <div class="col-lg-8 offset-lg-2">
-                        
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Inicio</a></li>
-                                <li class="breadcrumb-item"><a href="/mis-plantillas">Mis Plantillas</a></li>
-                                <li class="breadcrumb-item active">Nueva Plantilla</li>
-                            </ol>
-                        </nav>
-                        
-                        <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                <h4 class="mb-0">
-                                    <i class="fa fa-bookmark me-2" aria-hidden="true"/>
-                                    Crear Nueva Plantilla
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                
-                                <form id="form-create-template">
-                                    
-                                    <div class="mb-4">
-                                        <label class="form-label" for="template-name">
-                                            <strong>Nombre de la Plantilla</strong>
-                                            <span class="text-danger">*</span>
-                                        </label>
-                                        <input type="text" 
-                                               id="template-name" 
-                                               class="form-control" 
-                                               placeholder="Ej: Pedido Mensual Almacén A"
-                                               required="required"/>
-                                    </div>
-                                    
-                                    <div class="mb-4">
-                                        <h5>Buscar Productos</h5>
-                                        <div class="row">
-                                            <div class="col-md-8">
-                                                <input type="text" 
-                                                       id="product-search" 
-                                                       class="form-control" 
-                                                       placeholder="Buscar por nombre o referencia..."/>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <button type="button" 
-                                                        id="btn-search-product" 
-                                                        class="btn btn-primary w-100">
-                                                    <i class="fa fa-search me-2" aria-hidden="true"/>
-                                                    Buscar
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div id="product-results" class="list-group mt-2" style="display: none;"></div>
-                                    </div>
-                                    
-                                    <div class="mb-4">
-                                        <h5>Productos de la Plantilla</h5>
-                                        <div class="table-responsive">
-                                            <table class="table table-striped" id="template-lines-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Producto</th>
-                                                        <th class="text-center">Cantidad</th>
-                                                        <th>Notas</th>
-                                                        <th class="text-center">Acción</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="template-lines-body">
-                                                    <tr id="empty-template-message">
-                                                        <td colspan="4" class="text-center text-muted">
-                                                            No hay productos agregados. Use el buscador arriba.
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mb-4">
-                                        <label class="form-label" for="template-notes">Notas de la Plantilla</label>
-                                        <textarea id="template-notes" 
-                                                  class="form-control" 
-                                                  rows="3" 
-                                                  placeholder="Notas o descripción de la plantilla..."></textarea>
-                                    </div>
-                                    
-                                    <div class="text-end">
-                                        <a href="/mis-plantillas" class="btn btn-secondary me-2">
-                                            <i class="fa fa-times me-2" aria-hidden="true"/>
-                                            Cancelar
-                                        </a>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fa fa-check me-2" aria-hidden="true"/>
-                                            Crear Plantilla
-                                        </button>
-                                    </div>
-                                    
-                                </form>
-                                
-                            </div>
-                        </div>
-                        
-                    </div>
-                </div>
-            </div>
-        </t>
-    </template>
-
-    <!-- Template: Crear Plantilla desde Pedido -->
-    <template id="portal_create_template_from_order" name="Crear Plantilla desde Pedido">
-        <t t-call="portal.portal_layout">
-            <t t-set="additional_title">Crear Plantilla</t>
-            
-            <div class="container mt-4">
-                <div class="row">
-                    <div class="col-lg-8 offset-lg-2">
-                        
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="/mi-portal">Portal</a></li>
-                                <li class="breadcrumb-item"><a href="/mis-pedidos">Mis Pedidos</a></li>
-                                <li class="breadcrumb-item"><a t-attf-href="/mis-pedidos/#{order.id}"><t t-esc="order.name"/></a></li>
-                                <li class="breadcrumb-item active">Crear Plantilla</li>
-                            </ol>
-                        </nav>
-                        
-                        <div class="card">
-                            <div class="card-header bg-success text-white">
-                                <h4 class="mb-0">
-                                    <i class="fa fa-bookmark me-2" aria-hidden="true"/>
-                                    Crear Plantilla desde Pedido
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                
-                                <div class="alert alert-info">
-                                    <i class="fa fa-info-circle me-2" aria-hidden="true"/>
-                                    Se creará una plantilla con los productos del pedido <strong><t t-esc="order.name"/></strong>
-                                </div>
-                                
-                                <form id="form-create-template-from-order">
-                                    
-                                    <div class="mb-4">
-                                        <label class="form-label" for="template-name">
-                                            <strong>Nombre de la Plantilla</strong>
-                                            <span class="text-danger">*</span>
-                                        </label>
-                                        <input type="text" 
-                                               id="template-name" 
-                                               class="form-control" 
-                                               placeholder="Ej: Pedido Mensual Almacén A"
-                                               required="required"/>
-                                        <small class="form-text text-muted">
-                                            Elige un nombre descriptivo para identificar fácilmente esta plantilla
-                                        </small>
-                                    </div>
-                                    
-                                    <div class="mb-4">
-                                        <label class="form-label"><strong>Opciones</strong></label>
-                        
-                                        <!-- Incluir notas -->
-                                        <t t-if="order.note">
-                                            <div class="form-check">
-                                                <input class="form-check-input" 
-                                                       type="checkbox" 
-                                                       id="include-notes"
-                                                       checked="checked"/>
-                                                <label class="form-check-label" for="include-notes">
-                                                    Incluir notas del pedido
-                                                </label>
-                                            </div>
-                                        </t>
-
-                                        <!-- Incluir dirección de entrega -->
-                                        <t t-if="order.delivery_address_id">
-                                            <div class="form-check">
-                                                <input class="form-check-input" 
-                                                       type="checkbox" 
-                                                       id="include-delivery-address"
-                                                       checked="checked"/>
-                                                <label class="form-check-label" for="include-delivery-address">
-                                                    Incluir dirección de entrega (<t t-esc="order.delivery_address_id.name or 'Sin nombre'"/>)
-                                                </label>
-                                            </div>
-                                        </t>
-
-                                        <!-- Incluir etiqueta cliente final -->
-                                        <t t-if="order.distributor_label_id">
-                                            <div class="form-check">
-                                                <input class="form-check-input" 
-                                                       type="checkbox" 
-                                                       id="include-distributor-label"
-                                                       checked="checked"/>
-                                                <label class="form-check-label" for="include-distributor-label">
-                                                    Incluir etiqueta de cliente final (<t t-esc="order.distributor_label_id.name or 'Sin nombre'"/>)
-                                                </label>
-                                            </div>
-                                        </t>
-                                    </div>
-                                    
-                                    <!-- Vista previa de productos -->
-                                    <div class="mb-4">
-                                        <h5>Productos que se incluirán (<t t-esc="len(order.order_line)"/>)</h5>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-striped">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Producto</th>
-                                                        <th class="text-center">Cantidad</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <t t-foreach="order.order_line" t-as="line">
-                                                        <tr>
-                                                            <td><t t-esc="line.product_id.name"/></td>
-                                                            <td class="text-center"><t t-esc="line.product_uom_qty"/></td>
-                                                        </tr>
-                                                    </t>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="text-end">
-                                        <a t-attf-href="/mis-pedidos/#{order.id}" class="btn btn-secondary me-2">
-                                            <i class="fa fa-times me-2" aria-hidden="true"/>
-                                            Cancelar
-                                        </a>
-                                        <button type="submit" 
-                                                id="btn-submit-template" 
-                                                class="btn btn-success">
-                                            <i class="fa fa-check me-2" aria-hidden="true"/>
-                                            Crear Plantilla
-                                        </button>
-                                    </div>
-                                    
-                                </form>
-                                
-                            </div>
-                        </div>
-                        
-                    </div>
-                </div>
-            </div>
-            
-        </t>
-    </template>
 
     <!-- ========================================== -->
     <!-- WIDGET DE CRÉDITO FLOTANTE -->
@@ -3066,12 +2787,6 @@
                                         <a href="/mis-facturas" class="btn btn-success btn-lg w-100">
                                             <i class="fa fa-file-text fa-2x mb-2" aria-hidden="true"/>
                                             <br/>Mis Facturas
-                                        </a>
-                                    </div>
-                                    <div class="col-md-2 col-6 mb-3">
-                                        <a href="/mis-plantillas" class="btn btn-warning btn-lg w-100">
-                                            <i class="fa fa-bookmark fa-2x mb-2" aria-hidden="true"/>
-                                            <br/>Plantillas
                                         </a>
                                     </div>
                                     <div class="col-md-2 col-6 mb-3">

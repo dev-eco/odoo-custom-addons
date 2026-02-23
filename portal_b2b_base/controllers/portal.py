@@ -35,20 +35,6 @@ class PortalB2B(CustomerPortal):
             'translatable': False,
         }
         
-        # ACTIVAR LOGGING AUTOMÁTICO
-        partner = request.env.user.partner_id
-        if partner.is_distributor:
-            try:
-                # Log de acceso a página
-                current_route = request.httprequest.path
-                if current_route not in ['/web/webclient/load_menus', '/web/dataset/call_kw']:
-                    request.env['portal.audit.log'].sudo().log_action(
-                        action='page_view',
-                        description=f'Acceso a {current_route}'
-                    )
-            except Exception as e:
-                _logger.debug(f"Error en logging automático: {str(e)}")
-        
         return values
 
     # ========== REDIRECCIONES AUTOMÁTICAS (PRIORIDAD ALTA) ==========
@@ -220,15 +206,31 @@ class PortalB2B(CustomerPortal):
                                 message=False, download=False, **kw):
         """
         Intercepta /my/invoices/<id> para:
-        - Permitir descargas PDF con o sin token
+        - BLOQUEAR descargas PDF para distribuidores (se envían por correo desde backend)
+        - Permitir descargas solo con access_token (usuarios externos/correos)
         - Redirigir a /mis-facturas para distribuidores
         """
-        # Si es una descarga de PDF, manejar directamente
+        # Verificar si es distribuidor autenticado
+        if not request.env.user._is_public():
+            partner = request.env.user.partner_id
+            if partner.is_distributor:
+                # DISTRIBUIDORES: NO pueden descargar, solo ver
+                if report_type in ('html', 'pdf', 'text'):
+                    _logger.warning(
+                        f"Distribuidor {partner.name} intentó descargar factura {invoice_id}. "
+                        f"Descarga bloqueada - las facturas se envían por correo."
+                    )
+                    return request.redirect(f'/mis-facturas/{invoice_id}?error=download_blocked')
+                
+                # Redirigir a vista de detalle en español
+                return request.redirect(f'/mis-facturas/{invoice_id}')
+        
+        # Para usuarios NO distribuidores o con access_token, permitir descarga
         if report_type in ('html', 'pdf', 'text'):
             _logger.debug(f"Descarga de factura {invoice_id} en formato {report_type}")
             
             try:
-                # Intentar obtener la factura con acceso público si hay token
+                # Intentar obtener la factura
                 if access_token:
                     invoice_sudo = request.env['account.move'].sudo().search([
                         ('id', '=', invoice_id),
@@ -252,6 +254,11 @@ class PortalB2B(CustomerPortal):
                 if not invoice_sudo.exists():
                     _logger.error(f"Factura {invoice_id} no encontrada")
                     return request.redirect('/mis-facturas')
+                
+                # Asegurar que la factura tenga token (generar si no existe)
+                if not invoice_sudo.access_token:
+                    invoice_sudo.access_token = invoice_sudo._generate_access_token()
+                    _logger.info(f"Token generado para factura {invoice_sudo.name}")
                 
                 # Generar PDF
                 if report_type == 'pdf':
@@ -296,7 +303,7 @@ class PortalB2B(CustomerPortal):
         if request.env.user and not request.env.user._is_public():
             partner = request.env.user.partner_id
             if partner.is_distributor:
-                return request.redirect('/mis-facturas')
+                return request.redirect(f'/mis-facturas/{invoice_id}')
         
         # Para usuarios normales, comportamiento estándar
         return super().portal_my_invoice_detail(invoice_id=invoice_id, **kw)
@@ -340,7 +347,7 @@ class PortalB2B(CustomerPortal):
             
             # Obtener últimos 5 pedidos
             recent_orders = request.env['sale.order'].search([
-                ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+                ('partner_id', 'child_of', [partner.commercial_partner_id.id]),
                 ('state', '!=', 'cancel'),
             ], order='date_order desc', limit=5)
             values['recent_orders'] = recent_orders
@@ -358,7 +365,7 @@ class PortalB2B(CustomerPortal):
         """Domain para pedidos del distribuidor actual."""
         partner = request.env.user.partner_id
         return [
-            ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+            ('partner_id', 'child_of', [partner.commercial_partner_id.id]),
             ('state', '!=', 'cancel'),
         ]
 
@@ -367,7 +374,7 @@ class PortalB2B(CustomerPortal):
         partner = request.env.user.partner_id
         domain = [
             ('move_type', '=', invoice_type or 'out_invoice'),
-            ('partner_id', 'child_of', partner.commercial_partner_id.id),
+            ('partner_id', 'child_of', [partner.commercial_partner_id.id]),
         ]
         return domain
 
@@ -517,17 +524,6 @@ class PortalB2B(CustomerPortal):
                 f"por usuario {request.env.user.login}"
             )
             return request.redirect('/mis-pedidos')
-
-        # ✅ LOGGING
-        try:
-            request.env['portal.audit.log'].log_action(
-                action='view_order',
-                model_name='sale.order',
-                record_id=order_id,
-                description=f'Visualización del pedido {order_sudo.name}'
-            )
-        except Exception as log_error:
-            _logger.warning(f"Error logging action: {str(log_error)}")
 
         productos_sin_stock = order_sudo.obtener_productos_sin_stock()
 
@@ -805,17 +801,6 @@ class PortalB2B(CustomerPortal):
                 f"Pedido {order.name} creado desde portal por {request.env.user.login}"
             )
 
-            # ✅ LOGGING
-            try:
-                request.env['portal.audit.log'].log_action(
-                    action='create_order',
-                    model_name='sale.order',
-                    record_id=order.id,
-                    description=f'Pedido {order.name} creado con {len(valid_lines)} líneas'
-                )
-            except Exception as log_error:
-                _logger.warning(f"Error logging action: {str(log_error)}")
-
             return {
                 'success': True,
                 'order_id': order.id,
@@ -1056,6 +1041,66 @@ class PortalB2B(CustomerPortal):
         except Exception as e:
             _logger.error(f"Error al exportar pedidos: {str(e)}")
             return request.redirect('/mis-pedidos?error=export_failed')
+
+    @http.route(['/mis-facturas/<int:invoice_id>'], type='http', auth='user', website=True)
+    def portal_factura_detalle(self, invoice_id, report_type=None, access_token=None, **kw):
+        """Detalle de una factura específica (SIN descarga para distribuidores)."""
+        try:
+            invoice_sudo = self._document_check_access('account.move', invoice_id, access_token)
+        except (AccessError, MissingError):
+            return request.redirect('/mis-facturas')
+
+        partner = request.env.user.partner_id
+        if invoice_sudo.partner_id.commercial_partner_id != partner.commercial_partner_id:
+            _logger.warning(
+                f"Intento de acceso no autorizado a factura {invoice_id} "
+                f"por usuario {request.env.user.login}"
+            )
+            return request.redirect('/mis-facturas')
+
+        # BLOQUEAR descarga de PDF para distribuidores
+        if report_type == 'pdf':
+            if partner.is_distributor:
+                _logger.warning(
+                    f"Distribuidor {partner.name} intentó descargar factura {invoice_sudo.name}. "
+                    f"Descarga bloqueada - las facturas se envían por correo desde el backend."
+                )
+                return request.redirect(f'/mis-facturas/{invoice_id}?error=download_blocked')
+            
+            # Para usuarios NO distribuidores, permitir descarga
+            try:
+                # Asegurar que la factura tenga token
+                if not invoice_sudo.access_token:
+                    invoice_sudo.sudo().access_token = invoice_sudo._generate_access_token()
+                    _logger.info(f"Token generado para factura {invoice_sudo.name}")
+                
+                # Generar PDF usando el reporte estándar de Odoo
+                pdf_content, content_type = request.env.ref('account.account_invoices').sudo()._render_qweb_pdf([invoice_id])
+                
+                # Headers para forzar descarga
+                pdfhttpheaders = [
+                    ('Content-Type', 'application/pdf'),
+                    ('Content-Length', len(pdf_content)),
+                    ('Content-Disposition', f'attachment; filename="{invoice_sudo.name}.pdf"')
+                ]
+                
+                _logger.info(f"PDF generado correctamente para factura {invoice_sudo.name}")
+                
+                return request.make_response(pdf_content, headers=pdfhttpheaders)
+            except Exception as e:
+                _logger.error(f"Error generando PDF de factura {invoice_id}: {str(e)}", exc_info=True)
+                return request.redirect(f'/mis-facturas/{invoice_id}?error=pdf_failed')
+
+        # Vista de detalle de la factura en el navegador
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'invoice': invoice_sudo,
+            'page_name': 'factura_detalle',
+            'report_type': report_type,
+            'is_distributor': partner.is_distributor,  # Para ocultar botón en template
+        })
+
+        return request.render('portal_b2b_base.portal_factura_detalle', values)
 
     @http.route(['/mis-facturas', '/mis-facturas/page/<int:page>'], 
                 type='http', auth='user', website=True)
@@ -1406,17 +1451,6 @@ class PortalB2B(CustomerPortal):
             
             _logger.info(f"Devolución creada y enviada por {partner.name} para pedido {order.name}")
             
-            # ✅ LOGGING
-            try:
-                request.env['portal.audit.log'].log_action(
-                    action='create_return',
-                    model_name='sale.return',
-                    record_id=return_obj.id,
-                    description=f'Solicitud de devolución creada para pedido {order.name}'
-                )
-            except Exception as log_error:
-                _logger.warning(f"Error logging action: {str(log_error)}")
-            
             return request.redirect(f'/mis-devoluciones?created=success')
             
         except Exception as e:
@@ -1604,7 +1638,7 @@ class PortalB2B(CustomerPortal):
         try:
             # Dominio base para pedidos del distribuidor
             order_domain = [
-                ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+                ('partner_id', 'child_of', [partner.commercial_partner_id.id]),
                 ('date_order', '>=', start_date),
                 ('date_order', '<=', today),
             ]
@@ -1887,17 +1921,6 @@ class PortalB2B(CustomerPortal):
                 f"por {partner.name}"
             )
 
-            # ✅ LOGGING
-            try:
-                request.env['portal.audit.log'].log_action(
-                    action='upload_document',
-                    model_name='sale.order',
-                    record_id=order_id,
-                    description=f'Documento subido: {doc_name}'
-                )
-            except Exception as log_error:
-                _logger.warning(f"Error logging action: {str(log_error)}")
-
             return request.redirect(
                 f'/mis-pedidos/{order_id}/documentos?uploaded=success'
             )
@@ -2071,7 +2094,6 @@ class PortalB2B(CustomerPortal):
                     'name': product.name,
                     'default_code': product.default_code or '',
                     'list_price': price,
-                    'qty_available': float(product.qty_available) if product.type == 'product' else 999,
                     'uom_name': product.uom_id.name,
                 })
 
@@ -2097,10 +2119,7 @@ class PortalB2B(CustomerPortal):
                 return {'error': _('Producto no encontrado')}
 
             return {
-                'qty_available': float(product.qty_available),
-                'incoming_qty': float(product.incoming_qty),
-                'outgoing_qty': float(product.outgoing_qty),
-                'virtual_available': float(product.virtual_available),
+                'message': 'Información de stock no disponible para distribuidores'
             }
 
         except Exception as e:
@@ -2226,7 +2245,6 @@ class PortalB2B(CustomerPortal):
                     'default_code': product.default_code or '',
                     'description_sale': product.description_sale or '',
                     'list_price': price,
-                    'qty_available': float(product.qty_available) if product.type == 'product' else 999,
                     'uom_name': product.uom_id.name,
                     'image_url': image_url,
                     'categ_id': product.categ_id.id if product.categ_id else None,
