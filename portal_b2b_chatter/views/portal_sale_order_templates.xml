@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Personalizar el chatter para distribuidores en el portal estándar (/my/orders) -->
+    <template id="portal_sale_order_chatter_custom" name="Portal Pedidos - Chatter Personalizado" inherit_id="sale.sale_order_portal_template">
+
+        <!-- Reemplazar el título del chatter con uno más amigable en español -->
+        <xpath expr="//div[@id='sale_order_communication']/h3" position="replace">
+            <h3 class="mb-3">
+                <i class="fa fa-comments-o me-2"></i>
+                Mensajes y Comunicación
+            </h3>
+            <p class="text-muted mb-4" style="font-size: 0.95rem;">
+                Puede enviar consultas o comentarios sobre este pedido.
+                Nuestro equipo responderá a la brevedad. Aquí también recibirá notificaciones
+                importantes como números de seguimiento de envíos.
+            </p>
+        </xpath>
+
+        <!-- Personalizar el atributo title del botón de discussion -->
+        <xpath expr="//a[@href='#discussion']" position="attributes">
+            <attribute name="title">Enviar mensaje sobre este pedido</attribute>
+        </xpath>
+
+    </template>
+
+    <!-- Añadir chatter al portal personalizado de distribuidores (/mis-pedidos) -->
+    <template id="portal_pedido_detalle_chatter" name="Portal B2B Pedidos - Chatter" inherit_id="portal_b2b_base.portal_pedido_detalle">
+
+        <!-- Añadir el chatter después de la última card (botones de acción) -->
+        <xpath expr="//div[@class='row']/div[@class='col-lg-10 offset-lg-1']" position="inside">
+            <hr class="my-4"/>
+            <div id="sale_order_communication" class="mb-4">
+                <h3 class="mb-3">
+                    <i class="fa fa-comments-o me-2"></i>
+                    Mensajes y Comunicación
+                </h3>
+                <p class="text-muted mb-4" style="font-size: 0.95rem;">
+                    Puede enviar consultas o comentarios sobre este pedido.
+                    Nuestro equipo responderá a la brevedad. Aquí también recibirá notificaciones
+                    importantes como números de seguimiento de envíos.
+                </p>
+                <t t-call="portal.message_thread">
+                    <t t-set="object" t-value="order"/>
+                </t>
+            </div>
+        </xpath>
+
+    </template>
+
+</odoo>

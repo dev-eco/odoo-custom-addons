@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        NOTA: Las reglas de acceso a mensajes se gestionan mediante
+        el override del método _search() en models/mail_message.py
+
+        Esto permite un control más fino y dinámico del acceso
+        sin las limitaciones de las record rules.
+    -->
+</odoo>

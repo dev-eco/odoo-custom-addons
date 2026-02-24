@@ -1,0 +1,28 @@
+/* Estilos para mejorar apariencia del chatter en el portal */
+
+.o_portal_chatter {
+    .o_portal_chatter_header {
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .o_portal_chatter_composer {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .o_portal_chatter_messages {
+        .o_portal_chatter_message {
+            border-left: 3px solid #007bff;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+
+            &.o_message_internal {
+                display: none; // Ocultar mensajes internos por si pasan el filtro
+            }
+        }
+    }
+}
