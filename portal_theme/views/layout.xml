@@ -61,72 +61,9 @@
                         <i class="fa fa-cog fa-lg"></i>
                     </button>
                 </div>
-                
-                <!-- Script para abrir/cerrar panel de configuración -->
-                <script type="text/javascript">
-                <![CDATA[
-                    (function() {
-                        console.log('[Settings Panel] Inicializando botón flotante');
-                        
-                        function initPanel() {
-                            const btn = document.getElementById('settings-btn');
-                            const panel = document.getElementById('settings-panel');
-                            const closeBtn = document.getElementById('settings-close-btn');
-                            
-                            if (!btn || !panel) {
-                                console.warn('[Settings Panel] Elementos no encontrados, reintentando...');
-                                setTimeout(initPanel, 500);
-                                return;
-                            }
-                            
-                            console.log('[Settings Panel] ✓ Elementos encontrados');
-                            
-                            // Abrir panel
-                            btn.addEventListener('click', function(e) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                panel.style.display = 'block';
-                                panel.classList.add('show');
-                                console.log('[Settings Panel] Panel abierto');
-                            });
-                            
-                            // Cerrar panel
-                            if (closeBtn) {
-                                closeBtn.addEventListener('click', function(e) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    panel.style.display = 'none';
-                                    panel.classList.remove('show');
-                                    console.log('[Settings Panel] Panel cerrado');
-                                });
-                            }
-                            
-                            // Cerrar al hacer clic fuera
-                            document.addEventListener('click', function(e) {
-                                if (!btn.contains(e.target) && 
-                                    !panel.contains(e.target) &&
-                                    panel.classList.contains('show')) {
-                                    panel.style.display = 'none';
-                                    panel.classList.remove('show');
-                                }
-                            });
-                            
-                            // Prevenir que clics dentro del panel lo cierren
-                            panel.addEventListener('click', function(e) {
-                                e.stopPropagation();
-                            });
-                        }
-                        
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', initPanel);
-                        } else {
-                            initPanel();
-                        }
-                    })();
-                ]]>
-                </script>
-                
+
                 <!-- Panel de configuración (oculto por defecto) -->
+                <!-- La lógica de apertura/cierre está en preferences.js -->
                 <div id="settings-panel" class="position-fixed shadow-lg" 
                      style="bottom: 90px; right: 20px; width: 340px; max-height: 600px; z-index: 1040; display: none;">
                     

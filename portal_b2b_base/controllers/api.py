@@ -29,11 +29,11 @@ class DistributorAPI(http.Controller):
                     'error': _('Usuario no autorizado')
                 }
             
-            # Calcular pedidos pendientes (borradores y enviados)
+            # Calcular pedidos pendientes (borradores y enviados) con límite
             pending_orders = request.env['sale.order'].search([
                 ('partner_id', '=', partner.id),
                 ('state', 'in', ['draft', 'sent'])
-            ])
+            ], limit=1000)  # Límite de seguridad
             pending_amount = sum(pending_orders.mapped('amount_total'))
             
             credit_limit = float(partner.credit_limit or 0.0)
@@ -68,13 +68,16 @@ class DistributorAPI(http.Controller):
         Obtener notificaciones del usuario.
         
         Args:
-            limit: Número máximo de notificaciones
+            limit: Número máximo de notificaciones (máximo 100)
         
         Returns:
             dict: Lista de notificaciones y contador de no leídas
         """
         try:
             partner = request.env.user.partner_id
+            
+            # Validar y limitar el parámetro limit
+            limit = min(int(limit), 100)  # Nunca más de 100
             
             notifications = request.env['portal.notification'].search([
                 ('partner_id', '=', partner.id),
@@ -224,6 +227,11 @@ class DistributorAPI(http.Controller):
                     'error': _('Usuario no autorizado')
                 }
             
+            # Validar período
+            valid_periods = ['week', 'month', 'quarter', 'year']
+            if period not in valid_periods:
+                period = 'month'
+            
             # Calcular fechas según período
             from datetime import datetime, timedelta
             today = datetime.today().date()
@@ -239,7 +247,7 @@ class DistributorAPI(http.Controller):
             else:
                 start_date = today - timedelta(days=30)
             
-            # Buscar o crear estadísticas
+            # Buscar o crear estadísticas con límite
             stats_model = request.env['distributor.statistics']
             stats = stats_model.search([
                 ('partner_id', '=', partner.id),

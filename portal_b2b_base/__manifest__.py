@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Portal B2B Base',
-    'version': '17.0.1.0.1',
+    'version': '17.0.3.0.0',
     'category': 'Sales/Sales',
     'summary': 'Portal B2B para distribuidores - Módulo base con gestión de pedidos y control de crédito',
     'description': """
@@ -9,6 +9,15 @@ Portal B2B Base
 ===============
 
 Módulo núcleo del portal B2B genérico para distribuidores.
+
+**Versión 3.0.0 - Refactorización Mayor:**
+- Eliminación de código duplicado en sale_return.py
+- Optimización de recursión en res_partner.py con límites de profundidad
+- Optimización de computed fields en distributor_statistics.py
+- Refactorización de cron complejo en sale_order_template.py
+- Protección de búsquedas con límites en api.py
+- Mejoras en rendimiento y mantenibilidad
+- Código más limpio y escalable
 
 Funcionalidades principales:
 -----------------------------
@@ -91,6 +100,9 @@ Licencia: LGPL-3
         'wizard/sale_order_template_wizard_views.xml',
         'wizard/sale_return_reject_wizard_views.xml',
 
+        # Menús de backend (ANTES de las vistas que los referencian)
+        'views/portal_backend_menus.xml',
+
         # Vistas backend
         'views/res_partner_views.xml',
         'views/sale_order_views.xml',
@@ -102,7 +114,11 @@ Licencia: LGPL-3
         # Templates portal
         'views/portal_templates.xml',
         'views/portal_menu.xml',
+        
+        # Herramientas de fix
+        'views/portal_fix_actions.xml',
     ],
+    'post_init_hook': 'post_init_hook',
     'assets': {
         'web.assets_frontend': [
             # Estilos

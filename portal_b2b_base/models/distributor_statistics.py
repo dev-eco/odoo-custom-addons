@@ -35,73 +35,73 @@ class DistributorStatistics(models.Model):
         default=fields.Date.today
     )
     
-    # Métricas de pedidos
+    # Métricas de pedidos (sin store para evitar recalculos costosos)
     total_orders = fields.Integer(
         string='Total Pedidos',
         compute='_compute_order_metrics',
-        store=True
+        store=False
     )
     
     confirmed_orders = fields.Integer(
         string='Pedidos Confirmados',
         compute='_compute_order_metrics',
-        store=True
+        store=False
     )
     
     cancelled_orders = fields.Integer(
         string='Pedidos Cancelados',
         compute='_compute_order_metrics',
-        store=True
+        store=False
     )
     
     total_amount = fields.Monetary(
         string='Importe Total',
         currency_field='currency_id',
         compute='_compute_order_metrics',
-        store=True
+        store=False
     )
     
     average_order_value = fields.Monetary(
         string='Valor Medio Pedido',
         currency_field='currency_id',
         compute='_compute_order_metrics',
-        store=True
+        store=False
     )
     
-    # Métricas de productos
+    # Métricas de productos (sin store para evitar recalculos costosos)
     total_products_ordered = fields.Integer(
         string='Productos Pedidos',
         compute='_compute_product_metrics',
-        store=True
+        store=False
     )
     
     top_product_ids = fields.Many2many(
         'product.product',
         string='Productos Más Vendidos',
         compute='_compute_product_metrics',
-        store=True
+        store=False
     )
     
-    # Métricas de facturación
+    # Métricas de facturación (sin store para evitar recalculos costosos)
     total_invoiced = fields.Monetary(
         string='Total Facturado',
         currency_field='currency_id',
         compute='_compute_invoice_metrics',
-        store=True
+        store=False
     )
     
     total_paid = fields.Monetary(
         string='Total Pagado',
         currency_field='currency_id',
         compute='_compute_invoice_metrics',
-        store=True
+        store=False
     )
     
     pending_payment = fields.Monetary(
         string='Pendiente de Pago',
         currency_field='currency_id',
         compute='_compute_invoice_metrics',
-        store=True
+        store=False
     )
     
     currency_id = fields.Many2one(

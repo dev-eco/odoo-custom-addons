@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== MENÚS DE BACKEND ========== -->
+
+    <!-- Menú principal Portal B2B en Ventas -->
+    <menuitem id="menu_backend_portal_b2b_root"
+              name="Portal B2B"
+              parent="sale.sale_menu_root"
+              sequence="50"/>
+
+    <!-- Menú de Configuración -->
+    <menuitem id="menu_portal_b2b_config"
+              name="Configuración"
+              parent="menu_backend_portal_b2b_root"
+              sequence="100"/>
+
+    <!-- Submenú: Distribuidores -->
+    <menuitem id="menu_backend_portal_b2b_distributors"
+              name="Distribuidores"
+              parent="menu_backend_portal_b2b_root"
+              action="base.action_partner_form"
+              sequence="10"/>
+
+    <!-- Submenú: Pedidos Portal -->
+    <menuitem id="menu_backend_portal_b2b_orders"
+              name="Pedidos Portal"
+              parent="menu_backend_portal_b2b_root"
+              action="sale.action_orders"
+              sequence="20"/>
+
+    <!-- Submenú: Mensajes Portal -->
+    <menuitem id="menu_backend_portal_b2b_messages"
+              name="Mensajes"
+              parent="menu_backend_portal_b2b_root"
+              sequence="30"/>
+
+    <!-- Submenú: Devoluciones -->
+    <menuitem id="menu_backend_portal_b2b_returns"
+              name="Devoluciones"
+              parent="menu_backend_portal_b2b_root"
+              sequence="40"/>
+
+</odoo>

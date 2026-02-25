@@ -100,7 +100,7 @@
                                                                 <t t-if="address.tail_lift_required">
                                                                     <p class="mb-0">
                                                                         <i class="fa fa-truck me-2" title="Pluma" aria-hidden="true"/>
-                                                                        Requiere camión con pluma
+                                                                        Requiere camión con plataforma elevadora
                                                                     </p>
                                                                 </t>
                                                             </div>
