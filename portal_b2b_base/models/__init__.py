@@ -10,3 +10,5 @@ from . import portal_message
 from . import sale_return
 from . import portal_user_preferences
 from . import res_config_settings
+from . import portal_data_diagnostic
+from . import sale_order_fix

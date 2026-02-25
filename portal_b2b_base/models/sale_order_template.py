@@ -291,61 +291,86 @@ class SaleOrderTemplate(models.Model):
         Cron para crear pedidos recurrentes automáticamente.
         Ejecutar diariamente.
         """
-        today = fields.Date.today()
-        
-        templates = self.search([
-            ('recurrence_enabled', '=', True),
-            ('recurrence_active', '=', True),
-            ('recurrence_next_date', '<=', today),
-        ])
+        templates = self._get_templates_to_process()
         
         for template in templates:
             try:
-                # Crear pedido desde plantilla
-                order = self.env['sale.order'].sudo().create({
-                    'partner_id': template.partner_id.id,
-                    'pricelist_id': template.partner_id.obtener_tarifa_aplicable().id,
-                    'note': f'Pedido recurrente generado automáticamente desde plantilla: {template.name}',
-                    'is_recurring': True,
-                    'template_id': template.id,
-                    'delivery_address_id': template.delivery_address_id.id if template.delivery_address_id else False,
-                    'distributor_label_id': template.distributor_label_id.id if template.distributor_label_id else False,
-                })
-                
-                # Crear líneas
-                for line in template.line_ids:
-                    self.env['sale.order.line'].sudo().create({
-                        'order_id': order.id,
-                        'product_id': line.product_id.id,
-                        'product_uom_qty': line.quantity,
-                    })
-                
-                # Actualizar próxima fecha
-                template.recurrence_next_date = today + timedelta(days=template.recurrence_interval)
-                
-                # Crear notificación
-                self.env['portal.notification'].sudo().create_notification(
-                    partner_id=template.partner_id.id,
-                    title=f'Pedido Recurrente Creado: {order.name}',
-                    message=f'Se ha creado automáticamente el pedido {order.name} desde la plantilla {template.name}',
-                    notification_type='success',
-                    action_url=f'/mis-pedidos/{order.id}',
-                    related_model='sale.order',
-                    related_id=order.id,
-                )
-                
-                _logger.info(f"Pedido recurrente {order.name} creado desde plantilla {template.name}")
-                
+                if self._validate_template(template):
+                    order = self._create_order_from_template(template)
+                    self._send_notification_email(template, order)
+                    self._update_template_next_date(template)
             except Exception as e:
-                _logger.error(f"Error creando pedido recurrente desde plantilla {template.name}: {str(e)}")
-                
-                # Notificar error
-                self.env['portal.notification'].sudo().create_notification(
-                    partner_id=template.partner_id.id,
-                    title='Error en Pedido Recurrente',
-                    message=f'No se pudo crear el pedido automático desde la plantilla {template.name}. Por favor, contacte con su gestor.',
-                    notification_type='danger',
-                )
+                _logger.error(f"Error procesando template {template.id}: {e}")
+                self._send_error_notification(template)
+                continue
+    
+    def _get_templates_to_process(self):
+        """Obtiene templates pendientes de procesar."""
+        today = fields.Date.today()
+        return self.search([
+            ('recurrence_enabled', '=', True),
+            ('recurrence_active', '=', True),
+            ('recurrence_next_date', '<=', today),
+        ], limit=100)  # Límite de seguridad
+    
+    def _validate_template(self, template):
+        """Valida que el template esté listo para procesar."""
+        if not template.partner_id:
+            _logger.warning(f"Template {template.id} sin partner_id")
+            return False
+        if not template.line_ids:
+            _logger.warning(f"Template {template.id} sin líneas")
+            return False
+        return True
+    
+    def _create_order_from_template(self, template):
+        """Crea pedido desde template."""
+        order = self.env['sale.order'].sudo().create({
+            'partner_id': template.partner_id.id,
+            'pricelist_id': template.partner_id.obtener_tarifa_aplicable().id,
+            'note': f'Pedido recurrente generado automáticamente desde plantilla: {template.name}',
+            'is_recurring': True,
+            'template_id': template.id,
+            'delivery_address_id': template.delivery_address_id.id if template.delivery_address_id else False,
+            'distributor_label_id': template.distributor_label_id.id if template.distributor_label_id else False,
+        })
+        
+        # Crear líneas
+        for line in template.line_ids:
+            self.env['sale.order.line'].sudo().create({
+                'order_id': order.id,
+                'product_id': line.product_id.id,
+                'product_uom_qty': line.quantity,
+            })
+        
+        _logger.info(f"Pedido recurrente {order.name} creado desde template {template.name}")
+        return order
+    
+    def _send_notification_email(self, template, order):
+        """Envía email de notificación."""
+        self.env['portal.notification'].sudo().create_notification(
+            partner_id=template.partner_id.id,
+            title=f'Pedido Recurrente Creado: {order.name}',
+            message=f'Se ha creado automáticamente el pedido {order.name} desde la plantilla {template.name}',
+            notification_type='success',
+            action_url=f'/mis-pedidos/{order.id}',
+            related_model='sale.order',
+            related_id=order.id,
+        )
+    
+    def _update_template_next_date(self, template):
+        """Actualiza próxima fecha de ejecución."""
+        today = fields.Date.today()
+        template.recurrence_next_date = today + timedelta(days=template.recurrence_interval)
+    
+    def _send_error_notification(self, template):
+        """Envía notificación de error."""
+        self.env['portal.notification'].sudo().create_notification(
+            partner_id=template.partner_id.id,
+            title='Error en Pedido Recurrente',
+            message=f'No se pudo crear el pedido automático desde la plantilla {template.name}. Por favor, contacte con su gestor.',
+            notification_type='danger',
+        )
 
 
 class SaleOrderTemplateLine(models.Model):

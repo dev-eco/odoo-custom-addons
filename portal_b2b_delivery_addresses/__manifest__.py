@@ -85,4 +85,7 @@ Licencia: LGPL-3
     'installable': True,
     'application': False,
     'auto_install': False,
+    'test': [
+        'tests/test_delivery_portal.py',
+    ],
 }

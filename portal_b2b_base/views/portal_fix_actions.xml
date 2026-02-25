@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== ACCIONES DE SERVIDOR ========== -->
+
+    <!-- Diagnóstico de pedidos por partner -->
+    <record id="action_server_diagnose_portal_orders" model="ir.actions.server">
+        <field name="name">Diagnosticar Pedidos Portal</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_diagnose_portal_orders()
+        </field>
+    </record>
+
+    <!-- Recalcular portal_visible de todos los pedidos -->
+    <record id="action_server_fix_portal_visibility_all" model="ir.actions.server">
+        <field name="name">Recalcular portal_visible (TODOS los pedidos)</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_fix_portal_visibility_all()
+        </field>
+    </record>
+
+    <!-- Recalcular portal_visible por partner -->
+    <record id="action_server_fix_portal_visibility_partner" model="ir.actions.server">
+        <field name="name">Recalcular portal_visible (Este Partner)</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+# Buscar pedidos del partner
+orders = env['sale.order'].search([
+    ('partner_id', 'child_of', [records.commercial_partner_id.id]),
+    ('state', '!=', 'cancel'),
+])
+
+count_fixed = 0
+for order in orders:
+    old_value = order.portal_visible
+    order._compute_portal_visible()
+    if order.portal_visible != old_value:
+        count_fixed += 1
+
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'Recálculo Completado',
+        'message': f'{count_fixed} pedidos actualizados para {records.name}.',
+        'type': 'success',
+    }
+}
+        </field>
+    </record>
+
+    <!-- Generar access_token en pedidos -->
+    <record id="action_server_ensure_tokens_orders" model="ir.actions.server">
+        <field name="name">Generar Access Tokens (Pedidos)</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_ensure_access_tokens_all()
+        </field>
+    </record>
+
+    <!-- Generar access_token en facturas -->
+    <record id="action_server_ensure_tokens_invoices" model="ir.actions.server">
+        <field name="name">Generar Access Tokens (Facturas)</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_ensure_access_tokens_all()
+        </field>
+    </record>
+
+
+    <!-- ========== MENÚ DE ADMINISTRACIÓN ========== -->
+
+    <menuitem id="menu_portal_fix_tools"
+              name="Herramientas Portal"
+              parent="portal_b2b_base.menu_portal_b2b_config"
+              sequence="100"/>
+
+    <menuitem id="menu_fix_portal_visibility"
+              name="Recalcular Visibilidad Portal"
+              parent="menu_portal_fix_tools"
+              action="action_server_fix_portal_visibility_all"
+              sequence="10"/>
+
+    <menuitem id="menu_ensure_tokens_orders"
+              name="Generar Tokens (Pedidos)"
+              parent="menu_portal_fix_tools"
+              action="action_server_ensure_tokens_orders"
+              sequence="20"/>
+
+    <menuitem id="menu_ensure_tokens_invoices"
+              name="Generar Tokens (Facturas)"
+              parent="menu_portal_fix_tools"
+              action="action_server_ensure_tokens_invoices"
+              sequence="30"/>
+
+</odoo>

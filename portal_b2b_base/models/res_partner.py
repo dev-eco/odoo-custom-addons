@@ -264,31 +264,32 @@ class ResPartner(models.Model):
             ('categ_id', 'in', all_category_ids)
         ]
 
-    def _get_child_categories(self, category_ids):
+    def _get_child_categories(self, category_ids, max_depth=10):
         """
-        Obtiene todas las categorías hijas recursivamente.
+        Obtiene todas las categorías hijas recursivamente con límite de profundidad.
         
         Args:
             category_ids: Lista de IDs de categorías padre
+            max_depth: Profundidad máxima de recursión (default 10)
             
         Returns:
             list: Lista de IDs incluyendo padres e hijos
         """
-        if not category_ids:
+        if not category_ids or max_depth <= 0:
             return []
         
         all_ids = set(category_ids)
         
-        # Buscar categorías hijas
+        # Buscar categorías hijas con límite de seguridad
         child_categories = self.env['product.category'].search([
             ('parent_id', 'in', list(all_ids))
-        ])
+        ], limit=100)  # Límite de seguridad por nivel
         
         if child_categories:
-            # Recursión para obtener nietos, bisnietos, etc.
+            # Recursión con profundidad reducida
             child_ids = child_categories.ids
             all_ids.update(child_ids)
-            grandchild_ids = self._get_child_categories(child_ids)
+            grandchild_ids = self._get_child_categories(child_ids, max_depth - 1)
             all_ids.update(grandchild_ids)
         
         return list(all_ids)

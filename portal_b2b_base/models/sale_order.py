@@ -36,15 +36,20 @@ class AccountMove(models.Model):
 
     @api.model
     def _ensure_access_tokens(self):
-        """Asegura que todas las facturas tengan access_token."""
+        """
+        Asegura que todas las facturas tengan access_token.
+        Llamado desde post_init_hook.
+        """
         invoices_without_token = self.search([
             ('access_token', '=', False),
-            ('move_type', 'in', ['out_invoice', 'out_refund'])
+            ('move_type', 'in', ['out_invoice', 'out_refund']),
+            ('state', '=', 'posted'),
         ])
         if invoices_without_token:
+            _logger.info(f"Generando access_token para {len(invoices_without_token)} facturas...")
             for invoice in invoices_without_token:
                 invoice.access_token = self._generate_access_token()
-            _logger.info(f"Tokens generados para {len(invoices_without_token)} facturas")
+            _logger.info(f"✓ Tokens generados para {len(invoices_without_token)} facturas")
 
 
 class SaleOrder(models.Model):
@@ -310,14 +315,19 @@ class SaleOrder(models.Model):
 
     @api.model
     def _ensure_access_tokens(self):
-        """Asegura que todos los pedidos tengan access_token."""
+        """
+        Asegura que todos los pedidos tengan access_token.
+        Llamado desde post_init_hook.
+        """
         orders_without_token = self.search([
-            ('access_token', '=', False)
+            ('access_token', '=', False),
+            ('state', '!=', 'cancel'),
         ])
         if orders_without_token:
+            _logger.info(f"Generando access_token para {len(orders_without_token)} pedidos...")
             for order in orders_without_token:
                 order.access_token = self._generate_access_token()
-            _logger.info(f"Tokens generados para {len(orders_without_token)} pedidos")
+            _logger.info(f"✓ Tokens generados para {len(orders_without_token)} pedidos")
 
     @api.model
     def _ensure_order_status_defaults(self):
@@ -381,33 +391,6 @@ class SaleOrder(models.Model):
             order.validar_credito_antes_confirmar()
 
         return super(SaleOrder, self).action_confirm()
-    """
-    def _action_confirm(self):
-        
-        Override para transferir notas al picking después de confirmar.
-        
-        Copia el contenido del campo 'note' del pedido al campo 'external_note'
-        del albarán (stock.picking) generado automáticamente.
-       
-        result = super()._action_confirm()
-        
-        # Transferir notas del pedido al campo external_note del picking
-        for order in self:
-            if order.note and order.picking_ids:
-                for picking in order.picking_ids:
-                    if not picking.external_note:
-                        picking.external_note = order.note
-                    else:
-                        # Si ya existe contenido, añadir las notas del pedido
-                        picking.external_note = f"{picking.external_note}\n\n{order.note}"
-                    
-                    _logger.info(
-                        f"Notas transferidas del pedido {order.name} "
-                        f"al albarán {picking.name}"
-                    )
-        
-        return result
-        """
     def action_cancel_from_portal(self) -> dict:
         """
         Cancela el pedido desde el portal.
