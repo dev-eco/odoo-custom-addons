@@ -296,10 +296,6 @@ class SaleReturn(models.Model):
         
         _logger.info(f"Nota de crédito {credit_note.name} creada para devolución {self.name}")
     
-    def action_close(self):
-        """Cierra la devolución."""
-        self.ensure_one()
-        self.write({'state': 'closed'})
 
     @api.model
     def get_distributor_orders_with_products(self, partner_id):
@@ -342,14 +338,6 @@ class SaleReturn(models.Model):
         
         return orders_data
 
-    def action_submit(self):
-        """Override para enviar email automático."""
-        result = super().action_submit()
-        
-        # Enviar email automático
-        self._send_return_notification_email()
-        
-        return result
 
     def _send_return_notification_email(self):
         """Envía notificación por email de nueva devolución."""

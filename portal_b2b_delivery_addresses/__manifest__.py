@@ -16,7 +16,7 @@ Funcionalidades:
 * Múltiples direcciones por distribuidor
 * Alias personalizados para direcciones (ej: "Obra Madrid", "Almacén Norte")
 * Información de contacto específica por dirección
-* Requisitos especiales de entrega (cita previa, camión con pluma)
+* Requisitos especiales de entrega (cita previa, camión con plataforma elevadora)
 * Notas de entrega personalizadas
 * Selección de dirección en creación de pedidos
 * Dirección por defecto configurable
@@ -85,4 +85,7 @@ Licencia: LGPL-3
     'installable': True,
     'application': False,
     'auto_install': False,
+    'test': [
+        'tests/test_delivery_portal.py',
+    ],
 }

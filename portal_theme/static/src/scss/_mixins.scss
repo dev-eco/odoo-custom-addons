@@ -1,0 +1,140 @@
+/**
+ * Portal B2B Theme - Mixins Reutilizables
+ * Mixins SCSS para patrones comunes
+ */
+
+// ========== RESPONSIVE ==========
+
+@mixin respond-to($breakpoint) {
+    @if $breakpoint == 'xs' {
+        @media (max-width: #{$breakpoint-sm - 1}) { @content; }
+    }
+    @else if $breakpoint == 'sm' {
+        @media (min-width: $breakpoint-sm) { @content; }
+    }
+    @else if $breakpoint == 'md' {
+        @media (min-width: $breakpoint-md) { @content; }
+    }
+    @else if $breakpoint == 'lg' {
+        @media (min-width: $breakpoint-lg) { @content; }
+    }
+    @else if $breakpoint == 'xl' {
+        @media (min-width: $breakpoint-xl) { @content; }
+    }
+    @else if $breakpoint == 'xxl' {
+        @media (min-width: $breakpoint-xxl) { @content; }
+    }
+}
+
+// ========== FLEXBOX ==========
+
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@mixin flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+// ========== GRADIENTES ==========
+
+@mixin gradient-primary {
+    background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+}
+
+@mixin gradient-success {
+    background: linear-gradient(135deg, $success 0%, darken($success, 10%) 100%);
+}
+
+@mixin gradient-danger {
+    background: linear-gradient(135deg, $danger 0%, darken($danger, 10%) 100%);
+}
+
+// ========== SOMBRAS ==========
+
+@mixin shadow-sm {
+    box-shadow: $box-shadow-sm;
+}
+
+@mixin shadow {
+    box-shadow: $box-shadow;
+}
+
+@mixin shadow-lg {
+    box-shadow: $box-shadow-lg;
+}
+
+// ========== TRANSICIONES ==========
+
+@mixin transition($property: all) {
+    transition: $property $transition-base;
+}
+
+@mixin transition-fast($property: all) {
+    transition: $property $transition-fast;
+}
+
+// ========== HOVER EFFECTS ==========
+
+@mixin hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    
+    &:hover {
+        transform: translateY(-8px);
+        box-shadow: $box-shadow-lg;
+    }
+}
+
+@mixin hover-scale {
+    transition: transform 0.2s ease;
+    
+    &:hover {
+        transform: scale(1.05);
+    }
+}
+
+// ========== TRUNCATE TEXT ==========
+
+@mixin text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@mixin text-truncate-multiline($lines: 2) {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+// ========== SCROLLBAR ==========
+
+@mixin custom-scrollbar($width: 6px, $track-color: #f1f1f1, $thumb-color: $primary) {
+    &::-webkit-scrollbar {
+        width: $width;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background: $track-color;
+        border-radius: 10px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: $thumb-color;
+        border-radius: 10px;
+        
+        &:hover {
+            background: darken($thumb-color, 10%);
+        }
+    }
+}

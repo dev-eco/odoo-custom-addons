@@ -1,0 +1,176 @@
+/**
+ * Portal B2B Theme - Tema Oscuro
+ * Estilos consolidados para modo oscuro
+ */
+
+// ========== VARIABLES MODO OSCURO ==========
+
+$dark-bg-primary: #1a1a1a;
+$dark-bg-secondary: #2d2d2d;
+$dark-bg-tertiary: #3a3a3a;
+$dark-text-primary: #ffffff;
+$dark-text-secondary: #e0e0e0;
+$dark-text-muted: #a0a0a0;
+$dark-border: #404040;
+$dark-primary: #4a9eff;
+$dark-success: #4caf50;
+$dark-warning: #ff9800;
+$dark-danger: #f44336;
+$dark-info: #2196f3;
+
+// ========== MODO OSCURO BASE ==========
+
+.theme-dark,
+html.theme-dark body {
+    background-color: $dark-bg-primary;
+    color: $dark-text-primary;
+    
+    // Textos
+    h1, h2, h3, h4, h5, h6 {
+        color: $dark-text-primary;
+    }
+    
+    p, span, div {
+        color: $dark-text-secondary;
+    }
+    
+    .text-muted {
+        color: $dark-text-muted !important;
+    }
+    
+    // Enlaces
+    a {
+        color: $dark-primary;
+        
+        &:hover {
+            color: lighten($dark-primary, 10%);
+        }
+    }
+    
+    // Cards
+    .card {
+        background-color: $dark-bg-secondary;
+        border: 1px solid $dark-border;
+        color: $dark-text-primary;
+        
+        .card-header {
+            background-color: $dark-bg-tertiary;
+            border-bottom: 1px solid $dark-border;
+            color: $dark-text-primary;
+        }
+        
+        .card-body {
+            background-color: $dark-bg-secondary;
+            color: $dark-text-secondary;
+        }
+        
+        .card-footer {
+            background-color: $dark-bg-tertiary;
+            border-top: 1px solid $dark-border;
+        }
+    }
+    
+    // Botones
+    .btn-primary {
+        background: linear-gradient(135deg, $dark-primary 0%, darken($dark-primary, 10%) 100%);
+        border-color: $dark-primary;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background-color: $dark-bg-tertiary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+    }
+    
+    // Formularios
+    .form-control,
+    .form-select {
+        background-color: $dark-bg-tertiary;
+        border: 1px solid $dark-border;
+        color: $dark-text-primary;
+        
+        &:focus {
+            background-color: $dark-bg-tertiary;
+            border-color: $dark-primary;
+            color: $dark-text-primary;
+            box-shadow: 0 0 0 0.2rem rgba($dark-primary, 0.25);
+        }
+        
+        &::placeholder {
+            color: $dark-text-muted;
+        }
+    }
+    
+    // Tablas
+    .table {
+        color: $dark-text-secondary;
+        
+        thead th {
+            background-color: $dark-bg-tertiary;
+            border-bottom: 2px solid $dark-border;
+            color: $dark-text-primary;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid $dark-border;
+            
+            &:hover {
+                background-color: rgba($dark-primary, 0.1);
+            }
+            
+            td {
+                border-bottom: 1px solid $dark-border;
+            }
+        }
+    }
+    
+    // Navbar
+    .navbar {
+        background-color: $dark-bg-secondary !important;
+        border-bottom: 1px solid $dark-border;
+        
+        .nav-link {
+            color: $dark-text-secondary !important;
+            
+            &:hover {
+                color: $dark-primary !important;
+            }
+        }
+    }
+    
+    // Modales
+    .modal-content {
+        background-color: $dark-bg-secondary;
+        border: 1px solid $dark-border;
+        color: $dark-text-primary;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid $dark-border;
+        
+        .btn-close {
+            filter: invert(1);
+        }
+    }
+}
+
+// ========== MODO AUTOMÁTICO ==========
+
+@media (prefers-color-scheme: dark) {
+    .theme-auto {
+        @extend .theme-dark;
+    }
+}
+
+// ========== TRANSICIONES SUAVES ==========
+
+.theme-dark,
+.theme-light,
+.theme-auto {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    
+    * {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+}

@@ -362,20 +362,57 @@ class PortalB2B(CustomerPortal):
         return values
 
     def _get_orders_domain(self):
-        """Domain para pedidos del distribuidor actual."""
+        """
+        Domain para pedidos del distribuidor actual.
+
+        Mejoras:
+        - Busca por partner comercial Y todos sus hijos
+        - Incluye pedidos donde el partner_id sea cualquier contacto relacionado
+        """
         partner = request.env.user.partner_id
+        commercial_partner = partner.commercial_partner_id
+
+        # Obtener todos los partners relacionados (padre comercial + hijos)
+        related_partners = request.env['res.partner'].search([
+            '|',
+            ('id', '=', commercial_partner.id),
+            ('commercial_partner_id', '=', commercial_partner.id)
+        ])
+
+        _logger.debug(f"Portal orders filter - User: {request.env.user.name}, "
+                     f"Partner: {partner.name}, Commercial: {commercial_partner.name}, "
+                     f"Related partners: {len(related_partners)}")
+
         return [
-            ('partner_id', 'child_of', [partner.commercial_partner_id.id]),
+            ('partner_id', 'in', related_partners.ids),
             ('state', '!=', 'cancel'),
         ]
 
     def _get_invoices_domain(self, invoice_type=None):
-        """Domain para facturas del distribuidor actual."""
+        """
+        Domain para facturas del distribuidor actual.
+
+        Mejoras:
+        - Busca por partner comercial Y todos sus hijos
+        - Incluye facturas donde el partner_id sea cualquier contacto relacionado
+        """
         partner = request.env.user.partner_id
+        commercial_partner = partner.commercial_partner_id
+
+        # Obtener todos los partners relacionados
+        related_partners = request.env['res.partner'].search([
+            '|',
+            ('id', '=', commercial_partner.id),
+            ('commercial_partner_id', '=', commercial_partner.id)
+        ])
+
         domain = [
             ('move_type', '=', invoice_type or 'out_invoice'),
-            ('partner_id', 'child_of', [partner.commercial_partner_id.id]),
+            ('partner_id', 'in', related_partners.ids),
         ]
+
+        _logger.debug(f"Portal invoices filter - Related partners: {len(related_partners)}")
+
         return domain
 
     # ========== RUTAS EN ESPAÑOL ==========
