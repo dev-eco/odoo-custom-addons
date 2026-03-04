@@ -482,7 +482,7 @@ class PortalB2B(CustomerPortal):
             else:
                 domain += [(searchbar_inputs[search_in]['input'], 'ilike', search)]
 
-        order_count = SaleOrder.search_count(domain)
+        order_count = SaleOrder.sudo().search_count(domain)
 
         pager = portal_pager(
             url='/mis-pedidos',
@@ -493,39 +493,16 @@ class PortalB2B(CustomerPortal):
             step=20,
         )
 
-        orders = SaleOrder.search(domain, order=order, limit=20, offset=pager['offset'])
+        # Usar sudo() para evitar problemas de permisos al acceder a pedidos
+        orders = SaleOrder.sudo().search(domain, order=order, limit=20, offset=pager['offset'])
         
-        # ASEGURAR VALORES POR DEFECTO PARA TODOS LOS CAMPOS
-        for order_item in orders:
-            try:
-                # Asegurar que los campos tengan valores válidos
-                if not hasattr(order_item, 'order_status') or not order_item.order_status:
-                    order_item.order_status = 'new'
-                if not hasattr(order_item, 'picking_status') or not order_item.picking_status:
-                    order_item.picking_status = 'not_created'
-                if not hasattr(order_item, 'distributor_document_count'):
-                    order_item.distributor_document_count = 0
-                if not hasattr(order_item, 'has_new_distributor_documents'):
-                    order_item.has_new_distributor_documents = False
-                    
-                # Trigger computed fields de forma segura
-                try:
-                    _ = order_item.order_status
-                    _ = order_item.picking_status
-                    _ = order_item.distributor_document_count
-                    _ = order_item.has_new_distributor_documents
-                except Exception as compute_error:
-                    _logger.warning(f"Error calculando campos computed para pedido {order_item.id}: {str(compute_error)}")
-                    
-            except Exception as e:
-                _logger.warning(f"Error procesando pedido {order_item.id}: {str(e)}")
-                # Asignar valores por defecto si hay error
-                order_item.order_status = 'new'
-                order_item.picking_status = 'not_created'
-        
-        # Calcular total general
-        all_orders = SaleOrder.search(domain)
-        grand_total = sum(float(o.amount_total) for o in all_orders)
+        # Calcular total general de forma segura
+        try:
+            all_orders = SaleOrder.sudo().search(domain)
+            grand_total = sum(float(o.amount_total or 0.0) for o in all_orders)
+        except Exception as e:
+            _logger.warning(f"Error calculando total general: {str(e)}")
+            grand_total = 0.0
 
         values = {
             'orders': orders,
@@ -544,7 +521,19 @@ class PortalB2B(CustomerPortal):
             'date_end': date_end,
         }
 
-        return request.render('portal_b2b_base.portal_mis_pedidos', values)
+        try:
+            return request.render('portal_b2b_base.portal_mis_pedidos', values)
+        except Exception as e:
+            _logger.error(f"Error renderizando template portal_mis_pedidos: {str(e)}", exc_info=True)
+            # Intentar renderizar con valores mínimos
+            minimal_values = {
+                'orders': [],
+                'order_count': 0,
+                'grand_total': 0.0,
+                'page_name': 'mis_pedidos',
+                'error_message': 'Error al cargar los pedidos. Por favor, inténtelo de nuevo.',
+            }
+            return request.render('portal_b2b_base.portal_mis_pedidos', minimal_values)
 
     @http.route(['/mis-pedidos/<int:order_id>'], type='http', auth='user', website=True)
     def portal_pedido_detalle(self, order_id, access_token=None, **kw):
