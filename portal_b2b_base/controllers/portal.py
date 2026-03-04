@@ -720,6 +720,12 @@ class PortalB2B(CustomerPortal):
             delivery_option = kw.get('delivery_option', 'default')
             delivery_address_id = None
 
+            _logger.info(
+                f"Portal B2B: Procesando pedido - delivery_option={delivery_option}, "
+                f"delivery_address_id={kw.get('delivery_address_id')}, "
+                f"partner={partner.name}"
+            )
+
             if delivery_option == 'saved':
                 # Usar dirección guardada
                 delivery_address_id = kw.get('delivery_address_id')
@@ -728,6 +734,10 @@ class PortalB2B(CustomerPortal):
                         delivery_address = request.env['delivery.address'].browse(int(delivery_address_id))
                         if delivery_address.exists() and delivery_address.partner_id == partner:
                             order_vals['delivery_address_id'] = delivery_address.id
+                            _logger.info(
+                                f"Portal B2B: Dirección guardada asignada: {delivery_address.name} "
+                                f"(ID: {delivery_address.id})"
+                            )
                     except Exception as e:
                         _logger.warning(f"Error al asignar dirección guardada: {str(e)}")
 
@@ -762,7 +772,10 @@ class PortalB2B(CustomerPortal):
                     if not kw.get('save_address_for_future'):
                         new_address.write({'is_default': False})
                     
-                    _logger.info(f"Nueva dirección '{new_address.name}' creada para {partner.name}")
+                    _logger.info(
+                        f"Portal B2B: Nueva dirección creada: {new_address.name} "
+                        f"(ID: {new_address.id}) para {partner.name}"
+                    )
                     
                 except Exception as e:
                     _logger.error(f"Error creando nueva dirección: {str(e)}")
