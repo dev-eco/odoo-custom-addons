@@ -4,11 +4,31 @@ from odoo import api, fields, models
 
 
 class ProductTemplate(models.Model):
-    """Extensión de product.template con campos técnicos de dimensiones."""
+    """Extensión de product.template con campos técnicos para reportes industriales."""
 
     _inherit = "product.template"
 
-    # ========== CAMPOS DE DIMENSIONES (FASE PILOTO) ==========
+    # ========== MATERIAL Y ACABADO ==========
+
+    product_material = fields.Char(
+        string="Material",
+        help="Material principal del producto (ej: Acero inoxidable, PVC, Aluminio)",
+    )
+
+    product_finish = fields.Selection(
+        [
+            ("natural", "Natural"),
+            ("painted", "Pintado"),
+            ("galvanized", "Galvanizado"),
+            ("anodized", "Anodizado"),
+            ("polished", "Pulido"),
+            ("other", "Otro"),
+        ],
+        string="Acabado",
+        help="Tipo de acabado superficial",
+    )
+
+    # ========== DIMENSIONES DETALLADAS ==========
 
     dimension_length = fields.Float(
         string="Largo (mm)", digits=(8, 2), help="Longitud en milímetros"
@@ -33,6 +53,28 @@ class ProductTemplate(models.Model):
         compute="_compute_dimension_display",
         store=False,
         help="Formato legible: 100 x 50 x 30 mm o Ø 50 mm",
+    )
+
+    # ========== INFORMACIÓN TÉCNICA ADICIONAL ==========
+
+    technical_datasheet = fields.Binary(
+        string="Ficha Técnica PDF", attachment=True, help="Documento técnico del producto"
+    )
+
+    technical_datasheet_filename = fields.Char(string="Nombre Ficha Técnica")
+
+    # ========== PACKAGING (para futura implementación albaranes Fase 2) ==========
+
+    package_units_per_box = fields.Integer(
+        string="Unidades por Caja",
+        default=1,
+        help="Cantidad de unidades en empaque estándar",
+    )
+
+    package_box_weight = fields.Float(
+        string="Peso Caja Completa (kg)",
+        digits=(8, 2),
+        help="Peso bruto de la caja con producto",
     )
 
     # ========== MÉTODOS COMPUTED ==========
