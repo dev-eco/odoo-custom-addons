@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_product_template_dimensions_all,product.template.dimensions.all,product.model_product_template,base.group_user,1,0,0,0
+access_product_template_dimensions_sales,product.template.dimensions.sales,product.model_product_template,sales_team.group_sale_salesman,1,1,1,0
+access_product_template_dimensions_manager,product.template.dimensions.manager,product.model_product_template,sales_team.group_sale_manager,1,1,1,1
