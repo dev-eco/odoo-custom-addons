@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Acción automática: Marcar como revisado al cambiar estado -->
+        <record id="action_sale_order_mark_reviewed" model="base.automation">
+            <field name="name">Marcar presupuesto como revisado al confirmar</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="trigger">on_write</field>
+            <field name="filter_domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+if record.needs_review:
+    record.write({'needs_review': False})
+]]></field>
+        </record>
+
+        <!-- Acción automática: Asegurar que nuevos presupuestos se marcan sin revisar -->
+        <record id="action_sale_order_mark_needs_review" model="base.automation">
+            <field name="name">Marcar nuevos presupuestos como sin revisar</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="trigger">on_create</field>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+if not record.needs_review:
+    record.write({'needs_review': True})
+]]></field>
+        </record>
+    </data>
+</odoo>

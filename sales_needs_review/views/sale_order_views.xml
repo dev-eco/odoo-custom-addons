@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Heredar vista tree de presupuestos -->
+    <record id="view_quotation_tree_needs_review" model="ir.ui.view">
+        <field name="name">sale.order.tree.needs.review</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <!-- Añadir columna después del cliente -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="needs_review" 
+                       widget="boolean_button"
+                       options="{'terminology': 'custom', 'hover': 'Sin revisar / Revisado'}"/>
+            </xpath>
+            <!-- Añadir decoraciones de color -->
+            <xpath expr="//tree" position="attributes">
+                <attribute name="decoration-danger">needs_review == True</attribute>
+                <attribute name="decoration-success">needs_review == False</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Heredar vista tree de pedidos de venta -->
+    <record id="view_order_tree_needs_review" model="ir.ui.view">
+        <field name="name">sale.order.tree.needs.review.orders</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="needs_review" 
+                       widget="boolean_button"
+                       options="{'terminology': 'custom', 'hover': 'Sin revisar / Revisado'}"/>
+            </xpath>
+            <xpath expr="//tree" position="attributes">
+                <attribute name="decoration-danger">needs_review == True</attribute>
+                <attribute name="decoration-success">needs_review == False</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Añadir filtro de búsqueda -->
+    <record id="view_sales_order_filter_needs_review" model="ir.ui.view">
+        <field name="name">sale.order.search.needs.review</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                <separator/>
+                <filter string="Sin revisar" 
+                        name="needs_review" 
+                        domain="[('needs_review', '=', True)]"/>
+                <filter string="Revisados" 
+                        name="reviewed" 
+                        domain="[('needs_review', '=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Heredar vista form para mostrar el campo -->
+    <record id="view_order_form_needs_review" model="ir.ui.view">
+        <field name="name">sale.order.form.needs.review</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="needs_review" widget="boolean_toggle"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
