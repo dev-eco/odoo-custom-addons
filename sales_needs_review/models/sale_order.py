@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class SaleOrder(models.Model):
@@ -11,14 +11,6 @@ class SaleOrder(models.Model):
         tracking=True,
         help="Indica si el presupuesto necesita revisión manual",
     )
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Asegurar que nuevos presupuestos se marcan como sin revisar."""
-        for vals in vals_list:
-            if "needs_review" not in vals:
-                vals["needs_review"] = True
-        return super().create(vals_list)
 
     def action_confirm(self):
         """Al confirmar, marcar como revisado automáticamente."""
