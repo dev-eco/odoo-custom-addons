@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extensión de la vista form de product.template -->
+    <record id="product_template_form_view_technical_info" model="ir.ui.view">
+        <field name="name">product.template.form.technical.info</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Añadir nueva página "Información Técnica" en el notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Información Técnica" name="technical_info">
+                    
+                    <!-- Material y Acabado -->
+                    <group string="Material y Acabado" name="material_finish">
+                        <group>
+                            <field name="product_material"/>
+                        </group>
+                        <group>
+                            <field name="product_finish"/>
+                        </group>
+                    </group>
+
+                    <!-- Dimensiones -->
+                    <group string="Dimensiones" name="dimensions">
+                        <group>
+                            <field name="dimension_length"/>
+                            <field name="dimension_width"/>
+                        </group>
+                        <group>
+                            <field name="dimension_height"/>
+                            <field name="dimension_diameter"/>
+                        </group>
+                        <group colspan="2">
+                            <field name="dimension_display" readonly="1" 
+                                   class="oe_inline oe_read_only"
+                                   invisible="dimension_display == False"/>
+                        </group>
+                    </group>
+
+                    <!-- Packaging -->
+                    <group string="Empaque" name="packaging">
+                        <group>
+                            <field name="package_units_per_box"/>
+                        </group>
+                        <group>
+                            <field name="package_box_weight"/>
+                        </group>
+                    </group>
+
+                    <!-- Documentación Técnica -->
+                    <group string="Documentación" name="documentation">
+                        <field name="technical_datasheet" filename="technical_datasheet_filename"/>
+                        <field name="technical_datasheet_filename" invisible="1"/>
+                    </group>
+
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

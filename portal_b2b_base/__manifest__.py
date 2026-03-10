@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Portal B2B Base',
-    'version': '17.0.3.0.0',
-    'category': 'Sales/Sales',
-    'summary': 'Portal B2B para distribuidores - Módulo base con gestión de pedidos y control de crédito',
-    'description': """
+    "name": "Portal B2B Base",
+    "version": "17.0.3.0.0",
+    "category": "Sales/Sales",
+    "summary": "Portal B2B para distribuidores - Módulo base con gestión de pedidos y control de crédito",
+    "description": """
 Portal B2B Base
 ===============
 
@@ -70,70 +70,62 @@ Flujo de configuración:
 Autor: Generic
 Licencia: LGPL-3
     """,
-    'author': 'Generic',
-    'website': 'https://www.example.com',
-    'license': 'LGPL-3',
-    'depends': [
-        'portal',
-        'sale',
-        'stock',
-        'account',
-        'website',
-        'mail',
+    "author": "Generic",
+    "website": "https://www.example.com",
+    "license": "LGPL-3",
+    "depends": [
+        "portal",
+        "sale",
+        "stock",
+        "account",
+        "website",
+        "mail",
     ],
-    'data': [
+    "data": [
         # Seguridad (PRIMERO)
-        'security/security.xml',
-        'security/ir.model.access.csv',
-        
+        "security/security.xml",
+        "security/ir.model.access.csv",
         # Reglas de productos (SIN referencias a campos nuevos)
-        'security/product_security.xml',
-
+        "security/product_security.xml",
         # Configuración del sitio web
-        'data/website_config.xml',
-        'data/email_templates.xml',
-        'data/mail_template_data.xml',
-        'data/sequences.xml',
-        'data/cron.xml',
-
+        "data/website_config.xml",
+        "data/email_templates.xml",
+        "data/mail_template_data.xml",
+        "data/sequences.xml",
+        "data/cron.xml",
         # Wizards (ANTES de las vistas que los usan)
-        'wizard/sale_order_template_wizard_views.xml',
-        'wizard/sale_return_reject_wizard_views.xml',
-
+        "wizard/sale_order_template_wizard_views.xml",
+        "wizard/sale_return_reject_wizard_views.xml",
         # Menús de backend (ANTES de las vistas que los referencian)
-        'views/portal_backend_menus.xml',
-
+        "views/portal_backend_menus.xml",
         # Vistas backend
-        'views/res_partner_views.xml',
-        'views/sale_order_views.xml',
-        'views/sale_order_template_views.xml',
-        'views/portal_message_views.xml',
-        'views/sale_return_views.xml',
-        'views/res_config_settings_views.xml',
-
+        "views/res_partner_views.xml",
+        "views/sale_order_views.xml",
+        "views/sale_order_template_views.xml",
+        "views/portal_message_views.xml",
+        "views/sale_return_views.xml",
+        "views/res_config_settings_views.xml",
         # Templates portal
-        'views/portal_templates.xml',
-        'views/portal_menu.xml',
-        
+        "views/portal_templates.xml",
+        "views/portal_menu.xml",
         # Herramientas de fix
-        'views/portal_fix_actions.xml',
+        "views/portal_fix_actions.xml",
     ],
-    'post_init_hook': 'post_init_hook',
-    'assets': {
-        'web.assets_frontend': [
+    "post_init_hook": "post_init_hook",
+    "assets": {
+        "web.assets_frontend": [
             # Estilos
-            'portal_b2b_base/static/src/scss/portal.scss',
-
+            "portal_b2b_base/static/src/scss/portal.scss",
             # Scripts del portal
-            'portal_b2b_base/static/src/js/portal.js',
-            'portal_b2b_base/static/src/js/product_grid.js',
-            'portal_b2b_base/static/src/js/returns.js',
+            "portal_b2b_base/static/src/js/portal.js",
+            "portal_b2b_base/static/src/js/product_grid.js",
+            "portal_b2b_base/static/src/js/returns.js",
         ],
     },
-    'external_dependencies': {
-        'python': ['xlsxwriter'],
+    "external_dependencies": {
+        "python": ["xlsxwriter"],
     },
-    'installable': True,
-    'application': False,
-    'auto_install': False,
+    "installable": True,
+    "application": False,
+    "auto_install": False,
 }

@@ -2,7 +2,18 @@
  * Portal B2B - JavaScript Frontend
  * Versión ultra-robusta con verificación exhaustiva
  * 
- * IMPORTANTE: portal_fix.js DEBE cargarse ANTES que este archivo
+ * DEPENDENCIAS:
+ * 1. portal_fix.js (DEBE cargarse PRIMERO - ver __manifest__.py)
+ * 2. product_grid.js (se carga en paralelo)
+ * 
+ * ORDEN DE CARGA GARANTIZADO EN __manifest__.py:
+ * 'assets': {
+ *     'web.assets_frontend': [
+ *         'portal_theme/static/src/js/portal_fix.js',      # ← PRIMERO
+ *         'portal_b2b_base/static/src/js/portal.js',       # ← SEGUNDO
+ *         'portal_b2b_base/static/src/js/product_grid.js', # ← TERCERO
+ *     ]
+ * }
  */
 
 (function() {
@@ -12,9 +23,17 @@
 
     // Esperar a que el DOM esté listo
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', safeInit);
     } else {
-        init();
+        safeInit();
+    }
+
+    function safeInit() {
+        try {
+            init();
+        } catch (error) {
+            console.error('Portal B2B: Error crítico en inicialización:', error);
+        }
     }
 
     function init() {
@@ -54,6 +73,12 @@
         }
 
         console.log('Portal B2B: Inicializando handlers de crear pedido');
+
+        // ✅ Inicializar edición inline de direcciones
+        inicializarEdicionInlineDirecciones();
+
+        // ✅ NOTA: La gestión de direcciones está en product_grid.js
+        // No duplicar event listeners aquí para evitar conflictos
 
         /**
          * Botón "Revisar Pedido"
@@ -182,16 +207,53 @@
                 const deliveryScheduleElement = document.getElementById('delivery-schedule');
                 const clientOrderRefElement = document.getElementById('client-order-ref');
 
+                // ✅ CRÍTICO: Capturar delivery_option del campo hidden
+                const deliveryOptionHidden = document.getElementById('delivery-option-hidden');
+                const deliveryOption = deliveryOptionHidden ? deliveryOptionHidden.value : 'default';
+
+                // Preparar formData base
                 const formData = {
                     lines: orderLines,
                     notes: notesElement ? notesElement.value : '',
-                    delivery_address_id: deliveryAddressSelect ? deliveryAddressSelect.value : null,
+                    delivery_option: deliveryOption, // ← CRÍTICO: Enviar delivery_option al backend
                     distributor_label_id: distributorLabelSelect ? distributorLabelSelect.value : null,
                     delivery_schedule: deliveryScheduleElement ? deliveryScheduleElement.value : '',
                     client_order_ref: clientOrderRefElement ? clientOrderRefElement.value : '',
                 };
 
-                console.log('Portal B2B: Enviando datos del pedido:', formData);
+                // Si usa dirección guardada, enviar ID
+                if (deliveryOption === 'saved') {
+                    const savedAddressSelect = document.getElementById('saved-address-select');
+                    if (savedAddressSelect && savedAddressSelect.value) {
+                        formData.delivery_address_id = savedAddressSelect.value;
+                        console.log('Portal B2B: Usando dirección guardada ID:', savedAddressSelect.value);
+                    }
+                }
+
+                // ✅ CRÍTICO: Si crea nueva dirección, enviar TODOS los campos del formulario
+                else if (deliveryOption === 'new') {
+                    // Campos de texto
+                    formData.new_address_name = document.getElementById('new-address-name')?.value || '';
+                    formData.new_address_street = document.getElementById('new-address-street')?.value || '';
+                    formData.new_address_street2 = document.getElementById('new-address-street2')?.value || '';
+                    formData.new_address_zip = document.getElementById('new-address-zip')?.value || '';
+                    formData.new_address_city = document.getElementById('new-address-city')?.value || '';
+                    formData.new_address_contact_name = document.getElementById('new-address-contact-name')?.value || '';
+                    formData.new_address_contact_phone = document.getElementById('new-address-contact-phone')?.value || '';
+                    formData.new_address_notes = document.getElementById('new-address-notes')?.value || '';
+
+                    // Checkboxes (backend espera 'on' cuando está marcado, vacío cuando no)
+                    formData.new_address_appointment = document.getElementById('new-address-appointment')?.checked ? 'on' : '';
+                    formData.new_address_tail_lift = document.getElementById('new-address-tail-lift')?.checked ? 'on' : '';
+                    formData.save_address_for_future = document.getElementById('save-address-for-future')?.checked || false;
+
+                    console.log(
+                        'Portal B2B: Enviando nueva dirección - ' + formData.new_address_name +
+                        ' (' + formData.new_address_city + ', CP: ' + formData.new_address_zip + ')'
+                    );
+                }
+
+                console.log('Portal B2B: formData completo a enviar:', formData);
 
                 const response = await fetch('/crear-pedido/submit', {
                     method: 'POST',
@@ -457,6 +519,213 @@
             console.warn(`Portal B2B: Elemento ${id} no encontrado`);
         }
         return element;
+    }
+
+    /**
+     * Edición inline de direcciones de entrega
+     */
+    function inicializarEdicionInlineDirecciones() {
+        const savedAddressSelect = document.getElementById('saved-address-select');
+        const editBtn = document.getElementById('edit-address-btn');
+        const modalElement = document.getElementById('editAddressModal');
+        const saveBtn = document.getElementById('save-edit-address-btn');
+
+        if (!savedAddressSelect || !editBtn || !modalElement) {
+            console.log('Portal B2B: Elementos de edición inline no encontrados');
+            return;
+        }
+
+        console.log('Portal B2B: Inicializando edición inline de direcciones');
+
+        // Variable para almacenar la instancia del modal
+        let modal = null;
+
+        /**
+         * Inicializa el modal cuando Bootstrap esté disponible
+         */
+        function initModalWhenReady() {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                try {
+                    modal = new bootstrap.Modal(modalElement);
+                    console.log('Portal B2B: Modal Bootstrap inicializado correctamente');
+                    return true;
+                } catch (error) {
+                    console.error('Portal B2B: Error al crear modal Bootstrap:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // Intentar inicializar inmediatamente
+        if (!initModalWhenReady()) {
+            console.warn('Portal B2B: Bootstrap no disponible aún, esperando...');
+            
+            // Reintentar cada 100ms hasta 5 segundos
+            let attempts = 0;
+            const maxAttempts = 50;
+            const retryInterval = setInterval(() => {
+                attempts++;
+                
+                if (initModalWhenReady()) {
+                    clearInterval(retryInterval);
+                    console.log('Portal B2B: Bootstrap cargado tras', attempts * 100, 'ms');
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(retryInterval);
+                    console.error('Portal B2B: Bootstrap no se cargó tras 5 segundos. Modal deshabilitado.');
+                    editBtn.style.display = 'none';
+                }
+            }, 100);
+        }
+
+        // Habilitar botón "Editar" cuando se selecciona dirección
+        savedAddressSelect.addEventListener('change', function() {
+            if (this.value) {
+                editBtn.disabled = false;
+            } else {
+                editBtn.disabled = true;
+            }
+        });
+
+        // Abrir modal y precargar datos
+        editBtn.addEventListener('click', function() {
+            // Verificar que el modal esté inicializado
+            if (!modal) {
+                alert('El sistema de edición aún no está listo. Por favor, espere unos segundos y vuelva a intentarlo.');
+                return;
+            }
+
+            const selectedOption = savedAddressSelect.options[savedAddressSelect.selectedIndex];
+            if (!selectedOption || !selectedOption.value) return;
+
+            console.log('Portal B2B: Abriendo modal de edición para dirección', selectedOption.value);
+
+            // Precargar datos del option seleccionado
+            document.getElementById('edit-address-id').value = selectedOption.value;
+            document.getElementById('edit-address-name').value = selectedOption.dataset.name || '';
+            document.getElementById('edit-address-street').value = selectedOption.dataset.street || '';
+            document.getElementById('edit-address-street2').value = selectedOption.dataset.street2 || '';
+            document.getElementById('edit-address-city').value = selectedOption.dataset.city || '';
+            document.getElementById('edit-address-zip').value = selectedOption.dataset.zip || '';
+            document.getElementById('edit-address-country').value = selectedOption.dataset.countryId || '';
+            document.getElementById('edit-address-contact-name').value = selectedOption.dataset.contactName || '';
+            document.getElementById('edit-address-contact-phone').value = selectedOption.dataset.contactPhone || '';
+            document.getElementById('edit-address-appointment').checked = selectedOption.dataset.appointment === 'True';
+            document.getElementById('edit-address-tail-lift').checked = selectedOption.dataset.tailLift === 'True';
+            document.getElementById('edit-address-notes').value = selectedOption.dataset.notes || '';
+
+            // Cargar provincias del país seleccionado
+            actualizarProvinciasEdit(selectedOption.dataset.countryId, selectedOption.dataset.stateId);
+
+            // Limpiar mensajes
+            document.getElementById('edit-address-error').classList.add('d-none');
+            document.getElementById('edit-address-success').classList.add('d-none');
+
+            // Abrir modal
+            modal.show();
+        });
+
+        // Guardar cambios con AJAX
+        saveBtn.addEventListener('click', async function() {
+            const form = document.getElementById('edit-address-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const addressId = document.getElementById('edit-address-id').value;
+            const spinner = saveBtn.querySelector('.spinner-border');
+            const errorDiv = document.getElementById('edit-address-error');
+            const successDiv = document.getElementById('edit-address-success');
+
+            // Mostrar spinner
+            spinner.classList.remove('d-none');
+            saveBtn.disabled = true;
+            errorDiv.classList.add('d-none');
+            successDiv.classList.add('d-none');
+
+            try {
+                const response = await fetch(`/api/direcciones/${addressId}/editar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            name: document.getElementById('edit-address-name').value,
+                            street: document.getElementById('edit-address-street').value,
+                            street2: document.getElementById('edit-address-street2').value,
+                            city: document.getElementById('edit-address-city').value,
+                            zip: document.getElementById('edit-address-zip').value,
+                            country_id: document.getElementById('edit-address-country').value,
+                            state_id: document.getElementById('edit-address-state').value || false,
+                            contact_name: document.getElementById('edit-address-contact-name').value,
+                            contact_phone: document.getElementById('edit-address-contact-phone').value,
+                            require_appointment: document.getElementById('edit-address-appointment').checked,
+                            tail_lift_required: document.getElementById('edit-address-tail-lift').checked,
+                            delivery_notes: document.getElementById('edit-address-notes').value,
+                        },
+                        id: Math.floor(Math.random() * 1000000),
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+
+                const data = await response.json();
+                const result = data.result;
+
+                if (result.success) {
+                    console.log('Portal B2B: Dirección actualizada exitosamente', result.address);
+
+                    // Actualizar el option del select
+                    const selectedOption = savedAddressSelect.options[savedAddressSelect.selectedIndex];
+                    selectedOption.textContent = result.address.name;
+                    selectedOption.dataset.name = result.address.name;
+                    selectedOption.dataset.fullAddress = result.address.full_address;
+
+                    // Mostrar éxito
+                    successDiv.textContent = result.message;
+                    successDiv.classList.remove('d-none');
+
+                    // Cerrar modal tras 1 segundo
+                    setTimeout(() => {
+                        modal.hide();
+                        successDiv.classList.add('d-none');
+                    }, 1000);
+                } else {
+                    errorDiv.textContent = result.error;
+                    errorDiv.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Portal B2B: Error al guardar dirección:', error);
+                errorDiv.textContent = 'Error al guardar: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            } finally {
+                spinner.classList.add('d-none');
+                saveBtn.disabled = false;
+            }
+        });
+    }
+
+    /**
+     * Función auxiliar para cargar provincias en modal edit
+     */
+    function actualizarProvinciasEdit(countryId, selectedStateId) {
+        const stateSelect = document.getElementById('edit-address-state');
+        if (!stateSelect) return;
+
+        if (!countryId) {
+            stateSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+            return;
+        }
+
+        // Por ahora, dejar vacío - se puede implementar fetch a endpoint de provincias
+        console.log('Portal B2B: Actualizar provincias para país', countryId, 'estado seleccionado', selectedStateId);
     }
 
     /**

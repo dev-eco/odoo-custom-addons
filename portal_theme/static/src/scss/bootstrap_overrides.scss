@@ -1,9 +1,9 @@
 /**
  * Portal B2B Theme - Bootstrap Overrides
  * Personaliza componentes de Bootstrap 5
+ * 
+ * NOTA: Las variables se importan desde primary_variables.scss en custom.scss
  */
-
-// Las variables ya están importadas en custom.scss, no reimportar aquí
 
 // ========== BOTONES ==========
 
@@ -240,10 +240,10 @@
                 text-decoration: underline;
             }
         }
-        
-        + .breadcrumb-item::before {
-            color: $text-muted;
-        }
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: $text-muted;
     }
 }
 

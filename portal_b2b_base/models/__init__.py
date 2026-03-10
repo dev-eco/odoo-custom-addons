@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from . import res_partner
-from . import sale_order
-from . import sale_order_template
-from . import distributor_statistics
-from . import portal_notification
-from . import portal_audit_log
-from . import portal_message
-from . import sale_return
-from . import portal_user_preferences
-from . import res_config_settings
-from . import portal_data_diagnostic
-from . import sale_order_fix
+from . import (
+    distributor_statistics,
+    portal_access_mixin,
+    portal_audit_log,
+    portal_data_diagnostic,
+    portal_message,
+    portal_notification,
+    portal_user_preferences,
+    res_config_settings,
+    res_partner,
+    sale_order,
+    sale_order_fix,
+    sale_order_template,
+    sale_return,
+)

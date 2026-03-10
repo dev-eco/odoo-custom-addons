@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Actualizar disclaimers por defecto en empresas existentes -->
+        <!-- Solo se ejecuta en instalación, no sobrescribe cambios manuales -->
+        
+        <function model="res.company" name="write">
+            <value eval="[ref('base.main_company')]"/>
+            <value eval="{
+                'report_quotation_disclaimer': '''
+                    &lt;p&gt;&lt;strong&gt;Condiciones Generales:&lt;/strong&gt;&lt;/p&gt;
+                    &lt;ul&gt;
+                        &lt;li&gt;Presupuesto válido por 30 días desde la fecha de emisión.&lt;/li&gt;
+                        &lt;li&gt;Precios sujetos a disponibilidad de stock.&lt;/li&gt;
+                        &lt;li&gt;Gastos de envío no incluidos salvo indicación contraria.&lt;/li&gt;
+                        &lt;li&gt;Forma de pago según condiciones acordadas.&lt;/li&gt;
+                    &lt;/ul&gt;
+                ''',
+                'report_delivery_disclaimer': '''
+                    &lt;p&gt;&lt;strong&gt;Instrucciones de Entrega:&lt;/strong&gt;&lt;/p&gt;
+                    &lt;ul&gt;
+                        &lt;li&gt;Revisar la mercancía en presencia del transportista.&lt;/li&gt;
+                        &lt;li&gt;Firmar el albarán solo si la entrega es conforme.&lt;/li&gt;
+                        &lt;li&gt;Notificar cualquier incidencia en un plazo máximo de 24 horas.&lt;/li&gt;
+                    &lt;/ul&gt;
+                ''',
+                'py3o_conversion_timeout': 30,
+                'py3o_enable_cache': True,
+            }"/>
+        </function>
+
+    </data>
+</odoo>
