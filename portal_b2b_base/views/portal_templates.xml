@@ -202,9 +202,9 @@
                                                         </td>
                                                         <td class="text-center">
                                                             <!-- Contador de documentos con validación segura -->
-                                                            <t t-set="doc_count" t-value="order.distributor_document_count if hasattr(order, 'distributor_document_count') else 0"/>
+                                                            <t t-set="doc_count" t-value="order.distributor_document_count or 0"/>
                                             
-                                                            <t t-if="doc_count and doc_count > 0">
+                                                            <t t-if="doc_count &gt; 0">
                                                                 <a t-attf-href="/mis-pedidos/#{order.id}/documentos" 
                                                                    class="btn btn-sm btn-info" 
                                                                    title="Ver documentos">
