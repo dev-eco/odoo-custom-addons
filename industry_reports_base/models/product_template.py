@@ -58,7 +58,9 @@ class ProductTemplate(models.Model):
     # ========== INFORMACIÓN TÉCNICA ADICIONAL ==========
 
     technical_datasheet = fields.Binary(
-        string="Ficha Técnica PDF", attachment=True, help="Documento técnico del producto"
+        string="Ficha Técnica PDF",
+        attachment=True,
+        help="Documento técnico del producto",
     )
 
     technical_datasheet_filename = fields.Char(string="Nombre Ficha Técnica")
