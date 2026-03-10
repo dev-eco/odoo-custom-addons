@@ -136,7 +136,7 @@
                                    options="{'no_create': True}"
                                    domain="[('partner_id', '=', partner_id), ('active', '=', True)]"
                                    string="Etiqueta"/>
-                            <field name="customer_delivery_reference"
+                            <field name="distributor_customer_reference"
                                    placeholder="Ej: ALB-2024-001"
                                    string="Referencia Albarán Cliente"/>
                         </group>
@@ -149,10 +149,10 @@
                     
                     <group string="Información del Cliente Final" 
                            invisible="distributor_label_id == False">
-                        <field name="final_customer_name" 
+                        <field name="distributor_customer_name" 
                                readonly="1"
                                string="Nombre Cliente Final"/>
-                        <field name="final_customer_reference" 
+                        <field name="distributor_customer_reference" 
                                readonly="1"
                                string="Referencia Cliente Final"/>
                     </group>

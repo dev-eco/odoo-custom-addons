@@ -1,0 +1,60 @@
+<odoo>
+  <data>
+    <!-- explicit list view definition -->
+<!--
+    <record model="ir.ui.view" id="industry_reports_base.list">
+      <field name="name">industry_reports_base list</field>
+      <field name="model">industry_reports_base.industry_reports_base</field>
+      <field name="arch" type="xml">
+        <tree>
+          <field name="name"/>
+          <field name="value"/>
+          <field name="value2"/>
+        </tree>
+      </field>
+    </record>
+-->
+
+    <!-- actions opening views on models -->
+<!--
+    <record model="ir.actions.act_window" id="industry_reports_base.action_window">
+      <field name="name">industry_reports_base window</field>
+      <field name="res_model">industry_reports_base.industry_reports_base</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+-->
+
+    <!-- server action to the one above -->
+<!--
+    <record model="ir.actions.server" id="industry_reports_base.action_server">
+      <field name="name">industry_reports_base server</field>
+      <field name="model_id" ref="model_industry_reports_base_industry_reports_base"/>
+      <field name="state">code</field>
+      <field name="code">
+        action = {
+          "type": "ir.actions.act_window",
+          "view_mode": "tree,form",
+          "res_model": model._name,
+        }
+      </field>
+    </record>
+-->
+
+    <!-- Top menu item -->
+<!--
+    <menuitem name="industry_reports_base" id="industry_reports_base.menu_root"/>
+-->
+    <!-- menu categories -->
+<!--
+    <menuitem name="Menu 1" id="industry_reports_base.menu_1" parent="industry_reports_base.menu_root"/>
+    <menuitem name="Menu 2" id="industry_reports_base.menu_2" parent="industry_reports_base.menu_root"/>
+-->
+    <!-- actions -->
+<!--
+    <menuitem name="List" id="industry_reports_base.menu_1_list" parent="industry_reports_base.menu_1"
+              action="industry_reports_base.action_window"/>
+    <menuitem name="Server to list" id="industry_reports_base" parent="industry_reports_base.menu_2"
+              action="industry_reports_base.action_server"/>
+-->
+  </data>
+</odoo>

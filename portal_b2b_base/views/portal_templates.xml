@@ -35,6 +35,24 @@
                             </div>
                             <div class="card-body">
                                 
+                                <!-- Mensajes de error -->
+                                <t t-if="request.params.get('error') == 'export_failed'">
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                        <i class="fa fa-exclamation-triangle me-2" aria-hidden="true"/>
+                                        <strong>Error al exportar:</strong> No se pudo generar el archivo Excel. 
+                                        Contacte con el administrador del sistema.
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                                    </div>
+                                </t>
+                                <t t-if="request.params.get('error') == 'xlsxwriter_missing'">
+                                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                        <i class="fa fa-exclamation-triangle me-2" aria-hidden="true"/>
+                                        <strong>Función no disponible:</strong> La exportación a Excel requiere configuración adicional del servidor.
+                                        Contacte con el administrador del sistema.
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                                    </div>
+                                </t>
+                                
                                 <!-- Filtros y búsqueda -->
                                 <div class="row mb-3">
                                     <div class="col-md-6">
@@ -153,33 +171,11 @@
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            <t t-set="final_customer" t-value="''"/>
-                                                            
-                                                            <!-- Método robusto con manejo de errores -->
-                                                            <t t-try="">
-                                                                <t t-set="final_customer_value" t-value="order.final_customer_name or ''"/>
-                                                                <t t-if="final_customer_value">
-                                                                    <t t-set="final_customer" t-value="final_customer_value"/>
-                                                                </t>
-                                                                <t t-catch="">
-                                                                    <!-- Fallback a distributor_customer_name -->
-                                                                    <t t-try="">
-                                                                        <t t-set="distributor_customer_value" t-value="order.distributor_customer_name or ''"/>
-                                                                        <t t-if="distributor_customer_value">
-                                                                            <t t-set="final_customer" t-value="distributor_customer_value"/>
-                                                                        </t>
-                                                                        <t t-catch="">
-                                                                            <!-- Si todo falla, dejar vacío -->
-                                                                        </t>
-                                                                    </t>
-                                                                </t>
-                                                            </t>
-                                                            
-                                                            <!-- Mostrar cliente final si existe -->
-                                                            <t t-if="final_customer">
+                                                            <!-- Cliente Final -->
+                                                            <t t-if="order.distributor_customer_name">
                                                                 <small class="text-primary">
                                                                     <i class="fa fa-user me-1" aria-hidden="true"/>
-                                                                    <t t-esc="final_customer"/>
+                                                                    <t t-esc="order.distributor_customer_name"/>
                                                                 </small>
                                                             </t>
                                                             <t t-else="">
@@ -187,30 +183,17 @@
                                                             </t>
                                                         </td>
                                                         <td>
-                                                            <t t-set="delivery_address" t-value="''"/>
-                                                            
-                                                            <!-- Método robusto para dirección de entrega -->
-                                                            <t t-try="">
-                                                                <t t-set="delivery_address_obj" t-value="order.delivery_address_id"/>
-                                                                <t t-if="delivery_address_obj and delivery_address_obj.name">
-                                                                    <t t-set="delivery_address" t-value="delivery_address_obj.name"/>
-                                                                </t>
-                                                                <t t-catch="">
-                                                                    <!-- Fallback a partner_shipping_id -->
-                                                                    <t t-if="order.partner_shipping_id and order.partner_shipping_id != order.partner_id">
-                                                                        <t t-set="shipping_partner" t-value="order.partner_shipping_id"/>
-                                                                        <t t-if="shipping_partner and shipping_partner.name">
-                                                                            <t t-set="delivery_address" t-value="shipping_partner.name"/>
-                                                                        </t>
-                                                                    </t>
-                                                                </t>
-                                                            </t>
-                                                            
-                                                            <!-- Mostrar dirección si existe -->
-                                                            <t t-if="delivery_address">
+                                                            <!-- Dirección Entrega -->
+                                                            <t t-if="order.delivery_address_id">
                                                                 <small class="text-info">
                                                                     <i class="fa fa-map-marker me-1" aria-hidden="true"/>
-                                                                    <t t-esc="delivery_address"/>
+                                                                    <t t-esc="order.delivery_address_id.name"/>
+                                                                </small>
+                                                            </t>
+                                                            <t t-elif="order.partner_shipping_id and order.partner_shipping_id != order.partner_id">
+                                                                <small class="text-info">
+                                                                    <i class="fa fa-map-marker me-1" aria-hidden="true"/>
+                                                                    <t t-esc="order.partner_shipping_id.name"/>
                                                                 </small>
                                                             </t>
                                                             <t t-else="">
@@ -218,18 +201,10 @@
                                                             </t>
                                                         </td>
                                                         <td class="text-center">
-                                                            <t t-set="doc_count" t-value="0"/>
-                                                            
-                                                            <!-- Método robusto para documentos -->
-                                                            <t t-try="">
-                                                                <t t-set="doc_count_value" t-value="order.distributor_document_count or 0"/>
-                                                                <t t-set="doc_count" t-value="int(doc_count_value)"/>
-                                                                <t t-catch="">
-                                                                    <t t-set="doc_count" t-value="0"/>
-                                                                </t>
-                                                            </t>
-                                                            
-                                                            <t t-if="doc_count > 0">
+                                                            <!-- Contador de documentos con validación segura -->
+                                                            <t t-set="doc_count" t-value="order.distributor_document_count if hasattr(order, 'distributor_document_count') else 0"/>
+                                            
+                                                            <t t-if="doc_count and doc_count > 0">
                                                                 <a t-attf-href="/mis-pedidos/#{order.id}/documentos" 
                                                                    class="btn btn-sm btn-info" 
                                                                    title="Ver documentos">
@@ -417,10 +392,13 @@
                                     <div class="mb-4">
                                         <h5>Dirección de Entrega</h5>
                                     
+                                        <!-- Campo hidden para enviar delivery_option al backend -->
+                                        <input type="hidden" id="delivery-option-hidden" name="delivery_option" value="default"/>
+                                    
                                         <div class="form-check mb-3">
                                             <input class="form-check-input" 
                                                    type="radio" 
-                                                   name="delivery_option" 
+                                                   name="delivery_option_radio" 
                                                    id="use-default-address" 
                                                    value="default"
                                                    checked="checked"/>
@@ -433,7 +411,7 @@
                                             <div class="form-check mb-3">
                                                 <input class="form-check-input" 
                                                        type="radio" 
-                                                       name="delivery_option" 
+                                                       name="delivery_option_radio" 
                                                        id="use-saved-address" 
                                                        value="saved"/>
                                                 <label class="form-check-label" for="use-saved-address">
@@ -442,24 +420,39 @@
                                             </div>
                                         
                                             <div id="saved-address-section" style="display: none;" class="mb-3 ms-4">
-                                                <select id="saved-address-select" name="delivery_address_id" class="form-control">
-                                                    <option value="">Seleccionar dirección...</option>
-                                                    <t t-foreach="delivery_addresses" t-as="address">
-                                                        <option t-att-value="address.id"
-                                                                t-att-data-full-address="address.full_address"
-                                                                t-att-data-require-appointment="address.require_appointment"
-                                                                t-att-data-tail-lift="address.tail_lift_required">
-                                                            <t t-esc="address.name"/>
-                                                        </option>
-                                                    </t>
-                                                </select>
+                                                <div class="input-group">
+                                                    <select id="saved-address-select" name="delivery_address_id" class="form-control">
+                                                        <option value="">Seleccionar dirección...</option>
+                                                        <t t-foreach="delivery_addresses" t-as="address">
+                                                            <option t-att-value="address.id"
+                                                                    t-att-data-name="address.name"
+                                                                    t-att-data-street="address.street"
+                                                                    t-att-data-street2="address.street2 or ''"
+                                                                    t-att-data-city="address.city"
+                                                                    t-att-data-zip="address.zip"
+                                                                    t-att-data-state-id="address.state_id.id if address.state_id else ''"
+                                                                    t-att-data-country-id="address.country_id.id"
+                                                                    t-att-data-contact-name="address.contact_name or ''"
+                                                                    t-att-data-contact-phone="address.contact_phone or ''"
+                                                                    t-att-data-appointment="address.require_appointment"
+                                                                    t-att-data-tail-lift="address.tail_lift_required"
+                                                                    t-att-data-notes="address.delivery_notes or ''"
+                                                                    t-att-data-full-address="address.full_address">
+                                                                <t t-esc="address.name"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                    <button class="btn btn-outline-secondary" type="button" id="edit-address-btn" disabled="disabled">
+                                                        <i class="fa fa-pencil" aria-hidden="true"></i> Editar
+                                                    </button>
+                                                </div>
                                             </div>
                                         </t>
                                     
                                         <div class="form-check mb-3">
                                             <input class="form-check-input" 
                                                    type="radio" 
-                                                   name="delivery_option" 
+                                                   name="delivery_option_radio" 
                                                    id="use-new-address" 
                                                    value="new"/>
                                             <label class="form-check-label" for="use-new-address">
@@ -768,6 +761,104 @@
                             </div>
                         </div>
                         
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal para editar dirección inline -->
+            <div class="modal fade" id="editAddressModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Editar Dirección de Entrega</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="edit-address-form">
+                                <input type="hidden" id="edit-address-id"/>
+
+                                <div class="mb-3">
+                                    <label for="edit-address-name" class="form-label">Nombre/Alias *</label>
+                                    <input type="text" class="form-control" id="edit-address-name" required="required"/>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="edit-address-street" class="form-label">Calle *</label>
+                                    <input type="text" class="form-control" id="edit-address-street" required="required"/>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="edit-address-street2" class="form-label">Calle 2</label>
+                                    <input type="text" class="form-control" id="edit-address-street2"/>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="edit-address-city" class="form-label">Ciudad *</label>
+                                        <input type="text" class="form-control" id="edit-address-city" required="required"/>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="edit-address-zip" class="form-label">Código Postal *</label>
+                                        <input type="text" class="form-control" id="edit-address-zip" required="required"/>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="edit-address-country" class="form-label">País *</label>
+                                        <select class="form-select" id="edit-address-country" required="required">
+                                            <option value="">Seleccionar país...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="edit-address-state" class="form-label">Provincia</label>
+                                        <select class="form-select" id="edit-address-state">
+                                            <option value="">-- Seleccionar --</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="edit-address-contact-name" class="form-label">Contacto</label>
+                                        <input type="text" class="form-control" id="edit-address-contact-name"/>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="edit-address-contact-phone" class="form-label">Teléfono Contacto</label>
+                                        <input type="text" class="form-control" id="edit-address-contact-phone"/>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="edit-address-appointment"/>
+                                    <label class="form-check-label" for="edit-address-appointment">
+                                        Requiere cita previa
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="edit-address-tail-lift"/>
+                                    <label class="form-check-label" for="edit-address-tail-lift">
+                                        Requiere camión con pluma
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="edit-address-notes" class="form-label">Notas de Entrega</label>
+                                    <textarea class="form-control" id="edit-address-notes" rows="3"></textarea>
+                                </div>
+                            </form>
+
+                            <div id="edit-address-error" class="alert alert-danger d-none"></div>
+                            <div id="edit-address-success" class="alert alert-success d-none"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" id="save-edit-address-btn">
+                                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                Guardar Cambios
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

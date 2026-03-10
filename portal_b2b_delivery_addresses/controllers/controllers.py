@@ -19,4 +19,3 @@
 #         return http.request.render('portal_b2b_delivery_addresses.object', {
 #             'object': obj
 #         })
-

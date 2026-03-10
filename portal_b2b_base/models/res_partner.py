@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from odoo import api, fields, models, _
+
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -10,65 +11,65 @@ _logger = logging.getLogger(__name__)
 class ResPartner(models.Model):
     """Extensión de contacto para funcionalidades B2B de distribuidores."""
 
-    _inherit = 'res.partner'
+    _inherit = "res.partner"
 
     # ========== CAMPO UNIFICADO ==========
     # USAR SOLO is_distributor (NO is_b2b_distributor)
-    
+
     is_distributor = fields.Boolean(
-        string='Es Distribuidor B2B',
-        compute='_compute_is_distributor',
+        string="Es Distribuidor B2B",
+        compute="_compute_is_distributor",
         store=True,
-        help='Se marca automáticamente si el contacto tiene un usuario con acceso al Portal B2B'
+        help="Se marca automáticamente si el contacto tiene un usuario con acceso al Portal B2B",
     )
 
     credit_limit = fields.Monetary(
-        string='Límite de Crédito',
-        currency_field='currency_id',
+        string="Límite de Crédito",
+        currency_field="currency_id",
         default=0.0,
-        help='Límite máximo de crédito permitido para este distribuidor'
+        help="Límite máximo de crédito permitido para este distribuidor",
     )
 
     available_credit = fields.Monetary(
-        string='Crédito Disponible',
-        currency_field='currency_id',
-        compute='_compute_available_credit',
+        string="Crédito Disponible",
+        currency_field="currency_id",
+        compute="_compute_available_credit",
         store=False,
-        help='Crédito disponible = Límite - Deuda pendiente'
+        help="Crédito disponible = Límite - Deuda pendiente",
     )
 
     distributor_pricelist_id = fields.Many2one(
-        'product.pricelist',
-        string='Tarifa Distribuidor',
-        help='Tarifa de precios específica para este distribuidor'
+        "product.pricelist",
+        string="Tarifa Distribuidor",
+        help="Tarifa de precios específica para este distribuidor",
     )
 
     total_invoiced_year = fields.Monetary(
-        string='Facturado Año Actual',
-        currency_field='currency_id',
-        compute='_compute_total_invoiced_year',
+        string="Facturado Año Actual",
+        currency_field="currency_id",
+        compute="_compute_total_invoiced_year",
         store=False,
-        help='Total facturado en el año en curso'
+        help="Total facturado en el año en curso",
     )
 
     allowed_product_categories = fields.Many2many(
-        'product.category',
-        'partner_product_category_rel',
-        'partner_id',
-        'category_id',
-        string='Categorías Permitidas',
-        help='Categorías de productos que este distribuidor puede ver y comprar. '
-             'Si está vacío, puede ver todas las categorías.'
+        "product.category",
+        "partner_product_category_rel",
+        "partner_id",
+        "category_id",
+        string="Categorías Permitidas",
+        help="Categorías de productos que este distribuidor puede ver y comprar. "
+        "Si está vacío, puede ver todas las categorías.",
     )
 
     allow_all_categories = fields.Boolean(
-        string='Permitir Todas las Categorías',
+        string="Permitir Todas las Categorías",
         default=True,
-        help='Si está marcado, el distribuidor puede ver todos los productos. '
-             'Si no, solo verá productos de las categorías seleccionadas.'
+        help="Si está marcado, el distribuidor puede ver todos los productos. "
+        "Si no, solo verá productos de las categorías seleccionadas.",
     )
 
-    @api.depends('user_ids', 'user_ids.groups_id')
+    @api.depends("user_ids", "user_ids.groups_id")
     def _compute_is_distributor(self) -> None:
         """
         Determina si el partner es distribuidor basado en sus usuarios.
@@ -78,8 +79,7 @@ class ResPartner(models.Model):
         """
         try:
             portal_b2b_group = self.env.ref(
-                'portal_b2b_base.group_portal_b2b',
-                raise_if_not_found=False
+                "portal_b2b_base.group_portal_b2b", raise_if_not_found=False
             )
         except Exception as e:
             _logger.warning(f"No se pudo obtener grupo Portal B2B: {str(e)}")
@@ -89,8 +89,7 @@ class ResPartner(models.Model):
             if portal_b2b_group and partner.user_ids:
                 # Verificar si algún usuario del partner tiene el grupo Portal B2B
                 has_portal_b2b_access = any(
-                    portal_b2b_group in user.groups_id
-                    for user in partner.user_ids
+                    portal_b2b_group in user.groups_id for user in partner.user_ids
                 )
                 partner.is_distributor = has_portal_b2b_access
 
@@ -102,7 +101,7 @@ class ResPartner(models.Model):
             else:
                 partner.is_distributor = False
 
-    @api.depends('credit', 'credit_limit')
+    @api.depends("credit", "credit_limit")
     def _compute_available_credit(self) -> None:
         """
         Calcula el crédito disponible para el distribuidor.
@@ -121,7 +120,7 @@ class ResPartner(models.Model):
                 f"Deuda: {partner.credit}, Disponible: {partner.available_credit}"
             )
 
-    @api.depends('invoice_ids', 'invoice_ids.amount_total', 'invoice_ids.state')
+    @api.depends("invoice_ids", "invoice_ids.amount_total", "invoice_ids.state")
     def _compute_total_invoiced_year(self) -> None:
         """
         Calcula el total facturado en el año actual.
@@ -132,15 +131,15 @@ class ResPartner(models.Model):
 
         for partner in self:
             domain = [
-                ('partner_id', 'child_of', partner.id),
-                ('move_type', '=', 'out_invoice'),
-                ('state', '=', 'posted'),
-                ('invoice_date', '>=', f'{current_year}-01-01'),
-                ('invoice_date', '<=', f'{current_year}-12-31'),
+                ("partner_id", "child_of", partner.id),
+                ("move_type", "=", "out_invoice"),
+                ("state", "=", "posted"),
+                ("invoice_date", ">=", f"{current_year}-01-01"),
+                ("invoice_date", "<=", f"{current_year}-12-31"),
             ]
 
-            invoices = self.env['account.move'].search(domain)
-            partner.total_invoiced_year = sum(invoices.mapped('amount_total'))
+            invoices = self.env["account.move"].search(domain)
+            partner.total_invoiced_year = sum(invoices.mapped("amount_total"))
 
     def validar_credito_disponible(self, monto: float) -> bool:
         """
@@ -158,12 +157,15 @@ class ResPartner(models.Model):
         self.ensure_one()
 
         if not self.is_distributor:
-            _logger.warning(f"Validación de crédito llamada en partner no distribuidor: {self.name}")
+            _logger.warning(
+                f"Validación de crédito llamada en partner no distribuidor: {self.name}"
+            )
             return True
 
         if self.credit_limit <= 0:
             raise ValidationError(
-                _('El distribuidor %s no tiene límite de crédito configurado.') % self.name
+                _("El distribuidor %s no tiene límite de crédito configurado.")
+                % self.name
             )
 
         credito_despues = self.available_credit - monto
@@ -193,23 +195,21 @@ class ResPartner(models.Model):
             return self.property_product_pricelist
 
         # Tarifa por defecto de la compañía
-        return self.env['product.pricelist'].search([
-            ('company_id', 'in', [self.env.company.id, False])
-        ], limit=1)
+        return self.env["product.pricelist"].search(
+            [("company_id", "in", [self.env.company.id, False])], limit=1
+        )
 
-    @api.constrains('credit_limit')
+    @api.constrains("credit_limit")
     def _check_credit_limit(self) -> None:
         """Valida que el límite de crédito sea positivo o cero."""
         for partner in self:
             if partner.credit_limit < 0:
-                raise ValidationError(
-                    _('El límite de crédito no puede ser negativo.')
-                )
+                raise ValidationError(_("El límite de crédito no puede ser negativo."))
 
     def obtener_estado_credito_widget(self) -> dict:
         """
         Obtiene el estado de crédito formateado para el widget flotante.
-        
+
         Returns:
             dict: Estado de crédito con todos los valores necesarios
         """
@@ -217,87 +217,89 @@ class ResPartner(models.Model):
 
         if not self.is_distributor or self.credit_limit <= 0:
             return {
-                'limit': 0.0,
-                'used': 0.0,
-                'pending': 0.0,
-                'available': 0.0,
-                'percentage_used': 0.0,
-                'currency_symbol': self.currency_id.symbol or '€',
+                "limit": 0.0,
+                "used": 0.0,
+                "pending": 0.0,
+                "available": 0.0,
+                "percentage_used": 0.0,
+                "currency_symbol": self.currency_id.symbol or "€",
             }
 
         # Calcular valores
         deuda_pendiente = self.credit  # Facturas sin pagar
         credito_disponible = self.available_credit
-        porcentaje_usado = (deuda_pendiente / self.credit_limit * 100) if self.credit_limit > 0 else 0
+        porcentaje_usado = (
+            (deuda_pendiente / self.credit_limit * 100) if self.credit_limit > 0 else 0
+        )
 
         return {
-            'limit': float(self.credit_limit),
-            'used': float(deuda_pendiente),
-            'pending': 0.0,  # Reservado para pedidos pendientes en futuro
-            'available': float(max(credito_disponible, 0.0)),
-            'percentage_used': float(min(porcentaje_usado, 100.0)),
-            'currency_symbol': self.currency_id.symbol or '€',
+            "limit": float(self.credit_limit),
+            "used": float(deuda_pendiente),
+            "pending": 0.0,  # Reservado para pedidos pendientes en futuro
+            "available": float(max(credito_disponible, 0.0)),
+            "percentage_used": float(min(porcentaje_usado, 100.0)),
+            "currency_symbol": self.currency_id.symbol or "€",
         }
 
     def get_allowed_product_domain(self):
         """
         Obtiene el dominio de productos permitidos para este distribuidor.
-        
+
         Returns:
             list: Dominio de Odoo para filtrar productos
         """
         self.ensure_one()
-        
+
         # Si permite todas las categorías o no tiene restricciones
         if self.allow_all_categories or not self.allowed_product_categories:
-            return [('sale_ok', '=', True), ('active', '=', True)]
-        
+            return [("sale_ok", "=", True), ("active", "=", True)]
+
         # Filtrar por categorías permitidas (incluyendo subcategorías)
         category_ids = self.allowed_product_categories.ids
-        
+
         # Obtener todas las subcategorías recursivamente
         all_category_ids = self._get_child_categories(category_ids)
-        
+
         return [
-            ('sale_ok', '=', True),
-            ('active', '=', True),
-            ('categ_id', 'in', all_category_ids)
+            ("sale_ok", "=", True),
+            ("active", "=", True),
+            ("categ_id", "in", all_category_ids),
         ]
 
     def _get_child_categories(self, category_ids, max_depth=10):
         """
         Obtiene todas las categorías hijas recursivamente con límite de profundidad.
-        
+
         Args:
             category_ids: Lista de IDs de categorías padre
             max_depth: Profundidad máxima de recursión (default 10)
-            
+
         Returns:
             list: Lista de IDs incluyendo padres e hijos
         """
         if not category_ids or max_depth <= 0:
             return []
-        
+
         all_ids = set(category_ids)
-        
+
         # Buscar categorías hijas con límite de seguridad
-        child_categories = self.env['product.category'].search([
-            ('parent_id', 'in', list(all_ids))
-        ], limit=100)  # Límite de seguridad por nivel
-        
+        child_categories = self.env["product.category"].search(
+            [("parent_id", "in", list(all_ids))], limit=100
+        )  # Límite de seguridad por nivel
+
         if child_categories:
             # Recursión con profundidad reducida
             child_ids = child_categories.ids
             all_ids.update(child_ids)
             grandchild_ids = self._get_child_categories(child_ids, max_depth - 1)
             all_ids.update(grandchild_ids)
-        
+
         return list(all_ids)
 
     def action_grant_portal_access(self):
         """
         Acción para otorgar acceso al portal B2B.
-        
+
         Crea un usuario PORTAL (no interno) y lo asigna al grupo Portal B2B.
         El usuario SOLO tiene acceso al portal, NO al backend.
         """
@@ -306,93 +308,108 @@ class ResPartner(models.Model):
         # Verificar si ya tiene usuario
         if self.user_ids:
             existing_user = self.user_ids[0]
-            
+
             # Si ya es usuario portal, solo agregar grupo B2B
-            if existing_user.has_group('base.group_portal'):
-                b2b_group = self.env.ref('portal_b2b_base.group_portal_b2b')
-                
+            if existing_user.has_group("base.group_portal"):
+                b2b_group = self.env.ref("portal_b2b_base.group_portal_b2b")
+
                 if b2b_group not in existing_user.groups_id:
-                    existing_user.sudo().write({
-                        'groups_id': [(4, b2b_group.id)]
-                    })
-                    
-                    _logger.info(f"Grupo Portal B2B añadido a usuario existente {existing_user.login}")
-                    
+                    existing_user.sudo().write({"groups_id": [(4, b2b_group.id)]})
+
+                    _logger.info(
+                        f"Grupo Portal B2B añadido a usuario existente {existing_user.login}"
+                    )
+
                     return {
-                        'type': 'ir.actions.client',
-                        'tag': 'display_notification',
-                        'params': {
-                            'title': _('Grupo Asignado'),
-                            'message': _('Se ha asignado el grupo Portal B2B al usuario existente.'),
-                            'type': 'success',
-                            'sticky': False,
-                        }
+                        "type": "ir.actions.client",
+                        "tag": "display_notification",
+                        "params": {
+                            "title": _("Grupo Asignado"),
+                            "message": _(
+                                "Se ha asignado el grupo Portal B2B al usuario existente."
+                            ),
+                            "type": "success",
+                            "sticky": False,
+                        },
                     }
                 else:
                     return {
-                        'type': 'ir.actions.client',
-                        'tag': 'display_notification',
-                        'params': {
-                            'title': _('Ya Configurado'),
-                            'message': _('Este usuario ya tiene acceso al Portal B2B.'),
-                            'type': 'info',
-                            'sticky': False,
-                        }
+                        "type": "ir.actions.client",
+                        "tag": "display_notification",
+                        "params": {
+                            "title": _("Ya Configurado"),
+                            "message": _("Este usuario ya tiene acceso al Portal B2B."),
+                            "type": "info",
+                            "sticky": False,
+                        },
                     }
             else:
                 # Es usuario interno, no podemos convertirlo
                 return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': _('Usuario Interno Detectado'),
-                        'message': _('Este contacto tiene un usuario interno. No se puede convertir en usuario portal. Cree un nuevo contacto para el portal B2B.'),
-                        'type': 'warning',
-                        'sticky': True,
-                    }
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "title": _("Usuario Interno Detectado"),
+                        "message": _(
+                            "Este contacto tiene un usuario interno. No se puede convertir en usuario portal. Cree un nuevo contacto para el portal B2B."
+                        ),
+                        "type": "warning",
+                        "sticky": True,
+                    },
                 }
 
         # Validar email
         if not self.email:
             return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Email Requerido'),
-                    'message': _('El contacto debe tener un email para crear el usuario portal.'),
-                    'type': 'danger',
-                    'sticky': False,
-                }
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Email Requerido"),
+                    "message": _(
+                        "El contacto debe tener un email para crear el usuario portal."
+                    ),
+                    "type": "danger",
+                    "sticky": False,
+                },
             }
 
         # Verificar si el email ya está en uso
-        existing_user = self.env['res.users'].sudo().search([('login', '=', self.email)], limit=1)
+        existing_user = (
+            self.env["res.users"].sudo().search([("login", "=", self.email)], limit=1)
+        )
         if existing_user:
             return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Email en Uso'),
-                    'message': _('Ya existe un usuario con este email: %s') % self.email,
-                    'type': 'danger',
-                    'sticky': False,
-                }
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Email en Uso"),
+                    "message": _("Ya existe un usuario con este email: %s")
+                    % self.email,
+                    "type": "danger",
+                    "sticky": False,
+                },
             }
 
         # Crear usuario PORTAL (no interno)
         try:
-            portal_group = self.env.ref('base.group_portal')
-            b2b_group = self.env.ref('portal_b2b_base.group_portal_b2b')
+            portal_group = self.env.ref("base.group_portal")
+            b2b_group = self.env.ref("portal_b2b_base.group_portal_b2b")
 
             # IMPORTANTE: Solo grupos de portal, NO grupos internos
-            user = self.env['res.users'].sudo().create({
-                'name': self.name,
-                'login': self.email,
-                'email': self.email,
-                'partner_id': self.id,
-                'groups_id': [(6, 0, [portal_group.id, b2b_group.id])],
-                'active': True,
-            })
+            user = (
+                self.env["res.users"]
+                .sudo()
+                .create(
+                    {
+                        "name": self.name,
+                        "login": self.email,
+                        "email": self.email,
+                        "partner_id": self.id,
+                        "groups_id": [(6, 0, [portal_group.id, b2b_group.id])],
+                        "active": True,
+                    }
+                )
+            )
 
             # Enviar email de invitación
             try:
@@ -402,25 +419,27 @@ class ResPartner(models.Model):
                 _logger.warning(f"Usuario creado pero error al enviar email: {str(e)}")
 
             return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Usuario Portal Creado'),
-                    'message': _('Se ha creado el usuario portal B2B. Se ha enviado un email con las instrucciones de acceso.'),
-                    'type': 'success',
-                    'sticky': False,
-                }
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Usuario Portal Creado"),
+                    "message": _(
+                        "Se ha creado el usuario portal B2B. Se ha enviado un email con las instrucciones de acceso."
+                    ),
+                    "type": "success",
+                    "sticky": False,
+                },
             }
 
         except Exception as e:
             _logger.error(f"Error al crear usuario portal: {str(e)}")
             return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Error'),
-                    'message': _('Error al crear el usuario portal: %s') % str(e),
-                    'type': 'danger',
-                    'sticky': True,
-                }
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Error"),
+                    "message": _("Error al crear el usuario portal: %s") % str(e),
+                    "type": "danger",
+                    "sticky": True,
+                },
             }
