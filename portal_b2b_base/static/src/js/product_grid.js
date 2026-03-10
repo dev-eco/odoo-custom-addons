@@ -10,9 +10,31 @@
 
     // Esperar a que el DOM esté listo
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', safeInit);
     } else {
-        init();
+        safeInit();
+    }
+
+    function safeInit() {
+        try {
+            init();
+        } catch (error) {
+            console.error('Portal B2B: Error en inicialización de product_grid:', error);
+            // Intentar mostrar mensaje de error al usuario
+            const formCrearPedido = document.getElementById('form-crear-pedido');
+            if (formCrearPedido) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.innerHTML = `
+                    <h5>Error de Inicialización</h5>
+                    <p>Hubo un problema al cargar la página. Por favor, recargue.</p>
+                    <button class="btn btn-primary" onclick="window.location.reload()">
+                        <i class="fa fa-refresh me-2"></i>Recargar
+                    </button>
+                `;
+                formCrearPedido.insertBefore(errorDiv, formCrearPedido.firstChild);
+            }
+        }
     }
 
     function init() {
@@ -23,7 +45,14 @@
         
         if (currentPath.includes('/crear-pedido')) {
             console.log('Portal B2B: Inicializando página crear pedido desde product_grid');
-            inicializarCrearPedido();
+            
+            // Verificar que existan los elementos necesarios antes de inicializar
+            const formCrearPedido = document.getElementById('form-crear-pedido');
+            if (formCrearPedido) {
+                inicializarCrearPedido();
+            } else {
+                console.warn('Portal B2B: Formulario crear pedido no encontrado, omitiendo inicialización');
+            }
         }
         
         // Gestión de direcciones de entrega
@@ -92,15 +121,22 @@
             });
         }
 
-        // Cargar productos inicial
-        loadCategories();
-        loadProducts();
+        // Cargar productos inicial solo si los elementos existen
+        if (productsGrid && productsPagination) {
+            loadCategories();
+            loadProducts();
+        } else {
+            console.error('Portal B2B: Elementos del grid no encontrados');
+        }
 
         /**
          * Carga categorías
          */
         async function loadCategories() {
-            if (!categoryFilter) return;
+            if (!categoryFilter) {
+                console.log('Portal B2B: categoryFilter no disponible, omitiendo carga de categorías');
+                return;
+            }
 
             try {
                 const response = await fetch('/api/productos/categorias', {
@@ -136,7 +172,10 @@
          * Carga productos
          */
         async function loadProducts() {
-            if (!productsGrid) return;
+            if (!productsGrid) {
+                console.error('Portal B2B: productsGrid no disponible');
+                return;
+            }
 
             productsGrid.innerHTML = '<div class="col-12 text-center py-5"><i class="fa fa-spinner fa-spin fa-3x"></i></div>';
 
@@ -180,7 +219,17 @@
 
             } catch (error) {
                 console.error('Portal B2B: Error cargando productos:', error);
-                productsGrid.innerHTML = '<div class="col-12 alert alert-danger">Error de conexión</div>';
+                if (productsGrid) {
+                    productsGrid.innerHTML = `
+                        <div class="col-12 alert alert-danger">
+                            <h5>Error al cargar productos</h5>
+                            <p>No se pudieron cargar los productos. Por favor, recargue la página.</p>
+                            <button class="btn btn-primary" onclick="window.location.reload()">
+                                <i class="fa fa-refresh me-2"></i>Recargar Página
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -436,14 +485,21 @@
      * Inicializa gestión de direcciones de entrega
      */
     function inicializarGestionDirecciones() {
-        console.log('Portal B2B: Inicializando gestión de direcciones');
+        console.log('Portal B2B: Inicializando gestión de direcciones (product_grid.js)');
 
-        // Gestión de opciones de dirección de entrega
-        const deliveryOptions = document.querySelectorAll('input[name="delivery_option"]');
+        // ✅ CORREGIDO: Usar el nombre correcto de los radio buttons
+        const deliveryOptions = document.querySelectorAll('input[name="delivery_option_radio"]');
+        const deliveryOptionHidden = document.getElementById('delivery-option-hidden');
+        
         if (deliveryOptions.length > 0) {
             deliveryOptions.forEach(function(radio) {
                 radio.addEventListener('change', function() {
                     const option = this.value;
+                    
+                    // Sincronizar con campo hidden
+                    if (deliveryOptionHidden) {
+                        deliveryOptionHidden.value = option;
+                    }
                     
                     const savedSection = document.getElementById('saved-address-section');
                     const newForm = document.getElementById('new-address-form');
@@ -455,11 +511,35 @@
                     
                     if (option === 'saved' && savedSection) {
                         savedSection.style.display = 'block';
+                        console.log('Portal B2B: Mostrando selector de direcciones guardadas');
                     } else if (option === 'new' && newForm) {
                         newForm.style.display = 'block';
+                        console.log('Portal B2B: Mostrando formulario de nueva dirección');
+                    } else {
+                        console.log('Portal B2B: Usando dirección predeterminada');
                     }
                 });
             });
+            
+            // Ejecutar al cargar para mostrar la sección correcta
+            const checkedRadio = document.querySelector('input[name="delivery_option_radio"]:checked');
+            if (checkedRadio) {
+                const option = checkedRadio.value;
+                
+                // Sincronizar con campo hidden
+                if (deliveryOptionHidden) {
+                    deliveryOptionHidden.value = option;
+                }
+                
+                const savedSection = document.getElementById('saved-address-section');
+                const newForm = document.getElementById('new-address-form');
+                
+                if (option === 'saved' && savedSection) {
+                    savedSection.style.display = 'block';
+                } else if (option === 'new' && newForm) {
+                    newForm.style.display = 'block';
+                }
+            }
         }
         
         // Gestión de selector de dirección guardada

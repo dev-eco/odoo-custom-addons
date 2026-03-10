@@ -2,6 +2,7 @@
 
 from . import (
     distributor_statistics,
+    portal_access_mixin,
     portal_audit_log,
     portal_data_diagnostic,
     portal_message,

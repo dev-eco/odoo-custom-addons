@@ -453,3 +453,82 @@ class DeliveryPortalController(http.Controller):
         except Exception as e:
             _logger.error(f"Error al eliminar etiqueta: {str(e)}")
             return werkzeug_redirect("/mis-etiquetas?error=delete_failed", code=303)
+
+    @http.route(
+        ["/api/direcciones/<int:address_id>/editar"],
+        type="json",
+        auth="user",
+        methods=["POST"],
+    )
+    def api_editar_direccion(self, address_id, **kw):
+        """
+        API JSON para editar dirección desde modal.
+
+        Returns:
+            dict: {success: bool, message: str, address: dict}
+        """
+        partner = request.env.user.partner_id
+
+        if not partner.is_distributor:
+            return {"success": False, "error": _("No autorizado")}
+
+        try:
+            # Obtener dirección
+            address = request.env["delivery.address"].search(
+                [
+                    ("id", "=", address_id),
+                    ("partner_id", "=", partner.id),
+                ],
+                limit=1,
+            )
+
+            if not address:
+                return {"success": False, "error": _("Dirección no encontrada")}
+
+            # Validar campos requeridos
+            required_fields = ["name", "street", "city", "zip", "country_id"]
+            for field in required_fields:
+                if not kw.get(field):
+                    return {
+                        "success": False,
+                        "error": _("Campo requerido faltante: %s") % field,
+                    }
+
+            # Actualizar dirección
+            address.sudo().write(
+                {
+                    "name": kw.get("name"),
+                    "street": kw.get("street"),
+                    "street2": kw.get("street2", False),
+                    "city": kw.get("city"),
+                    "zip": kw.get("zip"),
+                    "state_id": int(kw.get("state_id"))
+                    if kw.get("state_id")
+                    else False,
+                    "country_id": int(kw.get("country_id")),
+                    "contact_name": kw.get("contact_name", False),
+                    "contact_phone": kw.get("contact_phone", False),
+                    "require_appointment": kw.get("require_appointment", False),
+                    "tail_lift_required": kw.get("tail_lift_required", False),
+                    "delivery_notes": kw.get("delivery_notes", False),
+                }
+            )
+
+            _logger.info(
+                f"Dirección {address.name} editada inline por {request.env.user.login}"
+            )
+
+            # Retornar datos actualizados
+            return {
+                "success": True,
+                "message": _("Dirección actualizada correctamente"),
+                "address": {
+                    "id": address.id,
+                    "name": address.name,
+                    "full_address": address.full_address,
+                },
+            }
+
+        except Exception as e:
+            _logger.error(f"Error al editar dirección inline: {str(e)}")
+            return {"success": False, "error": str(e)}

@@ -3,10 +3,24 @@
  * Importa todos los estilos del tema
  */
 
+// ========== IMPORTACIONES ORDENADAS ==========
+
+// 1. Variables y mixins (PRIMERO)
 @import 'primary_variables';
+@import 'mixins';
+
+// 2. Overrides de Bootstrap
 @import 'bootstrap_overrides';
+
+// 3. Layout y componentes
 @import 'portal_layout';
 @import 'portal_components';
+
+// 4. Temas
+@import 'dark_theme';
+
+// 5. Accesibilidad
+@import 'accessibility';
 
 * {
     box-sizing: border-box;

@@ -855,12 +855,13 @@ class PortalB2B(CustomerPortal):
             }
 
             # Gestión de dirección de entrega
+            # IMPORTANTE: Leer desde el campo hidden 'delivery_option'
             delivery_option = kw.get("delivery_option", "default")
             delivery_address_id = None
 
             _logger.info(
                 f"Portal B2B: Procesando pedido - delivery_option={delivery_option}, "
-                f"delivery_address_id={kw.get('delivery_address_id')}, "
+                f"delivery_address_id_raw={kw.get('delivery_address_id')}, "
                 f"partner={partner.name}"
             )
 
@@ -881,10 +882,18 @@ class PortalB2B(CustomerPortal):
                                 f"Portal B2B: Dirección guardada asignada: {delivery_address.name} "
                                 f"(ID: {delivery_address.id})"
                             )
+                        else:
+                            _logger.warning(
+                                f"Portal B2B: Dirección {delivery_address_id} no válida o no pertenece al partner"
+                            )
                     except Exception as e:
-                        _logger.warning(
-                            f"Error al asignar dirección guardada: {str(e)}"
+                        _logger.error(
+                            f"Portal B2B: Error al asignar dirección guardada: {str(e)}"
                         )
+                else:
+                    _logger.warning(
+                        f"Portal B2B: delivery_option='saved' pero no se recibió delivery_address_id"
+                    )
 
             elif delivery_option == "new":
                 # Crear nueva dirección
@@ -924,6 +933,11 @@ class PortalB2B(CustomerPortal):
                     new_address = (
                         request.env["delivery.address"].sudo().create(new_address_vals)
                     )
+                    
+                    # ✅ Validación crítica: Verificar que se creó correctamente
+                    if not new_address or not new_address.id:
+                        raise ValueError("Error crítico: delivery.address creada pero sin ID")
+                    
                     order_vals["delivery_address_id"] = new_address.id
 
                     # Si el usuario NO marcó "guardar para futuros pedidos", marcarla como no predeterminada
@@ -932,7 +946,8 @@ class PortalB2B(CustomerPortal):
 
                     _logger.info(
                         f"Portal B2B: Nueva dirección creada: {new_address.name} "
-                        f"(ID: {new_address.id}) para {partner.name}"
+                        f"(ID: {new_address.id}) para {partner.name}. "
+                        f"Asignada a order_vals['delivery_address_id']={order_vals['delivery_address_id']}"
                     )
 
                 except Exception as e:
@@ -1055,7 +1070,13 @@ class PortalB2B(CustomerPortal):
             import io
             from collections import defaultdict
 
-            import xlsxwriter
+            try:
+                import xlsxwriter
+            except ImportError:
+                _logger.error(
+                    "xlsxwriter no está instalado. Instalar con: pip3 install xlsxwriter"
+                )
+                return request.redirect("/mis-pedidos?error=xlsxwriter_missing")
 
             # Crear archivo Excel en memoria
             output = io.BytesIO()
@@ -1177,7 +1198,7 @@ class PortalB2B(CustomerPortal):
                     order.partner_shipping_id
                     and order.partner_shipping_id != order.partner_id
                 ):
-                    delivery_address = order.partner_shipping_id.name
+                    delivery_address = order.partner_shipping_id.sudo().name
                 worksheet.write(row, 9, delivery_address)
 
                 # Cliente final
@@ -1297,11 +1318,8 @@ class PortalB2B(CustomerPortal):
                 ],
             )
 
-        except ImportError:
-            _logger.error("xlsxwriter no está instalado")
-            return request.redirect("/mis-pedidos?error=export_failed")
         except Exception as e:
-            _logger.error(f"Error al exportar pedidos: {str(e)}")
+            _logger.error(f"Error al exportar pedidos: {str(e)}", exc_info=True)
             return request.redirect("/mis-pedidos?error=export_failed")
 
     @http.route(

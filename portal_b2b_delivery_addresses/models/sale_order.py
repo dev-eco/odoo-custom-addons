@@ -132,9 +132,18 @@ class SaleOrder(models.Model):
         self.ensure_one()
 
         if not self.delivery_address_id:
+            _logger.debug(
+                f"Pedido {self.name}: _sync_shipping_address_from_delivery_address() "
+                f"llamado pero delivery_address_id es False"
+            )
             return
 
         delivery_addr = self.delivery_address_id
+        
+        _logger.info(
+            f"Pedido {self.name}: Sincronizando delivery_address_id={delivery_addr.id} "
+            f"({delivery_addr.name})"
+        )
 
         # Buscar si ya existe un contacto con esta dirección exacta
         # Buscar por combinación única: nombre + dirección + ciudad + CP + parent_id
@@ -201,6 +210,19 @@ class SaleOrder(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Override para sincronizar delivery_address_id inmediatamente al crear."""
+        # ✅ LOG de entrada para debug detallado
+        for vals in vals_list:
+            _logger.info(
+                f"SaleOrder.create() - Valores recibidos: "
+                f"partner_id={vals.get('partner_id')}, "
+                f"delivery_address_id={vals.get('delivery_address_id')}, "
+                f"partner_shipping_id={vals.get('partner_shipping_id')}"
+            )
+            
+            # Log específico si viene delivery_address_id
+            if "delivery_address_id" in vals and vals.get("delivery_address_id"):
+                _logger.info(f"✅ create() recibió delivery_address_id={vals['delivery_address_id']}")
+        
         orders = super().create(vals_list)
 
         # Sincronizar delivery_address_id con partner_shipping_id para cada pedido
@@ -208,8 +230,14 @@ class SaleOrder(models.Model):
             if order.delivery_address_id:
                 order._sync_shipping_address_from_delivery_address()
                 _logger.info(
-                    f"Pedido {order.name}: delivery_address_id sincronizado al crear "
-                    f"(dirección: {order.delivery_address_id.name})"
+                    f"✅ Pedido {order.name}: delivery_address_id={order.delivery_address_id.id} "
+                    f"({order.delivery_address_id.name}) sincronizado → "
+                    f"partner_shipping_id={order.partner_shipping_id.id} ({order.partner_shipping_id.name})"
+                )
+            else:
+                _logger.warning(
+                    f"⚠️  Pedido {order.name} creado SIN delivery_address_id. "
+                    f"partner_shipping_id={order.partner_shipping_id.name if order.partner_shipping_id else 'None'}"
                 )
 
         return orders
