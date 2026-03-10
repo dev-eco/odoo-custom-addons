@@ -19,4 +19,3 @@
 #         return http.request.render('portal_b2b_base.object', {
 #             'object': obj
 #         })
-

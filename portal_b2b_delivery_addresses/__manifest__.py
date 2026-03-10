@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Portal B2B - Direcciones de Entrega',
-    'version': '17.0.1.0.0',
-    'category': 'Sales/Sales',
-    'summary': 'Gestión de múltiples direcciones de entrega para distribuidores B2B',
-    'description': """
+    "name": "Portal B2B - Direcciones de Entrega",
+    "version": "17.0.1.0.0",
+    "category": "Sales/Sales",
+    "summary": "Gestión de múltiples direcciones de entrega para distribuidores B2B",
+    "description": """
 Portal B2B - Direcciones de Entrega
 ====================================
 
@@ -53,39 +53,36 @@ Rutas del portal:
 Autor: Generic
 Licencia: LGPL-3
     """,
-    'author': 'Generic',
-    'website': 'https://www.example.com',
-    'license': 'LGPL-3',
-    'depends': [
-        'portal_b2b_base',
-        'website',
+    "author": "Generic",
+    "website": "https://www.example.com",
+    "license": "LGPL-3",
+    "depends": [
+        "portal_b2b_base",
+        "website",
     ],
-    'data': [
+    "data": [
         # Seguridad
-        'security/security.xml',
-        'security/ir.model.access.csv',
-        
+        "security/security.xml",
+        "security/ir.model.access.csv",
         # Configuración del sitio web
-        'data/website_config.xml',
-        
+        "data/website_config.xml",
         # Vistas backend
-        'views/delivery_address_views.xml',
-        'views/distributor_label_views.xml',
-        'views/sale_order_views.xml',
-        
+        "views/delivery_address_views.xml",
+        "views/distributor_label_views.xml",
+        "views/sale_order_views.xml",
         # Templates portal
-        'views/portal_templates.xml',
+        "views/portal_templates.xml",
     ],
-    'assets': {
-        'web.assets_frontend': [
-            'portal_b2b_delivery_addresses/static/src/scss/delivery_addresses.scss',
-            'portal_b2b_delivery_addresses/static/src/js/delivery_addresses.js',
+    "assets": {
+        "web.assets_frontend": [
+            "portal_b2b_delivery_addresses/static/src/scss/delivery_addresses.scss",
+            "portal_b2b_delivery_addresses/static/src/js/delivery_addresses.js",
         ],
     },
-    'installable': True,
-    'application': False,
-    'auto_install': False,
-    'test': [
-        'tests/test_delivery_portal.py',
+    "installable": True,
+    "application": False,
+    "auto_install": False,
+    "test": [
+        "tests/test_delivery_portal.py",
     ],
 }
