@@ -150,10 +150,17 @@ class PortalTemplates(http.Controller):
             )
 
             # Agregar dirección y etiqueta si están configuradas
-            if template.delivery_address_id:
+            if hasattr(template, 'delivery_address_id') and template.delivery_address_id:
                 order.delivery_address_id = template.delivery_address_id.id
+                # Forzar sincronización inmediata con partner_shipping_id
+                if hasattr(order, '_sync_shipping_address_from_delivery_address'):
+                    order._sync_shipping_address_from_delivery_address()
+                    _logger.info(
+                        f"Pedido {order.name} desde plantilla {template.name}: "
+                        f"dirección {template.delivery_address_id.name} sincronizada"
+                    )
 
-            if template.distributor_label_id:
+            if hasattr(template, 'distributor_label_id') and template.distributor_label_id:
                 order.distributor_label_id = template.distributor_label_id.id
 
             # Actualizar uso de la plantilla

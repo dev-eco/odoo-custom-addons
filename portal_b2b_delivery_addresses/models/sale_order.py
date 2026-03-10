@@ -34,10 +34,6 @@ class SaleOrder(models.Model):
         help="Etiqueta del cliente final del distribuidor",
     )
 
-    customer_delivery_reference = fields.Char(
-        string="Referencia Albarán Cliente",
-        help="Número de albarán del cliente final del distribuidor",
-    )
 
     hide_company_info_on_report = fields.Boolean(
         string="Ocultar Info Empresa en Reporte",
@@ -45,24 +41,6 @@ class SaleOrder(models.Model):
         help="No mostrar información de nuestra empresa en PDF",
     )
 
-    # Archivos adjuntos del distribuidor
-    customer_delivery_note_ids = fields.Many2many(
-        "ir.attachment",
-        "sale_order_customer_delivery_note_rel",
-        "order_id",
-        "attachment_id",
-        string="Albaranes Cliente Final",
-        help="Albaranes/documentos del cliente final del distribuidor",
-    )
-
-    customer_label_ids = fields.Many2many(
-        "ir.attachment",
-        "sale_order_customer_label_rel",
-        "order_id",
-        "attachment_id",
-        string="Etiquetas Cliente Final",
-        help="Etiquetas personalizadas del cliente final",
-    )
 
     # Información adicional del distribuidor
     distributor_notes = fields.Text(
@@ -70,55 +48,6 @@ class SaleOrder(models.Model):
         help="Notas internas del distribuidor sobre este pedido",
     )
 
-    final_customer_name = fields.Char(
-        string="Nombre Cliente Final",
-        compute="_compute_final_customer_info",
-        store=True,
-        default="",
-        help="Nombre del cliente final (del distribuidor)",
-    )
-
-    final_customer_reference = fields.Char(
-        string="Referencia Cliente Final",
-        compute="_compute_final_customer_info",
-        store=True,
-        default="",
-        help="Referencia del cliente final",
-    )
-
-    @api.depends(
-        "distributor_label_id",
-        "distributor_label_id.customer_name",
-        "distributor_label_id.customer_reference",
-        "customer_delivery_reference",
-    )
-    def _compute_final_customer_info(self) -> None:
-        """Obtiene información del cliente final desde la etiqueta."""
-        for order in self:
-            try:
-                if (
-                    order.distributor_label_id
-                    and order.distributor_label_id.customer_name
-                ):
-                    order.final_customer_name = (
-                        order.distributor_label_id.customer_name or ""
-                    )
-                    order.final_customer_reference = (
-                        order.distributor_label_id.customer_reference
-                        or order.customer_delivery_reference
-                        or ""
-                    )
-                else:
-                    order.final_customer_name = ""
-                    order.final_customer_reference = (
-                        order.customer_delivery_reference or ""
-                    )
-            except Exception as e:
-                _logger.warning(
-                    f"Error calculando cliente final para pedido {order.id}: {str(e)}"
-                )
-                order.final_customer_name = ""
-                order.final_customer_reference = ""
 
     @api.depends("delivery_address_id", "delivery_address_id.full_address")
     def _compute_delivery_address_display(self) -> None:
@@ -133,24 +62,26 @@ class SaleOrder(models.Model):
     def _onchange_partner_id_delivery_address(self) -> None:
         """Al cambiar el cliente, selecciona su dirección predeterminada."""
         if self.partner_id:
-            default_address = self.env["delivery.address"].search(
-                [
-                    ("partner_id", "=", self.partner_id.id),
-                    ("is_default", "=", True),
-                    ("active", "=", True),
-                ],
-                limit=1,
-            )
-
-            if default_address:
-                self.delivery_address_id = default_address
-                _logger.debug(
-                    f"Dirección predeterminada asignada: {default_address.name}"
+            # Solo buscar dirección predeterminada si NO se está creando con delivery_address_id ya definido
+            if not self.delivery_address_id:
+                default_address = self.env["delivery.address"].search(
+                    [
+                        ("partner_id", "=", self.partner_id.id),
+                        ("is_default", "=", True),
+                        ("active", "=", True),
+                    ],
+                    limit=1,
                 )
-            else:
-                self.delivery_address_id = False
-                self.partner_shipping_id = self.partner_id
-                _logger.debug("No se encontró dirección predeterminada")
+
+                if default_address:
+                    self.delivery_address_id = default_address
+                    _logger.debug(
+                        f"Dirección predeterminada asignada: {default_address.name}"
+                    )
+                else:
+                    # Solo establecer partner_shipping_id si NO hay delivery_address_id
+                    self.partner_shipping_id = self.partner_id
+                    _logger.debug("No se encontró dirección predeterminada")
         else:
             self.delivery_address_id = False
             self.partner_shipping_id = False
@@ -190,27 +121,6 @@ class SaleOrder(models.Model):
             if self.partner_id:
                 self.partner_shipping_id = self.partner_id
 
-    @api.model
-    def _ensure_final_customer_fields(self):
-        """Asegura que todos los pedidos tengan campos de cliente final inicializados."""
-        try:
-            orders_without_fields = self.search(
-                [
-                    "|",
-                    ("final_customer_name", "=", False),
-                    ("final_customer_reference", "=", False),
-                ]
-            )
-
-            for order in orders_without_fields:
-                order._compute_final_customer_info()
-
-            if orders_without_fields:
-                _logger.info(
-                    f"Inicializados campos cliente final en {len(orders_without_fields)} pedidos"
-                )
-        except Exception as e:
-            _logger.warning(f"Error inicializando campos cliente final: {str(e)}")
 
     def _sync_shipping_address_from_delivery_address(self):
         """
@@ -288,39 +198,44 @@ class SaleOrder(models.Model):
         else:
             return ""
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Override para sincronizar delivery_address_id inmediatamente al crear."""
+        orders = super().create(vals_list)
+
+        # Sincronizar delivery_address_id con partner_shipping_id para cada pedido
+        for order in orders:
+            if order.delivery_address_id:
+                order._sync_shipping_address_from_delivery_address()
+                _logger.info(
+                    f"Pedido {order.name}: delivery_address_id sincronizado al crear "
+                    f"(dirección: {order.delivery_address_id.name})"
+                )
+
+        return orders
+
     def write(self, vals):
         """Override para sincronizar direcciones al actualizar."""
         result = super().write(vals)
 
-        # Si se modificó delivery_address_id, sincronizar INMEDIATAMENTE
-        if "delivery_address_id" in vals:
+        # Si se modificó delivery_address_id O partner_id, sincronizar INMEDIATAMENTE
+        if "delivery_address_id" in vals or "partner_id" in vals:
             for order in self:
                 if order.delivery_address_id:
                     # Forzar sincronización
                     order._sync_shipping_address_from_delivery_address()
+                    _logger.debug(
+                        f"Pedido {order.name}: delivery_address_id sincronizado en write()"
+                    )
                 else:
                     # Si se borra la dirección B2B, volver al distribuidor
                     if order.partner_id:
                         order.partner_shipping_id = order.partner_id
+                        _logger.debug(
+                            f"Pedido {order.name}: partner_shipping_id reestablecido a partner_id"
+                        )
 
         return result
-
-    def _get_shipping_address_display(self):
-        """
-        Obtiene el nombre de visualización de la dirección de envío.
-
-        Si hay delivery_address_id, usa solo el alias sin el nombre del distribuidor.
-        """
-        self.ensure_one()
-
-        if self.delivery_address_id:
-            # Usar solo el nombre del delivery_address (alias)
-            return self.delivery_address_id.name
-        elif self.partner_shipping_id:
-            # Usar el nombre estándar del partner_shipping_id
-            return self.partner_shipping_id.display_name
-        else:
-            return ""
 
     @api.onchange("distributor_label_id")
     def _onchange_distributor_label_id(self) -> None:

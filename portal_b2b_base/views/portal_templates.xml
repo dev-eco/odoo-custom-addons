@@ -153,33 +153,11 @@
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            <t t-set="final_customer" t-value="''"/>
-                                                            
-                                                            <!-- Método robusto con manejo de errores -->
-                                                            <t t-try="">
-                                                                <t t-set="final_customer_value" t-value="order.final_customer_name or ''"/>
-                                                                <t t-if="final_customer_value">
-                                                                    <t t-set="final_customer" t-value="final_customer_value"/>
-                                                                </t>
-                                                                <t t-catch="">
-                                                                    <!-- Fallback a distributor_customer_name -->
-                                                                    <t t-try="">
-                                                                        <t t-set="distributor_customer_value" t-value="order.distributor_customer_name or ''"/>
-                                                                        <t t-if="distributor_customer_value">
-                                                                            <t t-set="final_customer" t-value="distributor_customer_value"/>
-                                                                        </t>
-                                                                        <t t-catch="">
-                                                                            <!-- Si todo falla, dejar vacío -->
-                                                                        </t>
-                                                                    </t>
-                                                                </t>
-                                                            </t>
-                                                            
-                                                            <!-- Mostrar cliente final si existe -->
-                                                            <t t-if="final_customer">
+                                                            <!-- Cliente Final -->
+                                                            <t t-if="order.distributor_customer_name">
                                                                 <small class="text-primary">
                                                                     <i class="fa fa-user me-1" aria-hidden="true"/>
-                                                                    <t t-esc="final_customer"/>
+                                                                    <t t-esc="order.distributor_customer_name"/>
                                                                 </small>
                                                             </t>
                                                             <t t-else="">
@@ -187,30 +165,17 @@
                                                             </t>
                                                         </td>
                                                         <td>
-                                                            <t t-set="delivery_address" t-value="''"/>
-                                                            
-                                                            <!-- Método robusto para dirección de entrega -->
-                                                            <t t-try="">
-                                                                <t t-set="delivery_address_obj" t-value="order.delivery_address_id"/>
-                                                                <t t-if="delivery_address_obj and delivery_address_obj.name">
-                                                                    <t t-set="delivery_address" t-value="delivery_address_obj.name"/>
-                                                                </t>
-                                                                <t t-catch="">
-                                                                    <!-- Fallback a partner_shipping_id -->
-                                                                    <t t-if="order.partner_shipping_id and order.partner_shipping_id != order.partner_id">
-                                                                        <t t-set="shipping_partner" t-value="order.partner_shipping_id"/>
-                                                                        <t t-if="shipping_partner and shipping_partner.name">
-                                                                            <t t-set="delivery_address" t-value="shipping_partner.name"/>
-                                                                        </t>
-                                                                    </t>
-                                                                </t>
-                                                            </t>
-                                                            
-                                                            <!-- Mostrar dirección si existe -->
-                                                            <t t-if="delivery_address">
+                                                            <!-- Dirección Entrega -->
+                                                            <t t-if="order.delivery_address_id">
                                                                 <small class="text-info">
                                                                     <i class="fa fa-map-marker me-1" aria-hidden="true"/>
-                                                                    <t t-esc="delivery_address"/>
+                                                                    <t t-esc="order.delivery_address_id.name"/>
+                                                                </small>
+                                                            </t>
+                                                            <t t-elif="order.partner_shipping_id and order.partner_shipping_id != order.partner_id">
+                                                                <small class="text-info">
+                                                                    <i class="fa fa-map-marker me-1" aria-hidden="true"/>
+                                                                    <t t-esc="order.partner_shipping_id.name"/>
                                                                 </small>
                                                             </t>
                                                             <t t-else="">

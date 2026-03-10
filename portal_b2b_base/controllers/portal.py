@@ -943,7 +943,7 @@ class PortalB2B(CustomerPortal):
             if distributor_label_id:
                 try:
                     order_vals["distributor_label_id"] = int(distributor_label_id)
-                    order_vals["customer_delivery_reference"] = (
+                    order_vals["distributor_customer_reference"] = (
                         customer_delivery_ref or ""
                     )
                 except Exception as e:
@@ -1187,9 +1187,11 @@ class PortalB2B(CustomerPortal):
                     hasattr(order, "distributor_label_id")
                     and order.distributor_label_id
                 ):
-                    final_customer = order.distributor_label_id.customer_name
+                    final_customer = order.distributor_label_id.customer_name or ""
                     final_customer_ref = (
-                        order.distributor_label_id.customer_reference or ""
+                        order.distributor_label_id.customer_reference 
+                        or order.distributor_customer_reference 
+                        or ""
                     )
                 elif (
                     hasattr(order, "distributor_customer_name")
